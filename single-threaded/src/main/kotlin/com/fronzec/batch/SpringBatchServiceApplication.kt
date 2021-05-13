@@ -1,11 +1,11 @@
-package com.fronzec.performantspringbatchservice
+package com.fronzec.batch
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
 @SpringBootApplication
-class PerformantSpringBatchServiceApplication
+class SpringBatchServiceApplication
 
 fun main(args: Array<String>) {
-    runApplication<PerformantSpringBatchServiceApplication>(*args)
+    runApplication<SpringBatchServiceApplication>(*args)
 }

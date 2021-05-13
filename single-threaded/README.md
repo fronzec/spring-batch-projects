@@ -1,1 +1,1 @@
-# performant-spring-batch-service
+# Single threaded batch service
