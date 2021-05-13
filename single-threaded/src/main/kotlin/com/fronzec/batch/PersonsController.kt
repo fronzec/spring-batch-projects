@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/persons")
 class PersonsController(private val personRepository: PersonRepository) {
+
     @GetMapping("/{id}")
     fun getById(@PathVariable(value = "id") id: Long): ResponseEntity<Person> {
         return personRepository.findById(id).map { article ->
