@@ -1,0 +1,13 @@
+version: '3.7'
+services:
+  db:
+    image: 'mysql:5.7'
+    environment:
+      MYSQL_DATABASE: batchservicedb
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+    volumes:
+      - batch-service-volume:/var/lib/mysql/
+    ports:
+      - 3306:3306
+volumes:
+  batch-service-volume:
