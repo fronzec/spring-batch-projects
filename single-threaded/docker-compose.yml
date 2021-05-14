@@ -3,7 +3,7 @@ services:
   db:
     image: mysql:5.7.33
     env_file:
-      - env.env
+      - .env
     environment:
       MYSQL_DATABASE: ${DB_NAME}
       # So you don't have to use root, but you can if you like
