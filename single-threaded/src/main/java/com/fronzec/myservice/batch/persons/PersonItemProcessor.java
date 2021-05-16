@@ -1,4 +1,4 @@
-package com.fronzec.myservice.batch;
+package com.fronzec.myservice.batch.persons;
 
 
 import org.slf4j.Logger;
@@ -17,7 +17,7 @@ public class PersonItemProcessor implements ItemProcessor<Person, Person> {
 
         final Person transformedPerson = new Person(firstName, lastName);
 
-        log.info("Converting (" + person + ") into (" + transformedPerson + ")");
+        // log.info("Converting (" + person + ") into (" + transformedPerson + ")");
 
         return transformedPerson;
     }

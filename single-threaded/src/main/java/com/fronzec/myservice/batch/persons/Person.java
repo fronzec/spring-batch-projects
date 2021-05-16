@@ -1,4 +1,4 @@
-package com.fronzec.myservice.batch;
+package com.fronzec.myservice.batch.persons;
 
 
 public class Person {
