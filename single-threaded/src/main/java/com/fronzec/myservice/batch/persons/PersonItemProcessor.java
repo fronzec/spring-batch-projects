@@ -10,6 +10,12 @@ public class PersonItemProcessor implements ItemProcessor<Person, Person> {
 
     private static final Logger log = LoggerFactory.getLogger(PersonItemProcessor.class);
 
+    /**
+     * This processor only takes the original Person fields to UPPER CASE
+     * @param person the person to process
+     * @return
+     * @throws Exception
+     */
     @Override
     public Person process(final Person person) throws Exception {
         final String firstName = person.getFirstName().toUpperCase();

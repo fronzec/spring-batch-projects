@@ -1,6 +1,8 @@
 package com.fronzec.myservice.batch;
 
 
+import com.fronzec.myservice.batch.persons.Customer;
+import com.fronzec.myservice.batch.persons.CustomerOutput;
 import com.fronzec.myservice.batch.persons.Person;
 import com.fronzec.myservice.batch.persons.PersonItemProcessor;
 import org.springframework.batch.core.Job;
@@ -53,11 +55,24 @@ public class BatchConfiguration {
     public FlatFileItemReader<Person> reader() {
         return new FlatFileItemReaderBuilder<Person>()
                 .name("personItemReader")
-                .resource(new ClassPathResource("sample-data-1k-error.csv"))
+                .resource(new ClassPathResource("sample-data-1k.csv"))
                 .delimited()
                 .names(new String[]{"firstName", "lastName"})
                 .fieldSetMapper(new BeanWrapperFieldSetMapper<Person>() {{
                     setTargetType(Person.class);
+                }})
+                .build();
+    }
+
+    @Bean
+    public FlatFileItemReader<Customer> readerCustomer() {
+        return new FlatFileItemReaderBuilder<Customer>()
+                .name("customerItemReader")
+                .resource(new ClassPathResource("sample-customers-1k.csv"))
+                .delimited()
+                .names("firstName", "lastName","email","profession")
+                .fieldSetMapper(new BeanWrapperFieldSetMapper<Customer>() {{
+                    setTargetType(Customer.class);
                 }})
                 .build();
     }
@@ -68,10 +83,24 @@ public class BatchConfiguration {
     }
 
     @Bean
+    public CustomerItemProcessor customerItemProcessor(){
+        return new CustomerItemProcessor();
+    }
+
+    @Bean
     public JdbcBatchItemWriter<Person> writer(DataSource dataSource) {
         return new JdbcBatchItemWriterBuilder<Person>()
                 .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
                 .sql("INSERT INTO persons (first_name, last_name) VALUES (:firstName, :lastName)")
+                .dataSource(dataSource)
+                .build();
+    }
+
+    @Bean
+    public JdbcBatchItemWriter<CustomerOutput> writerCustomer(DataSource dataSource) {
+        return new JdbcBatchItemWriterBuilder<CustomerOutput>()
+                .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
+                .sql("INSERT INTO customer (firstName, lastName, fullName, email, profession) VALUES (:firstName, :lastName, :fullName, :email, :profession)")
                 .dataSource(dataSource)
                 .build();
     }
@@ -85,12 +114,21 @@ public class BatchConfiguration {
     @Bean(name = "myImportUserJob")
     public Job importUserJob(JobCompletionNotificationListener listener, Step step1) {
 
-        return jobBuilderFactory.get("myImportUserJob")// Our jobname must be the name of the bean for our job
+        return jobBuilderFactory.get("myImportUserJob")// JobName: The jobname could be different from bean name but is common to hava the same value
                 .incrementer(new RunIdIncrementer())// Job id increment identifier
                 .listener(listener) // Job listeners that allow tracking of job lifecycle events
                 .flow(step1) // Configure the first step for this job
                 .end() // No more steps for our job, ready to build
                 .build();
+    }
+
+    @Bean(name = "importCustomerJob")
+    public Job importCustomerJob(JobCompletionNotificationListener listener, Step stepCustomer2) {
+        return jobBuilderFactory.get("importCustomerJob")// JobName: The jobname could be different from bean name but is common to hava the same value
+                .incrementer(new RunIdIncrementer())
+                .listener(listener)
+                .flow(stepCustomer2)
+                .end().build();
     }
 
     /**
@@ -109,6 +147,17 @@ public class BatchConfiguration {
                 .build();
     }
 
+    @Bean
+    public Step stepCustomer2(JdbcBatchItemWriter<CustomerOutput> writer, MyChunkListener myChunkListener) {
+        return stepBuilderFactory.get("stepCustomer2")// the bean name that allow creates our step
+                .<Customer, CustomerOutput> chunk(20) //chunk size of items to process in each step
+                .reader(readerCustomer()) // Bean reader configured
+                .processor(customerItemProcessor()) // Bean processor configured
+                .writer(writer) // Bean writer configured
+                .listener(myChunkListener) // Chunk listener configured
+                .build();
+    }
+
     /**
      * If we need allow launch a job from an HTTP request we need to launch async,
      * To launch a Job we need the job and a JobLauncher
@@ -119,7 +168,7 @@ public class BatchConfiguration {
     public JobLauncher asyncJobLauncher() throws Exception {
         var jobLauncher = new SimpleJobLauncher();
         jobLauncher.setJobRepository(jobRepository);
-        jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor());
+        jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor("asyncJobExecutor"));// Job exexutor
         jobLauncher.afterPropertiesSet();
         return jobLauncher;
     }

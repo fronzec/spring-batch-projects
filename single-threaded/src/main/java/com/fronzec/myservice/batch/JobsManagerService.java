@@ -3,7 +3,6 @@ package com.fronzec.myservice.batch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.configuration.JobRegistry;
@@ -17,10 +16,10 @@ import org.springframework.batch.core.repository.JobExecutionAlreadyRunningExcep
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -54,6 +53,8 @@ public class JobsManagerService {
 
     private BeanFactory beanFactory;
 
+    private List<Job> jobsList;
+
     /**
      * As previously discussed, the JobRepository provides CRUD operations on the meta-data, and the JobExplorer provides
      * read-only operations on the meta-data. However, those operations are most useful when used together to perform common
@@ -62,20 +63,30 @@ public class JobsManagerService {
      */
     private JobOperator jobOperator;
 
-    public JobsManagerService(JobLauncher asyncJobLauncher, JobExplorer jobExplorer, JobRegistry jobRegistry, BeanFactory beanFactory, JobOperator jobOperator) {
+    public JobsManagerService(JobLauncher asyncJobLauncher, JobExplorer jobExplorer,
+                              JobRegistry jobRegistry, BeanFactory beanFactory,
+                              List<Job> jobsList, JobOperator jobOperator) {
         this.asyncJobLauncher = asyncJobLauncher;
         this.jobExplorer = jobExplorer;
         this.jobRegistry = jobRegistry;
         this.beanFactory = beanFactory;
+        this.jobsList = jobsList;
         this.jobOperator = jobOperator;
     }
 
     @PostConstruct
     public void init() {
-        // NOTE: 16/05/21 Jobs configurations associated
-        Map<String, String> value = new HashMap<>();
-        value.put("paramname", "paramvalue");
-        jobs.put("myImportUserJob", value);
+        // NOTE: 16/05/21 Jobs configurations associated manually
+        Map<String, String> params = new HashMap<>();
+        params.put("paramname", "paramvalue");
+        jobs.put("myImportUserJob", params);
+        jobs.put("importCustomerJob", params);
+        // TODO: 16/05/21 trying to run non existing job
+        jobs.put("nonExistingJob", params);
+
+        // NOTE: 16/05/21 Jobs loaded in our service using spring, see injection on constructor
+        logger.info("jobs found by spring -> {}", jobsList.size());
+        jobsList.forEach(job -> logger.info("job-> {}", job));
 
     }
 
@@ -85,20 +96,68 @@ public class JobsManagerService {
         // TODO: 16/05/21 instance a job parameter and job names
         HashMap<String, String> info = new HashMap<>(jobs.size());
         jobs.forEach((key, params) -> {
-            var theJob = (Job) beanFactory.getBean(key);
-            Objects.requireNonNull(theJob);
+            try {
+                var theJob = (Job) beanFactory.getBean(key);
+                Objects.requireNonNull(theJob);
+                var jobParametersBuilder = new JobParametersBuilder();
+                // Adding the date to our param we set and allow run a single job only for one day
+                int day = date.getDay();
+                int month = date.getMonth();
+                int year = date.getYear();
+                params.put("DATE",String.format("%s-%s-%s", day,month,year));
+                params.put("RUNNING_NUMBER", runningNumber.toString());
+                params.forEach(jobParametersBuilder::addString);
+                try {
+                    logger.info("Running job: {} with params -> {}", theJob, params);
+                    asyncJobLauncher.run(theJob, jobParametersBuilder.toJobParameters());
+                    info.put(key, theJob.toString());
+                } catch (JobExecutionAlreadyRunningException e) {
+                    logger.error("already", e);
+                    info.put(key, e.getMessage());
+                } catch (JobRestartException e) {
+                    logger.error("restart", e);
+                    info.put(key, e.getMessage());
+                } catch (JobInstanceAlreadyCompleteException e) {
+                    logger.error("completed", e);
+                    info.put(key, e.getMessage());
+                } catch (JobParametersInvalidException e) {
+                    logger.info("parameters", e);
+                    info.put(key, e.getMessage());
+                }
+            } catch (NoSuchBeanDefinitionException e) {
+                    logger.info("nobeanjob found", e);
+                    info.put(key, e.getMessage());
+                }
+
+        });
+
+        return info;
+    }
+
+    /**
+     *
+     * @param date
+     * @param runningNumber
+     * @return
+     */
+    public HashMap<String, String> launchAllJobsPreloaded(Date date, final Integer runningNumber) {
+        Objects.requireNonNull(date);
+        var info = new HashMap<String, String>(jobsList.size());
+        jobsList.forEach(job -> {
+            var key = job.getName();
+            var params = new HashMap<String, String>();
             var jobParametersBuilder = new JobParametersBuilder();
             // Adding the date to our param we set and allow run a single job only for one day
-            int day = date.getDay();
-            int month = date.getMonth();
-            int year = date.getYear();
+            var day = date.getDay();
+            var month = date.getMonth();
+            var year = date.getYear();
             params.put("DATE",String.format("%s-%s-%s", day,month,year));
             params.put("RUNNING_NUMBER", runningNumber.toString());
             params.forEach(jobParametersBuilder::addString);
             try {
-                logger.info("Running job: {} with params -> {}", theJob, params);
-                asyncJobLauncher.run(theJob, jobParametersBuilder.toJobParameters());
-                info.put(key, theJob.toString());
+                logger.info("Running job: {} with params -> {}", job, params);
+                asyncJobLauncher.run(job, jobParametersBuilder.toJobParameters());
+                info.put(key, job.toString());
             } catch (JobExecutionAlreadyRunningException e) {
                 logger.error("already", e);
                 info.put(key, e.getMessage());
