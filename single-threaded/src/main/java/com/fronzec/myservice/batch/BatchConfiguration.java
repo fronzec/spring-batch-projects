@@ -114,7 +114,7 @@ public class BatchConfiguration {
     @Bean(name = "myImportUserJob")
     public Job importUserJob(JobCompletionNotificationListener listener, Step step1) {
 
-        return jobBuilderFactory.get("myImportUserJob")// JobName: The jobname could be different from bean name but is common to hava the same value
+        return jobBuilderFactory.get("myImportUserJob")// JobName: The jobname could be different from bean name but is common to have the same value
                 .incrementer(new RunIdIncrementer())// Job id increment identifier
                 .listener(listener) // Job listeners that allow tracking of job lifecycle events
                 .flow(step1) // Configure the first step for this job
@@ -124,7 +124,7 @@ public class BatchConfiguration {
 
     @Bean(name = "importCustomerJob")
     public Job importCustomerJob(JobCompletionNotificationListener listener, Step stepCustomer2) {
-        return jobBuilderFactory.get("importCustomerJob")// JobName: The jobname could be different from bean name but is common to hava the same value
+        return jobBuilderFactory.get("importCustomerJob")// JobName: The jobname could be different from bean name but is common to have the same value
                 .incrementer(new RunIdIncrementer())
                 .listener(listener)
                 .flow(stepCustomer2)
