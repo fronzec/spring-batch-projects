@@ -45,7 +45,7 @@ public class JobController {
     public ResponseEntity<String> postMethodName(@RequestHeader(value = "X-User", required = true) String user,
                                                  @Valid @RequestBody LaunchJobRequest request) {
         logger.info("user -> {}, reqBody -> {}", user, request);
-        return ResponseEntity.ok("{}");
+        return ResponseEntity.ok(JsonUtils.parseObject2Json(jobsManagerService.runJobWithParams(request)));
     }
 
 

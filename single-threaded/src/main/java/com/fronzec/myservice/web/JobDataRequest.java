@@ -2,6 +2,8 @@ package com.fronzec.myservice.web;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fronzec.myservice.utils.JsonUtils;
+
 import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotNull;
@@ -36,5 +38,10 @@ public class JobDataRequest {
 
     public void setTryNumber(Integer tryNumber) {
         this.tryNumber = tryNumber;
+    }
+
+    @Override
+    public String toString() {
+        return JsonUtils.parseObject2Json(this);
     }
 }

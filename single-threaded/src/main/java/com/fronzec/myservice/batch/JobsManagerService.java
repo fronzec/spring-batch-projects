@@ -20,6 +20,11 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+
+import com.fronzec.myservice.utils.JsonUtils;
+import com.fronzec.myservice.web.LaunchJobRequest;
+
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -34,9 +39,11 @@ import java.util.Set;
 @Service
 public class JobsManagerService {
 
-    // Saves jobBeanNames and jobsParams
-    // TODO esto se debe mover a la BD
-    private HashMap<String, Map<String, String>> jobs = new HashMap<>();
+    // TODO esto se debe mover a la BD a un modelo entidad relacion
+    /**
+     * Saves jobBeanNames and jobsParams
+     */
+    private Map<String, Map<String, String>> jobs = new HashMap<>();
 
     private static final Logger logger = LoggerFactory.getLogger(JobsManagerService.class);
 
@@ -56,7 +63,7 @@ public class JobsManagerService {
     private List<Job> jobsList;
 
     /**
-     * As previously discussed, the JobRepository provides CRUD operations on the meta-data, and the JobExplorer provides
+     * The JobRepository provides CRUD operations on the meta-data, and the JobExplorer provides
      * read-only operations on the meta-data. However, those operations are most useful when used together to perform common
      * monitoring tasks such as stopping, restarting, or summarizing a Job, as is commonly done by batch operators.
      * Spring Batch provides these types of operations via the JobOperator interface:
@@ -79,6 +86,7 @@ public class JobsManagerService {
         // NOTE: 16/05/21 Jobs configurations associated manually
         Map<String, String> params = new HashMap<>();
         params.put("paramname", "paramvalue");
+
         jobs.put("myImportUserJob", params);
         jobs.put("importCustomerJob", params);
         // TODO: 16/05/21 trying to run non existing job
@@ -174,6 +182,51 @@ public class JobsManagerService {
         });
 
         return info;
+    }
+
+    public Map<String, String> runJobWithParams(LaunchJobRequest request) {
+        Map<String, String> launchedJobMetadata = new HashMap<>();
+
+
+        Map<String, String> jobExecParams = new HashMap<>();
+        if(jobs.containsKey(request.getJobBeanName())) {
+            try {
+                var theJob = (Job) beanFactory.getBean(request.getJobBeanName());
+                Objects.requireNonNull(theJob);
+                launchedJobMetadata.put("jobName", request.getJobBeanName());
+                var jobParametersBuilder = new JobParametersBuilder();
+                // Adding the date to our param we track the execution of the job for a day
+                // That param allow for example filter data to be processed for that day
+                LocalDate execDate = LocalDate.parse(request.getParams().get("date"));
+                jobExecParams.put("DATE",String.format("%s-%s-%s", execDate.getDayOfMonth(),
+                    execDate.getMonth().getValue(), execDate.getYear()));
+                jobExecParams.put("ATTEMPT_NUMBER", request.getParams().get("execution_attempt_number"));
+                jobExecParams.put("DESCRIPTION", request.getParams().get("description"));
+
+                // add param to the job builder
+                jobExecParams.forEach(jobParametersBuilder::addString);
+
+                logger.info("Attempt to run job -> {} with params -> {}", theJob, JsonUtils.parseObject2Json(jobExecParams));
+                asyncJobLauncher.run(theJob, jobParametersBuilder.toJobParameters());
+                launchedJobMetadata.put("result", JsonUtils.parseObject2Json(theJob.toString()));
+
+            } catch (JobExecutionAlreadyRunningException e) {
+                logger.error("already running job with the same params", e);
+                launchedJobMetadata.put("error", e.getMessage());
+            } catch (JobRestartException e) {
+                logger.error("restart", e);
+                launchedJobMetadata.put("error", e.getMessage());
+            } catch (JobInstanceAlreadyCompleteException e) {
+                logger.error("completed", e);
+                launchedJobMetadata.put("error", e.getMessage());
+            } catch (JobParametersInvalidException e) {
+                logger.info("parameters", e);
+                launchedJobMetadata.put("error", e.getMessage());
+            }
+        } else {
+            launchedJobMetadata.put("error", String.format("Job <%s> not found", request.getJobBeanName()));
+        }
+        return launchedJobMetadata;
     }
 
     public HashMap<String, String> stopAllJobs() {

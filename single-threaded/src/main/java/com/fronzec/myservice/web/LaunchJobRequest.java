@@ -25,6 +25,7 @@ public class LaunchJobRequest {
     /**
      * Params to use in our job, this fields must be validated to check required fields and
      * correct values for each job type
+     * TODO replace this map with a POJO that allow more easy control over params
      */
     private HashMap<String, String> params = new HashMap<>();
 
