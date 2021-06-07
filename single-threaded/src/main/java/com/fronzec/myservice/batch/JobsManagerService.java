@@ -186,8 +186,6 @@ public class JobsManagerService {
 
     public Map<String, String> runJobWithParams(LaunchJobRequest request) {
         Map<String, String> launchedJobMetadata = new HashMap<>();
-
-
         Map<String, String> jobExecParams = new HashMap<>();
         if(jobs.containsKey(request.getJobBeanName())) {
             try {
@@ -231,7 +229,6 @@ public class JobsManagerService {
 
     public HashMap<String, String> stopAllJobs() {
         HashMap<String, String> singaledStopped = new HashMap<>();
-
         jobs.keySet().forEach(name -> {
             try {
                 Set<Long> runningExecutions = jobOperator.getRunningExecutions(name);

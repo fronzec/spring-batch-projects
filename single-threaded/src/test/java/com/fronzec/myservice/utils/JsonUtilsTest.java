@@ -6,7 +6,8 @@ import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
-public class JsonUtilsTest {
+class JsonUtilsTest {
+
     @Test
     void testParseObject2Json() {
         String actual1 = JsonUtils.parseObject2Json(null);
