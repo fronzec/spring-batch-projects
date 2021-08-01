@@ -1,78 +1,76 @@
 package com.fronzec.myservice.batch.persons;
 
-import java.time.LocalDateTime;
-
 public class CustomerOutput {
 
-    private String firstName;
-    private String lastName;
-    private String fullName;
-    private String email;
-    private String profession;
+  private String firstName;
 
-    public CustomerOutput() {
-    }
+  private String lastName;
 
-    public CustomerOutput(String firstName, String lastName, String fullName, String email, String profession) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.fullName = fullName;
-        this.email = email;
-        this.profession = profession;
-    }
+  private String fullName;
 
-    public static CustomerOutput fromCustomer(Customer customer) {
-        return new CustomerOutput(customer.getFirstName(), customer.getLastName(),
-                customer.getFirstName() + " "+customer.getLastName(), customer.getEmail(), customer.getProfession() );
+  private String email;
 
-    }
+  private String profession;
 
-    public String getEmail() {
-        return email;
-    }
+  public CustomerOutput() {
+  }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+  public CustomerOutput(String firstName, String lastName, String fullName, String email, String profession) {
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.fullName = fullName;
+    this.email = email;
+    this.profession = profession;
+  }
 
-    public String getProfession() {
-        return profession;
-    }
+  public static CustomerOutput fromCustomer(Customer customer) {
+    return new CustomerOutput(customer.getFirstName(), customer.getLastName(), customer.getFirstName() + " " + customer.getLastName(),
+            customer.getEmail(), customer.getProfession());
 
-    public void setProfession(String profession) {
-        this.profession = profession;
-    }
+  }
 
-    public String getFirstName() {
-        return firstName;
-    }
+  public String getEmail() {
+    return email;
+  }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
+  public void setEmail(String email) {
+    this.email = email;
+  }
 
-    public String getLastName() {
-        return lastName;
-    }
+  public String getProfession() {
+    return profession;
+  }
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
+  public void setProfession(String profession) {
+    this.profession = profession;
+  }
 
-    @Override
-    public String toString() {
-        return "Customer{" +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", fullName='" + fullName + '\'' +
-                '}';
-    }
+  public String getFirstName() {
+    return firstName;
+  }
 
-    public String getFullName() {
-        return fullName;
-    }
+  public void setFirstName(String firstName) {
+    this.firstName = firstName;
+  }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
+  public String getLastName() {
+    return lastName;
+  }
+
+  public void setLastName(String lastName) {
+    this.lastName = lastName;
+  }
+
+  @Override
+  public String toString() {
+    return "Customer{" + ", firstName='" + firstName + '\'' + ", lastName='" + lastName + '\'' + ", fullName='" + fullName + '\'' + '}';
+  }
+
+  public String getFullName() {
+    return fullName;
+  }
+
+  public void setFullName(String fullName) {
+    this.fullName = fullName;
+  }
 }

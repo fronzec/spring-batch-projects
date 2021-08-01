@@ -7,8 +7,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 class SpringBatchServiceApplicationTest {
 
-    @Test
-    void contextLoads() {
+  @Test
+  void contextLoads() {
 
-    }
+  }
 }
