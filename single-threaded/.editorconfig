@@ -51,7 +51,6 @@ ij_haml_keep_indents_on_empty_lines = false
 [*.java]
 indent_size = 2
 tab_width = 2
-ij_visual_guides = none
 ij_java_align_consecutive_assignments = false
 ij_java_align_consecutive_variable_declarations = false
 ij_java_align_group_field_declarations = false
