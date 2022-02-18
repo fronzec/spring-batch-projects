@@ -1,5 +1,6 @@
 package com.fronzec.myservice.web;
 
+import com.fronzec.myservice.batch.JobsManagerService;
 import java.util.HashMap;
 import java.util.Map;
 import javax.validation.Valid;
@@ -12,8 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.fronzec.myservice.batch.JobsManagerService;
 
 /**
  * Este controlador expone endpoints para la gestion de los jobs
@@ -42,7 +41,7 @@ public class JobController {
 
   @PostMapping(value = "/start-single")
   public ResponseEntity<Map<String, String>> postMethodName(
-          @RequestHeader(value = "X-User", required = true)
+          @RequestHeader(value = "X-User")
                   String user, @Valid
   @RequestBody
           LaunchJobRequest request) {

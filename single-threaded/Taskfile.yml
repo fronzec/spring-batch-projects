@@ -1,0 +1,8 @@
+version : '3'
+tasks:
+  hello-world:
+    cmds:
+      - echo "Hello world"
+  up-db:
+    cmds:
+      - docker compose up -d db

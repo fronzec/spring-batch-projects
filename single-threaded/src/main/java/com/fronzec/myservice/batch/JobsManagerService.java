@@ -86,8 +86,9 @@ public class JobsManagerService {
     Map<String, String> params = new HashMap<>();
     params.put("paramname", "paramvalue");
 
-    jobs.put("myImportUserJob", params);
-    jobs.put("importCustomerJob", params);
+    jobs.put("job1", params);
+    jobs.put("job2", params);
+    jobs.put("job3", params);
     // TODO: 16/05/21 trying to run non existing job
     jobs.put("nonExistingJob", params);
 
@@ -276,4 +277,5 @@ public class JobsManagerService {
             });
     return running;
   }
+
 }
