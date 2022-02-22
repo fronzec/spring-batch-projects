@@ -1,4 +1,4 @@
-version : '3'
+version: '3'
 tasks:
   hello-world:
     cmds:
@@ -6,3 +6,13 @@ tasks:
   up-db:
     cmds:
       - docker compose up -d db
+  build:
+    cmds:
+      - docker build -t fronzec/single-threaded:latest .
+  down:
+    cmds:
+      - docker-compose down --remove-orphans
+  up:
+    deps: [ down,build ]
+    cmds:
+      - docker-compose up

@@ -1,5 +1,17 @@
+---
 version: '3.7'
 services:
+  single-threaded:
+    image: fronzec/single-threaded:latest
+    memswap_limit: 0
+    mem_limit: 128M
+    cpus: 1
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
   db:
     image: mysql:5.6.51
     restart: "no"
