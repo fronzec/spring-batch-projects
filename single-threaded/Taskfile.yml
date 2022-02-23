@@ -1,11 +1,23 @@
 version: '3'
 tasks:
-  hello-world:
+  hello:
     cmds:
       - echo "Hello world"
+  setup-envs:
+    cmds:
+      - cp env.example.txt .env
+    # test existence of files
+    preconditions:
+      - sh: "! test -f .env"
+        msg: "==========> .env file already exists, their values will be used"
+
+
   up-db:
     cmds:
       - docker compose up -d db
+  up-service:
+    cmds:
+      - docker compose up -d single-threaded
   build:
     cmds:
       - docker build -t fronzec/single-threaded:latest .
