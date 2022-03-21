@@ -1,9 +1,11 @@
 package com.fronzec.myservice.batch.job1.step1;
 
 import com.fronzec.myservice.batch.job1.Person;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
+@StepScope
 @Component
 public class CsvProcessor implements ItemProcessor <Person, Person> {
 

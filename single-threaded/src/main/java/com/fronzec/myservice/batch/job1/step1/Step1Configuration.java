@@ -2,6 +2,7 @@ package com.fronzec.myservice.batch.job1.step1;
 
 import com.fronzec.myservice.batch.job1.Person;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
@@ -20,6 +21,7 @@ public class Step1Configuration {
     this.stepBuilderFactory = stepBuilderFactory;
   }
 
+  @JobScope
   @Bean
   public Step step1(FlatFileItemReader<Person> readerPersons, CsvProcessor processor, JdbcBatchItemWriter<Person> writer) {
     return stepBuilderFactory.get("step1")

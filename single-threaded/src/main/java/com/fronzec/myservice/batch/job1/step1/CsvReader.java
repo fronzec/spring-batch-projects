@@ -1,6 +1,7 @@
 package com.fronzec.myservice.batch.job1.step1;
 
 import com.fronzec.myservice.batch.job1.Person;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
@@ -10,6 +11,8 @@ import org.springframework.core.io.ClassPathResource;
 
 @Configuration
 public class CsvReader {
+
+  @StepScope
   @Bean
   public FlatFileItemReader<Person> readerPersons() {
     return new FlatFileItemReaderBuilder<Person>().name("personsItemReader")

@@ -32,7 +32,7 @@ public class Step2KeySetPagingItemReader extends AbstractPaginatedDataItemReader
   protected Iterator<PersonsEntity> doPageRead() {
     PageRequest pageRequest = PageRequest.of(0, chunkRead);
     lastPersonId = getLastChukId(persons);
-    persons = personRepository.findByIdGreaterThanOrderByIdAsc(lastPersonId, pageRequest);
+    persons = personRepository.findByIdGreaterThanAndProcessedIsFalseOrderByIdAsc(lastPersonId, pageRequest);
     return persons.iterator();
   }
 
