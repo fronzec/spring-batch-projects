@@ -1,0 +1,7 @@
+### Healthcheck
+GET http://localhost:8080/api/batch-service/actuator/health
+
+### Prometheus
+GET http://localhost:8080/api/batch-service/actuator/prometheus
+
+

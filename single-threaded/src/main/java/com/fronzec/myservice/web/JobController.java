@@ -29,24 +29,46 @@ public class JobController {
     this.jobsManagerService = jobsManagerService;
   }
 
-  @PostMapping("/start-all")
-  public ResponseEntity<JobInfo> startAllAction(@Valid
+  @PostMapping("/start-all/async")
+  public ResponseEntity<JobInfo> startAllJobsAsync(@Valid
   @RequestBody
-          JobDataRequest dataRequest) {
-    HashMap<String, String> stringStringHashMap = jobsManagerService.launchAllJobs(dataRequest.getDate(), dataRequest.getTryNumber());
+          AllJobsDataRequest dataRequest) {
+    HashMap<String, String> stringStringHashMap =
+            jobsManagerService.launchAllNonAutoDetectedJobsAsync(dataRequest.getDate(), dataRequest.getTryNumber());
     JobInfo jobInfo = new JobInfo();
     jobInfo.setInfo(stringStringHashMap);
     return ResponseEntity.ok(jobInfo);
   }
 
-  @PostMapping(value = "/start-single")
-  public ResponseEntity<Map<String, String>> postMethodName(
+  @PostMapping("/start-all/sync")
+  public ResponseEntity<JobInfo> startAllJobsSync(@Valid
+  @RequestBody
+          AllJobsDataRequest dataRequest) {
+    HashMap<String, String> stringStringHashMap =
+            jobsManagerService.launchAllNonAutoDetectedJobsSync(dataRequest.getLocalDate(), dataRequest.getTryNumber());
+    JobInfo jobsResultInfo = new JobInfo();
+    jobsResultInfo.setInfo(stringStringHashMap);
+    return ResponseEntity.ok(jobsResultInfo);
+  }
+
+  @PostMapping(value = "/start-single/async")
+  public ResponseEntity<Map<String, String>> runJobAsync(
           @RequestHeader(value = "X-User")
                   String user, @Valid
   @RequestBody
-          LaunchJobRequest request) {
+          SingleJobDataRequest request) {
     logger.info("user -> {}, reqBody -> {}", user, request);
-    return ResponseEntity.ok(jobsManagerService.runJobWithParams(request));
+    return ResponseEntity.ok(jobsManagerService.asyncRunJobWithParams(request));
+  }
+
+  @PostMapping(value = "/start-single/sync")
+  public ResponseEntity<Map<String, String>> runJobSync(
+          @RequestHeader(value = "X-User")
+                  String user, @Valid
+  @RequestBody
+          SingleJobDataRequest request) {
+    logger.info("user -> {}, reqBody -> {}", user, request);
+    return ResponseEntity.ok(jobsManagerService.syncRunJobWithParams(request));
   }
 
 
