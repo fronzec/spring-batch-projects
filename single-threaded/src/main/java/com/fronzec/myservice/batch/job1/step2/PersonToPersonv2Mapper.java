@@ -13,6 +13,7 @@ public class PersonToPersonv2Mapper {
     PersonsV2Entity personsV2Entity = new PersonsV2Entity();
     personsV2Entity.setEmail(entity.getEmail());
     personsV2Entity.setFirstName(entity.getFirstName());
+    personsV2Entity.setLastName(entity.getLastName());
     personsV2Entity.setProfession(entity.getProfession());
     personsV2Entity.setUuidV4(UUID.randomUUID()
             .toString());

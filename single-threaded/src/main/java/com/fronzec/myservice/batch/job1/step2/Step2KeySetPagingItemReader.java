@@ -26,6 +26,8 @@ public class Step2KeySetPagingItemReader extends AbstractPaginatedDataItemReader
 
   public Step2KeySetPagingItemReader(PersonRepository personRepository) {
     this.personRepository = personRepository;
+    // note: required set the name for spring batch
+    setName(Step2KeySetPagingItemReader.class.getName());
   }
 
   @Override

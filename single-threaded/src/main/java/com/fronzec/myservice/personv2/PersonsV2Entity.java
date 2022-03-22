@@ -1,6 +1,5 @@
 package com.fronzec.myservice.personv2;
 
-import java.sql.Timestamp;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -37,14 +36,6 @@ public class PersonsV2Entity {
   @Basic
   @Column(name = "uuid_v4", nullable = false, length = 36)
   private String uuidV4;
-
-  @Basic
-  @Column(name = "created_at", nullable = false)
-  private Timestamp createdAt;
-
-  @Basic
-  @Column(name = "updated_at", nullable = false)
-  private Timestamp updatedAt;
 
   @Basic
   @Column(name = "fk_dispatched_group_id", nullable = true)
@@ -98,22 +89,6 @@ public class PersonsV2Entity {
     this.uuidV4 = uuidV4;
   }
 
-  public Timestamp getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(Timestamp createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public Timestamp getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(Timestamp updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
   public Long getFkDispatchedGroupId() {
     return fkDispatchedGroupId;
   }
@@ -151,12 +126,7 @@ public class PersonsV2Entity {
     if (uuidV4 != null ? !uuidV4.equals(that.uuidV4) : that.uuidV4 != null) {
       return false;
     }
-    if (createdAt != null ? !createdAt.equals(that.createdAt) : that.createdAt != null) {
-      return false;
-    }
-    if (updatedAt != null ? !updatedAt.equals(that.updatedAt) : that.updatedAt != null) {
-      return false;
-    }
+
     if (fkDispatchedGroupId != null ? !fkDispatchedGroupId.equals(that.fkDispatchedGroupId) : that.fkDispatchedGroupId != null) {
       return false;
     }
@@ -172,8 +142,6 @@ public class PersonsV2Entity {
     result = 31 * result + (email != null ? email.hashCode() : 0);
     result = 31 * result + (profession != null ? profession.hashCode() : 0);
     result = 31 * result + (uuidV4 != null ? uuidV4.hashCode() : 0);
-    result = 31 * result + (createdAt != null ? createdAt.hashCode() : 0);
-    result = 31 * result + (updatedAt != null ? updatedAt.hashCode() : 0);
     result = 31 * result + (fkDispatchedGroupId != null ? fkDispatchedGroupId.hashCode() : 0);
     return result;
   }
