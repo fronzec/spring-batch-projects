@@ -37,7 +37,7 @@ public class BatchConfiguration {
   }
 
   /**
-   * If we need allow launch a job from an HTTP request we need to launch async,
+   * Sync task executor.
    * To launch a Job we need the job and a JobLauncher
    *
    * @return
