@@ -2,24 +2,28 @@ package com.fronzec.myservice.web;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fronzec.myservice.utils.JsonUtils;
+import java.time.LocalDate;
 import java.util.Date;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.PositiveOrZero;
 
-import com.fronzec.myservice.utils.JsonUtils;
-
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class JobDataRequest {
+public class AllJobsDataRequest {
 
   @NotNull
   @JsonFormat(pattern = "dd-MM-yyyy")
   private Date date;
 
+  @NotNull
+  @JsonFormat(pattern = "yyyy-MM-dd")
+  private LocalDate localDate;
+
   @PositiveOrZero
   @NotNull
   private Integer tryNumber;
 
-  public JobDataRequest() {
+  public AllJobsDataRequest() {
   }
 
   public Date getDate() {
@@ -36,6 +40,14 @@ public class JobDataRequest {
 
   public void setTryNumber(Integer tryNumber) {
     this.tryNumber = tryNumber;
+  }
+
+  public LocalDate getLocalDate() {
+    return localDate;
+  }
+
+  public void setLocalDate(LocalDate localDate) {
+    this.localDate = localDate;
   }
 
   @Override

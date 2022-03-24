@@ -1,17 +1,16 @@
 package com.fronzec.myservice.web;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.fronzec.myservice.utils.JsonUtils;
 import java.util.HashMap;
 import java.util.Map;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
-import com.fronzec.myservice.utils.JsonUtils;
-
-@JsonNaming(value = PropertyNamingStrategy.SnakeCaseStrategy.class)
-public class LaunchJobRequest {
+@JsonNaming(value = PropertyNamingStrategies.SnakeCaseStrategy.class)
+public class SingleJobDataRequest {
 
   /**
    * Spring batch job bean name to instance a new job dinamically

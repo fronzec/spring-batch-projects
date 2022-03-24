@@ -1,23 +1,42 @@
+---
 version: '3.7'
 services:
+  single-threaded:
+    image: fronzec/single-threaded:latest
+    memswap_limit: 0
+    mem_limit: 128M
+    cpus: 1
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
   db:
-    image: mysql:5.7.33
+    image: mysql:5.6.51
+    restart: "no"
     env_file:
       - .env
     environment:
       MYSQL_DATABASE: ${DB_NAME}
       # So you don't have to use root, but you can if you like
-      MYSQL_USER: ${DB_USER}
+      MYSQL_USER: ${DB_USERNAME_NONROOT}
       # You can use whatever password you like
-      MYSQL_PASSWORD: ${DB_PASS}
-      # Password for root access
-      MYSQL_ROOT_PASSWORD: ${DB_PASS}
+      MYSQL_PASSWORD: ${DB_PASSWORD_NONROOT}
+      # Password for root access empty
+      MYSQL_ROOT_PASSWORD: ""
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
     ports:
-      # Host:Container
+      # <Port exposed on host machine> : < MySQL Port running inside container>
       - '3306:3306'
     expose:
+      # Opens port 3306 on the container
       - '3306'
+      # Where our data will be persisted
     volumes:
-      - mydbdata:/var/lib/mysql
+      # <Volume name>:<Container Datas>
+      - mysql56voldata01:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+# Names our volume
 volumes:
-  mydbdata:
+  mysql56voldata01:
