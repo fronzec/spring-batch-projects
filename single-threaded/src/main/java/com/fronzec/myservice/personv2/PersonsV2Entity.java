@@ -7,6 +7,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "persons_v2")
@@ -32,6 +33,10 @@ public class PersonsV2Entity {
   @Basic
   @Column(name = "profession", nullable = false, length = 15)
   private String profession;
+
+  @Basic
+  @Column(name = "salary", nullable = false)
+  private BigDecimal salary;
 
   @Basic
   @Column(name = "uuid_v4", nullable = false, length = 36)
@@ -79,6 +84,15 @@ public class PersonsV2Entity {
 
   public void setProfession(String profession) {
     this.profession = profession;
+  }
+
+
+  public BigDecimal getSalary() {
+    return salary;
+  }
+
+  public void setSalary(BigDecimal salary) {
+    this.salary = salary;
   }
 
   public String getUuidV4() {
