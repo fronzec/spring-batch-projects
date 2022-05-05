@@ -2,6 +2,9 @@ package com.fronzec.myservice.batch.job1.step2;
 
 import com.fronzec.myservice.person.PersonsEntity;
 import com.fronzec.myservice.personv2.PersonsV2Entity;
+
+import java.math.BigDecimal;
+import java.util.Random;
 import java.util.UUID;
 
 public class PersonToPersonv2Mapper {
@@ -17,6 +20,7 @@ public class PersonToPersonv2Mapper {
     personsV2Entity.setProfession(entity.getProfession());
     personsV2Entity.setUuidV4(UUID.randomUUID()
             .toString());
+    personsV2Entity.setSalary(BigDecimal.valueOf(Math.random()));
     return personsV2Entity;
   }
 }
