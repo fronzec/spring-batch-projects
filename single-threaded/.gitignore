@@ -182,4 +182,4 @@ build/
 
 
 *.env
-!example.env
+!.devenvironment/example.env
