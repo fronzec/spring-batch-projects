@@ -27,4 +27,4 @@ tasks:
   up:
     deps: [ down,build ]
     cmds:
-      - docker-compose up
+      - docker-compose up -p singlethreaded
