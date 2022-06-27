@@ -17,7 +17,7 @@ public class Step2KeySetPagingItemReader extends AbstractPaginatedDataItemReader
 
   long lastPersonId = 0;
 
-  @Value("${single-threaded.jobs.job1.readers.chunk-size:1000}")
+  @Value("${single-threaded.jobs.job1.step2.reader.chunk-size:1000}")
   private int chunkRead;
 
   private final PersonRepository personRepository;
@@ -28,17 +28,19 @@ public class Step2KeySetPagingItemReader extends AbstractPaginatedDataItemReader
     this.personRepository = personRepository;
     // note: required set the name for spring batch
     setName(Step2KeySetPagingItemReader.class.getName());
+    setSaveState(false); //Because we are controlling if an item is processed or not using a column value, is preferable don't store any
+    // state such as the current row number, since is irrelevant upon restart. This can bea applicable for readers and writers
   }
 
   @Override
   protected Iterator<PersonsEntity> doPageRead() {
     PageRequest pageRequest = PageRequest.of(0, chunkRead);
-    lastPersonId = getLastChukId(persons);
+    lastPersonId = getLastChunkId(persons);
     persons = personRepository.findByIdGreaterThanAndProcessedIsFalseOrderByIdAsc(lastPersonId, pageRequest);
     return persons.iterator();
   }
 
-  private long getLastChukId(List<PersonsEntity> persons) {
+  private long getLastChunkId(List<PersonsEntity> persons) {
     if (persons == null || persons.isEmpty()) {
       return 0L;
     }
