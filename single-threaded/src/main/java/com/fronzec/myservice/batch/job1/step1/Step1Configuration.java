@@ -28,7 +28,7 @@ public class Step1Configuration {
   @JobScope
   @Bean
   public Step step1(FlatFileItemReader<Person> readerPersons, CsvProcessor processor, JdbcBatchItemWriter<Person> writer) {
-    return stepBuilderFactory.get("step1")
+    return stepBuilderFactory.get("job1Step1")
             .<Person, Person>chunk(chunkSize)
             .reader(readerPersons)
             .processor(processor)
