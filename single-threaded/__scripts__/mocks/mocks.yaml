@@ -1,0 +1,28 @@
+management:
+  port: 8000
+  # ssl: true
+  # sslCertFile: "subdir/cert.pem",
+  # sslKeyFile: "subdir/key.pem",
+#templatingEngine: Jinja2 # if we want to use jinja2
+# See more in https://mockintosh.io/
+services:
+  - name: Example Mock Service Config
+    port: 8001
+    managementRoot: __admin # http://localhost:8001/__admin/
+    endpoints:
+      - path: /
+        response: hello world
+      - path: /ping
+        response: pong
+      - path: "/search"
+        queryString:
+          q: "{{keyword1}}"
+          s: "{{keyword1}}"
+        response: 'result: {{keyword1}} {{keyword2}}'
+      - path: /receive_batch
+        method: POST
+        response:
+          status: 200
+          headers:
+            content-type: application/json
+          body: '{}'

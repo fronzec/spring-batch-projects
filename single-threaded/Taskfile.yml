@@ -28,3 +28,6 @@ tasks:
     deps: [ down,build ]
     cmds:
       - docker-compose up -p singlethreaded
+  mocksup:
+    cmds:
+      - mockintosh ./__scripts__/mocks/mocks.yaml
