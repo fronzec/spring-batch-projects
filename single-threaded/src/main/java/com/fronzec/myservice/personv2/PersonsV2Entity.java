@@ -1,5 +1,7 @@
 package com.fronzec.myservice.personv2;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -8,6 +10,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "persons_v2")
@@ -41,6 +44,14 @@ public class PersonsV2Entity {
   @Basic
   @Column(name = "uuid_v4", nullable = false, length = 36)
   private String uuidV4;
+
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false)
+  private LocalDateTime createdAt;
+
+  @UpdateTimestamp
+  @Column(name = "updated_at", nullable = false)
+  private LocalDateTime updatedAt;
 
   @Basic
   @Column(name = "fk_dispatched_group_id", nullable = true)
@@ -158,5 +169,22 @@ public class PersonsV2Entity {
     result = 31 * result + (uuidV4 != null ? uuidV4.hashCode() : 0);
     result = 31 * result + (fkDispatchedGroupId != null ? fkDispatchedGroupId.hashCode() : 0);
     return result;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
+
+
+  public LocalDateTime getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void setUpdatedAt(LocalDateTime updatedAt) {
+    this.updatedAt = updatedAt;
   }
 }

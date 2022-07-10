@@ -17,6 +17,8 @@ public class EntityPersonV2RowMapper implements RowMapper<PersonsV2Entity> {
     personsV2.setProfession(rs.getString("profession"));
     personsV2.setSalary(rs.getBigDecimal("salary"));
     personsV2.setUuidV4(rs.getString("uuid_v4"));
+    personsV2.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+    personsV2.setCreatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
     return personsV2;
   }
 }
