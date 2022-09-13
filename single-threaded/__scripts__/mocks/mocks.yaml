@@ -7,7 +7,7 @@ management:
 # See more in https://mockintosh.io/
 services:
   - name: Example Mock Service Config
-    port: 8001
+    port: 8081
     managementRoot: __admin # http://localhost:8001/__admin/
     endpoints:
       - path: /
@@ -19,7 +19,7 @@ services:
           q: "{{keyword1}}"
           s: "{{keyword1}}"
         response: 'result: {{keyword1}} {{keyword2}}'
-      - path: /receive_batch
+      - path: /mock-service/receive-batch
         method: POST
         response:
           status: 200
