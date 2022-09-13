@@ -8,6 +8,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "persons")
@@ -23,7 +24,7 @@ public class PersonsEntity {
   private String firstName;
 
   @Basic
-  @Column(name = "last_name", nullable = true, length = 50)
+  @Column(name = "last_name", length = 50)
   private String lastName;
 
   @Basic
@@ -43,6 +44,7 @@ public class PersonsEntity {
   private Timestamp createdAt;
 
   @Basic
+  @UpdateTimestamp
   @Column(name = "updated_at", nullable = false)
   private Timestamp updatedAt;
 
@@ -142,11 +144,7 @@ public class PersonsEntity {
     if (createdAt != null ? !createdAt.equals(that.createdAt) : that.createdAt != null) {
       return false;
     }
-    if (updatedAt != null ? !updatedAt.equals(that.updatedAt) : that.updatedAt != null) {
-      return false;
-    }
-
-    return true;
+    return updatedAt != null ? updatedAt.equals(that.updatedAt) : that.updatedAt == null;
   }
 
   @Override

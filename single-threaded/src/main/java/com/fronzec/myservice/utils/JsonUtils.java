@@ -2,6 +2,7 @@ package com.fronzec.myservice.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +10,10 @@ import org.slf4j.LoggerFactory;
 public class JsonUtils {
 
   public static final ObjectMapper mapper = new ObjectMapper();
+
+  static {
+    mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+  }
 
   private static final Logger logger = LoggerFactory.getLogger(JsonUtils.class);
 

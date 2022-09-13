@@ -25,11 +25,13 @@ public class Job1Configuration {
    * Job 1 configuration with complex flow
    *
    * @param listener our job completion listener
-   * @param step1
+   * @param step1    the step 1
+   * @param step2    the step 2
+   * @param step3    the step 3
    * @return the Job
    */
   @Bean(name = "job1")
-  public Job job1(JobCompletionNotificationListener listener, Step step1, Step step2) {
+  public Job job1(JobCompletionNotificationListener listener, Step step1, Step step2, Step step3) {
 
     return jobBuilderFactory.get("job1")// JobName: The jobname could be different from bean name but is common to have the
             // same value
@@ -37,7 +39,7 @@ public class Job1Configuration {
             .listener(listener) // Job listeners that allow tracking of job lifecycle events
             .flow(step1) // Configure the first step for this job
             .next(step2) // Configure the second step for this job
-            //.next(step3) // Configure the third step for this job
+            .next(step3) // Configure the third step for this job
             .end() // No more steps for our job, ready to build
             .build();
   }
