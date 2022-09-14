@@ -27,7 +27,7 @@ vscode:
 # Define the integration between Gitpod and JetBrains IDEs.
 jetbrains:
   intellij:
-    vmoptions: "-Xmx2g"
+    vmoptions: "-Xms2048m -Xmx2048m -XX:ReservedCodeCacheSize=1024m -Didea.connection.timeout=3600000"
     plugins:
       - com.haulmont.jpab
     prebuilds:
