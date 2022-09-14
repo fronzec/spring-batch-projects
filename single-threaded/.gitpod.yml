@@ -3,6 +3,9 @@ tasks:
   command: java -jar target/*.jar
   name: Run SingleThreaded app
 
+image:
+  file: .gitpod.Dockerfile
+
 # exposed ports
 ports:
 - port: 8080
@@ -14,7 +17,8 @@ vscode:
     - vscjava.vscode-java-pack
 
 jetbrains:
-  intellij:  
+  intellij:
+    vmoptions: "-Xmx2g"
     plugins:
       - com.haulmont.jpab
     prebuilds:
