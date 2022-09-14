@@ -10,7 +10,7 @@ image:
   file: .gitpod.Dockerfile
 
 # Define which path Gitpod considers the project’s workspace directory, relative to /workspace.
-workspaceLocation: "./single-threaded"
+# workspaceLocation: "./single-threaded"
 
 # exposed ports
 ports:
