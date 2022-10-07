@@ -1,8 +1,9 @@
+# Task reference usage https://taskfile.dev/usage/
 version: '3'
 tasks:
   hello:
     cmds:
-      - echo "Hello world, task works ok!!!"
+      - echo "Task works ok!!!"
   setup-envs:
     cmds:
       - cp env.example.txt .env
