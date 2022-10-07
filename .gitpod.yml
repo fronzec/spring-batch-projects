@@ -8,6 +8,7 @@ tasks:
       ./mvnw -B dependency:go-offline package -DskipTests
       mysql -e "show databases;"
       mysql -e "create database if not exists singlethreadeddb;"
+      mysql -e "show databases;"
       cd ..
 #- init: ./spring-batch-projects/mvnw -B dependency:go-offline package -DskipTests
 #  command: java -jar target/*.jar
