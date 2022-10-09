@@ -1,5 +1,6 @@
 # Task reference usage https://taskfile.dev/usage/
 version: '3'
+silent: true
 tasks:
   hello:
     cmds:
@@ -32,3 +33,14 @@ tasks:
   mocksup:
     cmds:
       - mockintosh ./__scripts__/mocks/mocks.yaml
+  dbbootstraping:
+    cmds:
+      - task: dbschema
+      - task: dbdata
+      - echo "db bootstraping finished"
+  dbschema:
+    cmds:
+      - mysql -p singlethreadeddb < /workspace/spring-batch-projects/single-threaded/.devenvironment/db/00_create_schema.sql
+  dbdata:
+    cmds:
+      - mysql -p singlethreadeddb < /workspace/spring-batch-projects/single-threaded/.devenvironment/db/01_init_data.sql
