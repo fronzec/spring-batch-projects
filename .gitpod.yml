@@ -55,5 +55,7 @@ jetbrains:
       - ru.adelf.idea.dotenv # .env files support
       - String Manipulation # String Manipulation
       - com.ultrahob.zerolength.plugin # Zero Width Characters locator
+      - com.intellij.javaee.batch # Jakarta EE: Batch Applications
+      - com.intellij.spring.batch # Spring Batch
     prebuilds:
       version: stable
