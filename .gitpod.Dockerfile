@@ -14,7 +14,7 @@ RUN bash -c ". /home/gitpod/.sdkman/bin/sdkman-init.sh && \
 
 RUN bash -c "brew install go-task/tap/go-task"
 RUN bash -c "python3 -m pip install --user pipx && \
-    python3 -m pipx ensurepath"
+    python3 -m pipx ensurepath --force"
 
 # We run mockintosh installation in other layer to have available pipx, TODO optimize
 RUN bash -c "pipx install mockintosh"
