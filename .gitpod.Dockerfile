@@ -10,9 +10,10 @@ USER gitpod
 # - pipx https://pypa.github.io/pipx/
 RUN bash -c ". /home/gitpod/.sdkman/bin/sdkman-init.sh && \
     sdk install java 17.0.3-tem && \
-    sdk default java 17.0.3-tem && \
-    brew install go-task/tap/go-task && \
-    python3 -m pip install --user pipx && \
+    sdk default java 17.0.3-tem"
+
+RUN bash -c "brew install go-task/tap/go-task"
+RUN bash -c "python3 -m pip install --user pipx && \
     python3 -m pipx ensurepath"
 
 # We run mockintosh installation in other layer to have available pipx, TODO optimize
