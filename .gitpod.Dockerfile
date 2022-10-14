@@ -11,4 +11,4 @@ RUN bash -c ". /home/gitpod/.sdkman/bin/sdkman-init.sh && \
     sdk install java 17.0.3-tem && \
     sdk default java 17.0.3-tem && \
     brew install go-task/tap/go-task && \
-    pip install -U mockintosh"
+    pip3 install -U mockintosh"
