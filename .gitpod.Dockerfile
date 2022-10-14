@@ -13,6 +13,7 @@ RUN bash -c ". /home/gitpod/.sdkman/bin/sdkman-init.sh && \
     sdk default java 17.0.3-tem && \
     brew install go-task/tap/go-task && \
     python3 -m pip install --user pipx && \
-    python3 -m pipx ensurepath && \
-    source ~/.bash_profile && \
-    pipx install mockintosh"
+    python3 -m pipx ensurepath"
+
+# We run mockintosh installation in other layer to have available pipx, TODO optimize
+RUN bash -c "pipx install mockintosh"
