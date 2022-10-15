@@ -4,6 +4,8 @@
 tasks:
   - name: Dependencies
     init: |
+      pipx install mockintosh
+      pipx inject mockintosh markupsafe==2.0.1
       cd ./single-threaded
       ./mvnw -B dependency:go-offline package -DskipTests
       mysql -e "show databases;"
