@@ -2,6 +2,10 @@
 # https://www.gitpod.io/docs/references/gitpod-yml
 # Commands to start on workspace startup
 tasks:
+  - name: Mockintosh
+    before: |
+      pipx install mockintosh
+      pipx inject mockintosh markupsafe==2.0.1
   - name: Dependencies && Database
     init: |
       cd ./single-threaded
@@ -11,10 +15,7 @@ tasks:
       mysql -e "show databases;"
       task dbbootstraping
       cd ..
-  - name: Mockintosh
-    init: |
-      pipx install mockintosh
-      pipx inject mockintosh markupsafe==2.0.1
+
 #- init: ./spring-batch-projects/mvnw -B dependency:go-offline package -DskipTests
 #  command: java -jar target/*.jar
 #  name: Run SingleThreaded app
