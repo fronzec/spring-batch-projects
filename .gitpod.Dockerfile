@@ -18,5 +18,3 @@ RUN bash -c "brew install go-task/tap/go-task"
 # ====== Python
 RUN bash -c "python3 -m pip install --user pipx && \
     python3 -m pipx ensurepath --force"
-COPY custom_bootstrap.sh /home/gitpod/custom_bootstrap.sh
-RUN bash -c ". /home/gitpod/custom_bootstrap.sh"
