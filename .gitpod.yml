@@ -12,10 +12,9 @@ tasks:
       task dbbootstraping
       cd ..
   - name: Mockintosh
-    init: >
-      pipx install mockintosh &&
+    init: |
+      pipx install mockintosh
       pipx inject mockintosh markupsafe==2.0.1
-    command: mockintosh
 #- init: ./spring-batch-projects/mvnw -B dependency:go-offline package -DskipTests
 #  command: java -jar target/*.jar
 #  name: Run SingleThreaded app
