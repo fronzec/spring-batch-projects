@@ -19,4 +19,4 @@ RUN bash -c "brew install go-task/tap/go-task"
 RUN bash -c "python3 -m pip install --user pipx && \
     python3 -m pipx ensurepath --force"
 COPY ./__scripts__/custom_init.sh /workspace/custom_init.sh
-RUN bash -c "/workspace/custom_init.sh"
+RUN /workspace/custom_init.sh
