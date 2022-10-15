@@ -17,7 +17,6 @@ RUN bash -c "brew install go-task/tap/go-task"
 
 # ====== Python
 RUN bash -c "python3 -m pip install --user pipx && \
-    python3 -m pipx ensurepath --force && \
-    source ~/.bashrc && \
-    /home/gitpod/.pyenv/shims/pipx install mockintosh && \
-    /home/gitpod/.pyenv/shims/pipx inject mockintosh markupsafe==2.0.1"
+    python3 -m pipx ensurepath --force"
+COPY ./__scripts__/custom_init.bash /workspace/custom_init.bash
+RUN /workspace/custom_init.bash
