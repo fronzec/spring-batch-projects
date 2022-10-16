@@ -33,7 +33,7 @@ ports:
   - name: Web
     port: 8080
     onOpen: ignore
-  - name: Database
+  - name: Mysql Database
     port: 3306
     onOpen: notify
     visibility: private
