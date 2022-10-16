@@ -64,5 +64,6 @@ jetbrains:
       - com.ultrahob.zerolength.plugin # Zero Width Characters locator
       - com.intellij.javaee.batch # Jakarta EE: Batch Applications
       - com.intellij.spring.batch # Spring Batch
+      - com.andrey4623.rainbowcsv # Rainbow CSV
     prebuilds:
       version: stable
