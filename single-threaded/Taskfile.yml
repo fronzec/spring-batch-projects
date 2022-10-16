@@ -30,9 +30,12 @@ tasks:
     deps: [ down,build ]
     cmds:
       - docker-compose up -p singlethreaded
-  mocksup:
+  runmocksservices:
     cmds:
-      - mockintosh ./__scripts__/mocks/mocks.yaml
+      - PYTHONPATH=./__scripts__/mocks/ mockintosh ./__scripts__/mocks/mocks.yaml
+  runmocksservicesquiet:
+    cmds:
+      - PYTHONPATH=./__scripts__/mocks/ mockintosh --quiet ./__scripts__/mocks/mocks.yaml
   dbbootstraping:
     cmds:
       - task: dbschema

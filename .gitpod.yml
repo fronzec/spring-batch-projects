@@ -6,6 +6,8 @@ tasks:
     before: |
       pipx install mockintosh
       pipx inject mockintosh markupsafe==2.0.1
+      cd ./single-threaded
+    command: task runmocksservices
   - name: Dependencies && Database
     init: |
       cd ./single-threaded
