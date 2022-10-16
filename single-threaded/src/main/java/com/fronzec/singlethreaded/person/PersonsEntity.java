@@ -1,6 +1,7 @@
 package com.fronzec.singlethreaded.person;
 
 import java.sql.Timestamp;
+import java.util.Objects;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -149,14 +150,6 @@ public class PersonsEntity {
 
   @Override
   public int hashCode() {
-    int result = (int) (id ^ (id >>> 32));
-    result = 31 * result + (firstName != null ? firstName.hashCode() : 0);
-    result = 31 * result + (lastName != null ? lastName.hashCode() : 0);
-    result = 31 * result + (profession != null ? profession.hashCode() : 0);
-    result = 31 * result + (email != null ? email.hashCode() : 0);
-    result = 31 * result + (processed ? 1 : 0);
-    result = 31 * result + (createdAt != null ? createdAt.hashCode() : 0);
-    result = 31 * result + (updatedAt != null ? updatedAt.hashCode() : 0);
-    return result;
+    return Objects.hash(id, firstName, lastName, profession, email, processed, createdAt, updatedAt);
   }
 }
