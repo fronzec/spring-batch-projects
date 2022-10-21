@@ -43,6 +43,7 @@ vscode:
   extensions:
     - pivotal.vscode-spring-boot
     - vscjava.vscode-java-pack
+    - WakaTime.vscode-wakatime # WakaTime
 
 # Define the integration between Gitpod and JetBrains IDEs.
 jetbrains:
@@ -65,5 +66,6 @@ jetbrains:
       - com.intellij.javaee.batch # Jakarta EE: Batch Applications
       - com.intellij.spring.batch # Spring Batch
       - com.andrey4623.rainbowcsv # Rainbow CSV
+      - com.wakatime.intellij.plugin # WakaTime
     prebuilds:
       version: stable
