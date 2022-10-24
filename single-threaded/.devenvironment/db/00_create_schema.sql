@@ -18,7 +18,7 @@ create table dispatched_group
 (
     id               bigint auto_increment
         primary key,
-    uuid_v4          char(35)                              not null,
+    uuid_v4          char(36)                              not null,
     dispatch_status  varchar(10) default 'UNKNOWN'         not null,
     records_included int                                   not null,
     created_at       datetime    default CURRENT_TIMESTAMP not null,
