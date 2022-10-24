@@ -4,6 +4,7 @@ import com.fronzec.singlethreaded.batchjobs.dispatchedgroups.DispatchStatus;
 import com.fronzec.singlethreaded.batchjobs.dispatchedgroups.DispatchedGroupEntity;
 import com.fronzec.singlethreaded.batchjobs.dispatchedgroups.DispatchedGroupEntityRepository;
 import com.fronzec.singlethreaded.batchjobs.persons.ProcessIndicatorItemWrapper;
+import com.fronzec.singlethreaded.personv2.PersonV2Repository;
 import com.fronzec.singlethreaded.restclients.ApiClient;
 import com.fronzec.singlethreaded.restclients.BatchItemsPayload;
 import java.util.ArrayList;
@@ -23,10 +24,13 @@ public class Step3Writer implements ItemWriter<ProcessIndicatorItemWrapper<Paylo
 
   private final ApiClient apiClient;
   private final DispatchedGroupEntityRepository dispatchedGroupEntityRepository;
+  private final PersonV2Repository personV2Repository;
 
-  public Step3Writer(ApiClient apiClient, DispatchedGroupEntityRepository dispatchedGroupEntityRepository) {
+  public Step3Writer(ApiClient apiClient, DispatchedGroupEntityRepository dispatchedGroupEntityRepository,
+          PersonV2Repository personV2Repository) {
     this.apiClient = apiClient;
     this.dispatchedGroupEntityRepository = dispatchedGroupEntityRepository;
+    this.personV2Repository = personV2Repository;
   }
 
   @Override
@@ -43,6 +47,7 @@ public class Step3Writer implements ItemWriter<ProcessIndicatorItemWrapper<Paylo
       dispatchedGroup.setRecordsIncluded(items.size());
       List<Long> ids = new ArrayList<>(items.size());
       items.forEach(item -> ids.add(item.getId()));
+      personV2Repository.updateDispatchedGroupId(dispatchedGroup.getId(), ids);
     } else {
       // TODO: 13/09/2022 finalize the job manually
       logger.info("cannot send items -> " + items.size());
