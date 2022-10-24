@@ -37,6 +37,18 @@ ports:
     port: 3306
     onOpen: notify
     visibility: private
+  - name: Example Mock Service Config
+    port: 8081
+    onOpen: notify
+    visibility: public
+  - name: Demo Service
+    port: 8888
+    onOpen: notify
+    visibility: public
+  - name: Mockintosh Management API + UI
+    port: 9999
+    onOpen: notify
+    visibility: private
 
 # Configure the VS Code editor.
 vscode:
