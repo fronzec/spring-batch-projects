@@ -2,8 +2,8 @@
 
 ## Tech Stack
 
-- Spring [multiple modules]
-- Spring batch
+- Java 17
+- Spring Framework [multiple modules]
 - MySQL as DB
 
 ## How to run locally
