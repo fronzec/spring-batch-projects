@@ -78,6 +78,6 @@ jetbrains:
       - com.intellij.javaee.batch # Jakarta EE: Batch Applications
       - com.intellij.spring.batch # Spring Batch
       - com.andrey4623.rainbowcsv # Rainbow CSV
-      - com.wakatime.intellij.plugin # WakaTime
+      # - com.wakatime.intellij.plugin # WakaTime, disable because api key is not stored and required every time new workspace start
     prebuilds:
       version: stable
