@@ -1,19 +1,8 @@
 ---
 version: '3.7'
 services:
-  single-threaded:
-    image: fronzec/single-threaded:latest
-    memswap_limit: 0
-    mem_limit: 128M
-    cpus: 1
-    env_file:
-      - .env
-    ports:
-      - "8080:8080"
-    depends_on:
-      - db
   db:
-    image: mysql:5.6.51
+    image: mysql:5.7.40
     restart: "no"
     env_file:
       - .env
@@ -35,8 +24,8 @@ services:
       # Where our data will be persisted
     volumes:
       # <Volume name>:<Container Datas>
-      - mysql56voldata01:/var/lib/mysql
+      - singlethreadeddbvoldata01:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 # Names our volume
 volumes:
-  mysql56voldata01:
+  singlethreadeddbvoldata01:
