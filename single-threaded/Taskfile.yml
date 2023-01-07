@@ -1,4 +1,5 @@
 # Task reference usage https://taskfile.dev/usage/
+---
 version: '3'
 silent: true
 tasks:
@@ -7,35 +8,17 @@ tasks:
       - echo "Task works ok!!!"
   setup-envs:
     cmds:
-      - cp env.example.txt .env
+      - cp gitpod.env .env
     # test existence of files
     preconditions:
       - sh: "! test -f .env"
         msg: "==========> .env file already exists, their values will be used"
-
-
-  up-db:
-    cmds:
-      - docker compose up -d db
-  up-service:
-    cmds:
-      - docker compose up -d single-threaded
-  build:
-    cmds:
-      - docker build -t fronzec/single-threaded:latest .
-  down:
-    cmds:
-      - docker-compose down --remove-orphans
-  up:
-    deps: [ down,build ]
-    cmds:
-      - docker-compose up -p singlethreaded
   runmocksservices:
     cmds:
-      - PYTHONPATH=./__scripts__/mocks/ mockintosh ./__scripts__/mocks/mocks.yaml
+      - PYTHONPATH=./_devenvironment/mocks/ mockintosh ./_devenvironment/mocks/mocks.yaml
   runmocksservicesquiet:
     cmds:
-      - PYTHONPATH=./__scripts__/mocks/ mockintosh --quiet ./__scripts__/mocks/mocks.yaml
+      - PYTHONPATH=./_devenvironment/mocks/ mockintosh --quiet ./_devenvironment/mocks/mocks.yaml
   dbbootstraping:
     cmds:
       - task: dbschema

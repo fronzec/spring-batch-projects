@@ -15,8 +15,9 @@ services:
       - 8080
     depends_on:
       - db
+
   db:
-    image: mysql:5.6.51
+    image: mysql:5.7.40
     restart: "no"
     env_file:
       - ./example.env
@@ -28,7 +29,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD_NONROOT}
       # Password for root access empty
       MYSQL_ROOT_PASSWORD: ""
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
     ports:
       # <Port exposed on host machine> : < MySQL Port running inside container>
       - '3306:3306'
@@ -38,8 +39,8 @@ services:
       # Where our data will be persisted
     volumes:
       # <Volume name>:<Container Datas>
-      - mysql56voldata02:/var/lib/mysql
+      - singlethreadeddbvoldata01:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 # Names our volume
 volumes:
-  mysql56voldata02:
+  singlethreadeddbvoldata01:
