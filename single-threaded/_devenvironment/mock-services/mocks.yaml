@@ -26,6 +26,13 @@ services: # config requires at least one service to be configured
           headers:
             content-type: application/json
           body: '{}'
+      - path: /mock-service/calculate-random-number
+        method: GET
+        response:
+          status: 200
+          headers:
+            content-type: application/json
+          body: '{"value":1.99}'
   - name: Demo Service  # optional, used for visual reference
     port: 8888  # required option, on which port to serve HTTP traffic
     # ssl: true  # uncomment to enable SSL, see also sslCertFile and sslKeyFile options
