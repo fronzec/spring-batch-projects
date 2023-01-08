@@ -32,6 +32,7 @@ create table persons_v2
 (
     id                     bigint auto_increment
         primary key,
+        snapshot_date date not null,
     first_name             varchar(50)                              not null,
     last_name              varchar(50)                              not null,
     email                  varchar(50)                              not null,
@@ -47,8 +48,8 @@ create table persons_v2
         foreign key (fk_dispatched_group_id) references dispatched_group (id)
 );
 
-create index persons_v2_profession_index
-    on persons_v2 (profession);
+create index persons_v2__snapshot_date_profession_index
+    on persons_v2 (snapshot_date,profession);
 
 -- auto-generated definition
 create table persons
@@ -64,5 +65,5 @@ create table persons
     updated_at datetime default CURRENT_TIMESTAMP not null
 );
 
-create index persons_processed_index
+create index persons__processed_index
     on persons (processed);

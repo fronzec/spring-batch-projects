@@ -10,6 +10,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -20,6 +21,9 @@ public class PersonsV2Entity {
   @Id
   @Column(name = "id", nullable = false)
   private long id;
+
+  @Column(name = "snapshot_date", nullable = false)
+  private LocalDate snapshotDate;
 
   @Basic
   @Column(name = "first_name", nullable = false, length = 50)
@@ -63,6 +67,14 @@ public class PersonsV2Entity {
 
   public void setId(long id) {
     this.id = id;
+  }
+
+  public LocalDate getSnapshotDate() {
+      return snapshotDate;
+  }
+
+  public void setSnapshotDate(LocalDate snapshotDate) {
+      this.snapshotDate = snapshotDate;
   }
 
   public String getFirstName() {
