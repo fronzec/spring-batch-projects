@@ -113,6 +113,12 @@
             <artifactId>eclipse-collections-api</artifactId>
             <version>11.1.0</version>
         </dependency>
+        <!-- https://github.com/vladmihalcea/hypersistence-utils -->
+        <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-55</artifactId>
+            <version>3.1.2</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/io.micrometer/micrometer-registry-prometheus -->
         <dependency>
             <groupId>io.micrometer</groupId>

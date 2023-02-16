@@ -61,6 +61,11 @@ public class PersonsV2Entity {
   @Column(name = "fk_dispatched_group_id", nullable = true)
   private Long fkDispatchedGroupId;
 
+  @Basic
+  @Column(name = "fk_grouped_id")
+  private Long fkGroupedId;
+
+
   public long getId() {
     return id;
   }
@@ -199,4 +204,12 @@ public class PersonsV2Entity {
   public void setUpdatedAt(LocalDateTime updatedAt) {
     this.updatedAt = updatedAt;
   }
+
+    public Long getFkGroupedId() {
+        return fkGroupedId;
+    }
+
+    public void setFkGroupedId(Long fkGroupedId) {
+        this.fkGroupedId = fkGroupedId;
+    }
 }
