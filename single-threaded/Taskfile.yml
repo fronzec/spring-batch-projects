@@ -26,7 +26,7 @@ tasks:
       - echo "db bootstraping finished"
   dbschema:
     cmds:
-      - mysql -p singlethreadeddb < /workspace/spring-batch-projects/single-threaded/.devenvironment/db/00_create_schema.sql
+      - mysql -p singlethreadeddb < /workspace/spring-batch-projects/single-threaded/_devenvironment/db/00_create_schema.sql
   dbdata:
     cmds:
-      - mysql -p singlethreadeddb < /workspace/spring-batch-projects/single-threaded/.devenvironment/db/01_init_data.sql
+      - mysql -p singlethreadeddb < /workspace/spring-batch-projects/single-threaded/_devenvironment/db/01_init_data.sql
