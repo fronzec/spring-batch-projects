@@ -67,7 +67,6 @@ jetbrains:
     plugins:
       - com.haulmont.jpab
       - zielu.gittoolbox # GitToolBox
-      - izhangzhihao.rainbow.brackets # Rainbow Brackets
       - lechuck.intellij-plugin.task # Taskfile
       - cn.yiiguxing.plugin.translate # Translation
       - com.intellij.grazie.pro # Grazie pro
