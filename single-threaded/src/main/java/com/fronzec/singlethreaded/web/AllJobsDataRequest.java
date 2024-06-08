@@ -3,10 +3,11 @@ package com.fronzec.singlethreaded.web;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fronzec.singlethreaded.utils.JsonUtils;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+
 import java.time.LocalDate;
 import java.util.Date;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.PositiveOrZero;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AllJobsDataRequest {

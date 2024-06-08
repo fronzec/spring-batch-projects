@@ -3,9 +3,7 @@ package com.fronzec.singlethreaded.batchjobs;
 
 import com.fronzec.singlethreaded.utils.JsonUtils;
 import com.fronzec.singlethreaded.web.SingleJobDataRequest;
-import java.time.LocalDate;
-import java.util.*;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -22,7 +20,12 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.stereotype.Service;
 
-/** Esta clas se encarga de proveer y gestionar la vida de los jobs */
+import java.time.LocalDate;
+import java.util.*;
+
+/**
+ * Esta clas se encarga de proveer y gestionar la vida de los jobs
+ */
 @Service
 public class JobsManagerService {
 
