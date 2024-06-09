@@ -16,7 +16,8 @@ import org.springframework.stereotype.Component;
 @StepScope
 @Component
 @Qualifier("step2Personv2Writer")
-public class Step2Personv2Writer implements ItemWriter<ProcessIndicatorItemWrapper<PersonsV2Entity>> {
+public class Step2Personv2Writer
+    implements ItemWriter<ProcessIndicatorItemWrapper<PersonsV2Entity>> {
 
   private final PersonV2Repository personV2Repository;
 
@@ -24,7 +25,8 @@ public class Step2Personv2Writer implements ItemWriter<ProcessIndicatorItemWrapp
 
   private final Logger logger = LoggerFactory.getLogger(Step2Personv2Writer.class);
 
-  public Step2Personv2Writer(PersonV2Repository personV2Repository, PersonRepository personRepository) {
+  public Step2Personv2Writer(
+      PersonV2Repository personV2Repository, PersonRepository personRepository) {
     this.personV2Repository = personV2Repository;
     this.personRepository = personRepository;
   }
@@ -33,10 +35,11 @@ public class Step2Personv2Writer implements ItemWriter<ProcessIndicatorItemWrapp
   public void write(List<? extends ProcessIndicatorItemWrapper<PersonsV2Entity>> items) {
     List<PersonsV2Entity> entities = new ArrayList<>(items.size());
     List<Long> originItemIds = new ArrayList<>(items.size());
-    items.forEach(item -> {
-      entities.add(item.getItem());
-      originItemIds.add(item.getId());
-    });
+    items.forEach(
+        item -> {
+          entities.add(item.getItem());
+          originItemIds.add(item.getId());
+        });
     personV2Repository.saveAll(entities);
     int updated = personRepository.updateProcessedInIds(originItemIds);
     logger.info(String.format("Total updated IDs %s", updated));

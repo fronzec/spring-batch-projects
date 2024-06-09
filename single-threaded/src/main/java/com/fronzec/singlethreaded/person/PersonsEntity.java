@@ -150,6 +150,7 @@ public class PersonsEntity {
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, firstName, lastName, profession, email, processed, createdAt, updatedAt);
+    return Objects.hash(
+        id, firstName, lastName, profession, email, processed, createdAt, updatedAt);
   }
 }

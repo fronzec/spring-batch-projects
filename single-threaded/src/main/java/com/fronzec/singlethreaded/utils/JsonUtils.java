@@ -21,15 +21,16 @@ public class JsonUtils {
 
   public static String parseObject2Json(final Object object) {
     return Optional.ofNullable(object)
-      .map(o -> {
-        var result = "{}";
-        try {
-          result = mapper.writeValueAsString(o);
-        } catch (JsonProcessingException e) {
-          logger.warn("Object cannot be parsed to json by -> {}", e.getMessage(), e);
-        }
-        return result;
-      })
-      .orElseGet(() -> "{}");
+        .map(
+            o -> {
+              var result = "{}";
+              try {
+                result = mapper.writeValueAsString(o);
+              } catch (JsonProcessingException e) {
+                logger.warn("Object cannot be parsed to json by -> {}", e.getMessage(), e);
+              }
+              return result;
+            })
+        .orElseGet(() -> "{}");
   }
 }

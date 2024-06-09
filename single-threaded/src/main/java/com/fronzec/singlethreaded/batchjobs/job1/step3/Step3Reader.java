@@ -22,22 +22,21 @@ public class Step3Reader {
   @Bean
   @StepScope
   public JdbcPagingItemReader<PersonsV2Entity> itemReader(
-    DataSource dataSource,
-    PagingQueryProvider pagingQueryProvider,
-    EntityPersonV2RowMapper entityPersonV2RowMapper
-  ) {
+      DataSource dataSource,
+      PagingQueryProvider pagingQueryProvider,
+      EntityPersonV2RowMapper entityPersonV2RowMapper) {
     Map<String, Object> parameterValues = new HashMap<>();
     parameterValues.put("fk_dispatched_group_id", null);
 
     return new JdbcPagingItemReaderBuilder<PersonsV2Entity>()
-      .name("step3Reader")
-      .dataSource(dataSource)
-      .queryProvider(pagingQueryProvider)
-      .parameterValues(parameterValues)
-      .pageSize(chunkSize)
-      .rowMapper(entityPersonV2RowMapper)
-      .saveState(false)
-      .build();
+        .name("step3Reader")
+        .dataSource(dataSource)
+        .queryProvider(pagingQueryProvider)
+        .parameterValues(parameterValues)
+        .pageSize(chunkSize)
+        .rowMapper(entityPersonV2RowMapper)
+        .saveState(false)
+        .build();
   }
 
   @Bean
@@ -49,7 +48,8 @@ public class Step3Reader {
   public SqlPagingQueryProviderFactoryBean pagingQueryProvider(DataSource dataSource) {
     SqlPagingQueryProviderFactoryBean provider = new SqlPagingQueryProviderFactoryBean();
     provider.setDataSource(dataSource);
-    provider.setSelectClause("select id, first_name, last_name, email, profession, salary, uuid_v4, created_at, updated_at");
+    provider.setSelectClause(
+        "select id, first_name, last_name, email, profession, salary, uuid_v4, created_at, updated_at");
     provider.setFromClause("from persons_v2");
     provider.setWhereClause("where fk_dispatched_group_id is :fk_dispatched_group_id");
     provider.setSortKey("id");

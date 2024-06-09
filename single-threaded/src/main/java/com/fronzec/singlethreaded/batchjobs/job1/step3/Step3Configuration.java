@@ -24,13 +24,14 @@ public class Step3Configuration {
 
   @JobScope
   @Bean
-  public Step step3(JdbcPagingItemReader<PersonsV2Entity> reader, Step3Processor processor, Step3Writer writter) {
+  public Step step3(
+      JdbcPagingItemReader<PersonsV2Entity> reader, Step3Processor processor, Step3Writer writter) {
     return stepBuilderFactory
-      .get("job1Step3")
-      .<PersonsV2Entity, ProcessIndicatorItemWrapper<PayloadItemInfo>>chunk(chunkSize)
-      .reader(reader)
-      .processor(processor)
-      .writer(writter)
-      .build();
+        .get("job1Step3")
+        .<PersonsV2Entity, ProcessIndicatorItemWrapper<PayloadItemInfo>>chunk(chunkSize)
+        .reader(reader)
+        .processor(processor)
+        .writer(writter)
+        .build();
   }
 }

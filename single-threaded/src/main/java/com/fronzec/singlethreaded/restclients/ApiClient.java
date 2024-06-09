@@ -22,24 +22,30 @@ public class ApiClient {
   Logger logger = Logger.getLogger(ApiClient.class.getName());
 
   public ApiClient(
-    RestTemplateBuilder restTemplateBuilder,
-    @Value("${single_threaded.rest_clients.client1.base_url}") String batchServiceHost,
-    @Value("${single_threaded.rest_clients.client1.dispatch_path.post}") String batchServiceDispatchPath,
-    @Value("${single_threaded.rest_clients.client1.calculate.get}") String getRandomValuePath,
-    @Value("${single_threaded.rest_clients.client1.connection_timeout_millis}") int connectionTimeoutMillis,
-    @Value("${single_threaded.rest_clients.client1.response_timeout_millis}") int readTimeoutMillis
-  ) {
-    this.batchServiceDispatchUrl = UriComponentsBuilder.fromHttpUrl(batchServiceHost + batchServiceDispatchPath).toUriString();
-    this.getRandomNumberUrl = UriComponentsBuilder.fromHttpUrl(batchServiceHost + getRandomValuePath).toUriString();
-    this.restTemplateDispatch = restTemplateBuilder
-      .setConnectTimeout(Duration.ofMillis(connectionTimeoutMillis))
-      .setReadTimeout(Duration.ofMillis(readTimeoutMillis))
-      .build();
+      RestTemplateBuilder restTemplateBuilder,
+      @Value("${single_threaded.rest_clients.client1.base_url}") String batchServiceHost,
+      @Value("${single_threaded.rest_clients.client1.dispatch_path.post}")
+          String batchServiceDispatchPath,
+      @Value("${single_threaded.rest_clients.client1.calculate.get}") String getRandomValuePath,
+      @Value("${single_threaded.rest_clients.client1.connection_timeout_millis}")
+          int connectionTimeoutMillis,
+      @Value("${single_threaded.rest_clients.client1.response_timeout_millis}")
+          int readTimeoutMillis) {
+    this.batchServiceDispatchUrl =
+        UriComponentsBuilder.fromHttpUrl(batchServiceHost + batchServiceDispatchPath).toUriString();
+    this.getRandomNumberUrl =
+        UriComponentsBuilder.fromHttpUrl(batchServiceHost + getRandomValuePath).toUriString();
+    this.restTemplateDispatch =
+        restTemplateBuilder
+            .setConnectTimeout(Duration.ofMillis(connectionTimeoutMillis))
+            .setReadTimeout(Duration.ofMillis(readTimeoutMillis))
+            .build();
   }
 
   public boolean sendBatch(BatchItemsPayload payload) {
     HttpEntity<BatchItemsPayload> request = new HttpEntity<>(payload, createDefaultHeaders());
-    ResponseEntity<Object> response = restTemplateDispatch.postForEntity(batchServiceDispatchUrl, request, Object.class);
+    ResponseEntity<Object> response =
+        restTemplateDispatch.postForEntity(batchServiceDispatchUrl, request, Object.class);
     // TODO: 12/09/2022 handle exceptions
     if (response.getStatusCode() == HttpStatus.OK) {
       return true;
@@ -50,7 +56,8 @@ public class ApiClient {
   }
 
   public DataCalculatedResponse getRandomValue(Long id) {
-    ResponseEntity<DataCalculatedResponse> response = restTemplateDispatch.getForEntity(getRandomNumberUrl, DataCalculatedResponse.class);
+    ResponseEntity<DataCalculatedResponse> response =
+        restTemplateDispatch.getForEntity(getRandomNumberUrl, DataCalculatedResponse.class);
     if (response.getStatusCode() == HttpStatus.OK) {
       return response.getBody();
     }

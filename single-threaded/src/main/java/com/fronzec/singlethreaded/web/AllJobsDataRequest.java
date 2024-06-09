@@ -19,9 +19,7 @@ public class AllJobsDataRequest {
   @JsonFormat(pattern = "yyyy-MM-dd")
   private LocalDate localDate;
 
-  @PositiveOrZero
-  @NotNull
-  private Integer tryNumber;
+  @PositiveOrZero @NotNull private Integer tryNumber;
 
   public AllJobsDataRequest() {}
 

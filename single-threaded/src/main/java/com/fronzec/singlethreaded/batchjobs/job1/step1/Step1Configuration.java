@@ -13,9 +13,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class Step1Configuration {
 
-  /**
-   * Convenient factory for a StepBuilder which sets the JobRepository automatically
-   */
+  /** Convenient factory for a StepBuilder which sets the JobRepository automatically */
   public final StepBuilderFactory stepBuilderFactory;
 
   @Value("${single-threaded.jobs.job1.step1.chunk-size:1000}")
@@ -27,13 +25,16 @@ public class Step1Configuration {
 
   @JobScope
   @Bean
-  public Step step1(FlatFileItemReader<Person> readerPersons, CsvProcessor processor, JdbcBatchItemWriter<Person> writer) {
+  public Step step1(
+      FlatFileItemReader<Person> readerPersons,
+      CsvProcessor processor,
+      JdbcBatchItemWriter<Person> writer) {
     return stepBuilderFactory
-      .get("job1Step1")
-      .<Person, Person>chunk(chunkSize)
-      .reader(readerPersons)
-      .processor(processor)
-      .writer(writer)
-      .build();
+        .get("job1Step1")
+        .<Person, Person>chunk(chunkSize)
+        .reader(readerPersons)
+        .processor(processor)
+        .writer(writer)
+        .build();
   }
 }

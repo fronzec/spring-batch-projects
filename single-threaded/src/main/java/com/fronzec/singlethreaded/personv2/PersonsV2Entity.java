@@ -163,7 +163,9 @@ public class PersonsV2Entity {
       return false;
     }
 
-    if (fkDispatchedGroupId != null ? !fkDispatchedGroupId.equals(that.fkDispatchedGroupId) : that.fkDispatchedGroupId != null) {
+    if (fkDispatchedGroupId != null
+        ? !fkDispatchedGroupId.equals(that.fkDispatchedGroupId)
+        : that.fkDispatchedGroupId != null) {
       return false;
     }
 

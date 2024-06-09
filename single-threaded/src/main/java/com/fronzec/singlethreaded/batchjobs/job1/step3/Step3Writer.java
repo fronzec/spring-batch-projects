@@ -27,10 +27,9 @@ public class Step3Writer implements ItemWriter<ProcessIndicatorItemWrapper<Paylo
   private final PersonV2Repository personV2Repository;
 
   public Step3Writer(
-    ApiClient apiClient,
-    DispatchedGroupEntityRepository dispatchedGroupEntityRepository,
-    PersonV2Repository personV2Repository
-  ) {
+      ApiClient apiClient,
+      DispatchedGroupEntityRepository dispatchedGroupEntityRepository,
+      PersonV2Repository personV2Repository) {
     this.apiClient = apiClient;
     this.dispatchedGroupEntityRepository = dispatchedGroupEntityRepository;
     this.personV2Repository = personV2Repository;
@@ -38,7 +37,8 @@ public class Step3Writer implements ItemWriter<ProcessIndicatorItemWrapper<Paylo
 
   @Override
   public void write(List<? extends ProcessIndicatorItemWrapper<PayloadItemInfo>> items) {
-    List<PayloadItemInfo> payloadItemInfos = items.stream().map(ProcessIndicatorItemWrapper::getItem).collect(Collectors.toList());
+    List<PayloadItemInfo> payloadItemInfos =
+        items.stream().map(ProcessIndicatorItemWrapper::getItem).collect(Collectors.toList());
     DispatchedGroupEntity dispatchedGroup = new DispatchedGroupEntity();
     dispatchedGroup.setUuidV4(UUID.randomUUID().toString());
     dispatchedGroupEntityRepository.save(dispatchedGroup);

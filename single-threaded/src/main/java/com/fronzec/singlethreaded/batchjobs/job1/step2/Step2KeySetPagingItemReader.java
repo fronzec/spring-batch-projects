@@ -28,15 +28,20 @@ public class Step2KeySetPagingItemReader extends AbstractPaginatedDataItemReader
     this.personRepository = personRepository;
     // note: required set the name for spring batch
     setName(Step2KeySetPagingItemReader.class.getName());
-    setSaveState(false); //Because we are controlling if an item is processed or not using a column value, is preferable don't store any
-    // state such as the current row number, since is irrelevant upon restart. This can bea applicable for readers and writers
+    setSaveState(
+        false); // Because we are controlling if an item is processed or not using a column value,
+                // is preferable don't store any
+    // state such as the current row number, since is irrelevant upon restart. This can bea
+    // applicable for readers and writers
   }
 
   @Override
   protected Iterator<PersonsEntity> doPageRead() {
     PageRequest pageRequest = PageRequest.of(0, chunkRead);
     lastPersonId = getLastChunkId(persons);
-    persons = personRepository.findByIdGreaterThanAndProcessedIsFalseOrderByIdAsc(lastPersonId, pageRequest);
+    persons =
+        personRepository.findByIdGreaterThanAndProcessedIsFalseOrderByIdAsc(
+            lastPersonId, pageRequest);
     return persons.iterator();
   }
 

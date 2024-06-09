@@ -8,17 +8,18 @@ import org.springframework.stereotype.Component;
 
 @StepScope
 @Component
-public class Step3Processor implements ItemProcessor<PersonsV2Entity, ProcessIndicatorItemWrapper<PayloadItemInfo>> {
+public class Step3Processor
+    implements ItemProcessor<PersonsV2Entity, ProcessIndicatorItemWrapper<PayloadItemInfo>> {
 
   @Override
   public ProcessIndicatorItemWrapper<PayloadItemInfo> process(PersonsV2Entity item) {
-    PayloadItemInfo payloadItemInfo = new PayloadItemInfo(
-      item.getUuidV4(),
-      item.getFirstName(),
-      item.getLastName(),
-      item.getEmail(),
-      item.getProfession()
-    );
+    PayloadItemInfo payloadItemInfo =
+        new PayloadItemInfo(
+            item.getUuidV4(),
+            item.getFirstName(),
+            item.getLastName(),
+            item.getEmail(),
+            item.getProfession());
     return new ProcessIndicatorItemWrapper<>(item.getId(), payloadItemInfo);
   }
 }

@@ -28,16 +28,16 @@ public class Step2Configuration {
   @JobScope
   @Bean
   public Step step2(
-    AbstractPaginatedDataItemReader<PersonsEntity> reader,
-    Step2PersonProcessor processor,
-    @Qualifier("step2Personv2Writer") ItemWriter<ProcessIndicatorItemWrapper<PersonsV2Entity>> writer
-  ) {
+      AbstractPaginatedDataItemReader<PersonsEntity> reader,
+      Step2PersonProcessor processor,
+      @Qualifier("step2Personv2Writer")
+          ItemWriter<ProcessIndicatorItemWrapper<PersonsV2Entity>> writer) {
     return stepBuilderFactory
-      .get("job1Step2")
-      .<PersonsEntity, ProcessIndicatorItemWrapper<PersonsV2Entity>>chunk(chunkSize)
-      .reader(reader)
-      .processor(processor)
-      .writer(writer)
-      .build();
+        .get("job1Step2")
+        .<PersonsEntity, ProcessIndicatorItemWrapper<PersonsV2Entity>>chunk(chunkSize)
+        .reader(reader)
+        .processor(processor)
+        .writer(writer)
+        .build();
   }
 }

@@ -12,17 +12,13 @@ import javax.validation.constraints.NotNull;
 @JsonNaming(value = PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class SingleJobDataRequest {
 
-  /**
-   * Spring batch job bean name to instance a new job dinamically
-   */
-  @NotNull
-  @NotEmpty
-  private String jobBeanName;
+  /** Spring batch job bean name to instance a new job dinamically */
+  @NotNull @NotEmpty private String jobBeanName;
 
   /**
-   * Params to use in our job, this fields must be validated to check required fields and
-   * correct values for each job type
-   * TODO replace this map with a POJO that allow more easy control over params
+   * Params to use in our job, this fields must be validated to check required fields and correct
+   * values for each job type TODO replace this map with a POJO that allow more easy control over
+   * params
    */
   private HashMap<String, String> params = new HashMap<>();
 
