@@ -1,3 +1,4 @@
+/* (C)2024 */
 package com.fronzec.singlethreaded.batchjobs;
 
 import org.slf4j.Logger;
@@ -13,21 +14,21 @@ import org.springframework.stereotype.Component;
 @Component
 public class JobCompletionNotificationListener extends JobExecutionListenerSupport {
 
-  private static final Logger log =
-      LoggerFactory.getLogger(JobCompletionNotificationListener.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(JobCompletionNotificationListener.class);
 
-  private final JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
-  @Autowired
-  public JobCompletionNotificationListener(JdbcTemplate jdbcTemplate) {
-    this.jdbcTemplate = jdbcTemplate;
-  }
-
-  @Override
-  public void afterJob(JobExecution jobExecution) {
-    if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
-      log.info("!!! JOB FINISHED! Time to verify the results");
-      // TODO: 16/05/21 verify results
+    @Autowired
+    public JobCompletionNotificationListener(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
-  }
+
+    @Override
+    public void afterJob(JobExecution jobExecution) {
+        if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
+            log.info("!!! JOB FINISHED! Time to verify the results");
+            // TODO: 16/05/21 verify results
+        }
+    }
 }

@@ -1,3 +1,4 @@
+/* (C)2024 */
 package com.fronzec.singlethreaded.batchjobs;
 
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
@@ -11,40 +12,41 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 @Configuration
 public class BatchConfiguration {
 
-  /** JobBuilderFactory for JobBuilder which sets the JobRepository automatically */
-  public final JobBuilderFactory jobBuilderFactory;
+    /** JobBuilderFactory for JobBuilder which sets the JobRepository automatically */
+    public final JobBuilderFactory jobBuilderFactory;
 
-  public BatchConfiguration(JobBuilderFactory jobBuilderFactory) {
-    this.jobBuilderFactory = jobBuilderFactory;
-  }
+    public BatchConfiguration(JobBuilderFactory jobBuilderFactory) {
+        this.jobBuilderFactory = jobBuilderFactory;
+    }
 
-  /**
-   * If we need allow launch a job from an HTTP request we need to launch async, To launch a Job we
-   * need the job and a JobLauncher
-   *
-   * @return
-   * @throws Exception
-   */
-  @Bean
-  public JobLauncher asyncJobLauncher(JobRepository jobRepository) throws Exception {
-    var jobLauncher = new SimpleJobLauncher();
-    jobLauncher.setJobRepository(jobRepository);
-    jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor("asyncJobExecutor")); // Job exexutor
-    jobLauncher.afterPropertiesSet();
-    return jobLauncher;
-  }
+    /**
+     * If we need allow launch a job from an HTTP request we need to launch async, To launch a Job we
+     * need the job and a JobLauncher
+     *
+     * @return
+     * @throws Exception
+     */
+    @Bean
+    public JobLauncher asyncJobLauncher(JobRepository jobRepository) throws Exception {
+        var jobLauncher = new SimpleJobLauncher();
+        jobLauncher.setJobRepository(jobRepository);
+        jobLauncher.setTaskExecutor(
+                new SimpleAsyncTaskExecutor("asyncJobExecutor")); // Job exexutor
+        jobLauncher.afterPropertiesSet();
+        return jobLauncher;
+    }
 
-  /**
-   * Sync task executor. To launch a Job we need the job and a JobLauncher
-   *
-   * @return
-   * @throws Exception
-   */
-  @Bean
-  public JobLauncher syncJobLauncher(JobRepository jobRepository) throws Exception {
-    var jobLauncher = new SimpleJobLauncher();
-    jobLauncher.setJobRepository(jobRepository);
-    jobLauncher.afterPropertiesSet();
-    return jobLauncher;
-  }
+    /**
+     * Sync task executor. To launch a Job we need the job and a JobLauncher
+     *
+     * @return
+     * @throws Exception
+     */
+    @Bean
+    public JobLauncher syncJobLauncher(JobRepository jobRepository) throws Exception {
+        var jobLauncher = new SimpleJobLauncher();
+        jobLauncher.setJobRepository(jobRepository);
+        jobLauncher.afterPropertiesSet();
+        return jobLauncher;
+    }
 }
