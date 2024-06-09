@@ -30,3 +30,8 @@ tasks:
   dbdata:
     cmds:
       - mysql -p singlethreadeddb < /workspace/spring-batch-projects/single-threaded/_devenvironment/db/01_init_data.sql
+  prettier:
+    cmds:
+      # this is a basic config for prettier for java, see pom.xml for prettier-maven-plugin
+      # https://github.com/jhipster/prettier-java
+      - prettier --write "**/*.java"
