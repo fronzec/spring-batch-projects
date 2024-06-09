@@ -96,14 +96,12 @@ public class DispatchedGroupEntity {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DispatchedGroupEntity that = (DispatchedGroupEntity) o;
-    return (
-      id == that.id &&
-      uuidV4.equals(that.uuidV4) &&
-      dispatchStatus.equals(that.dispatchStatus) &&
-      recordsIncluded == that.recordsIncluded &&
-      createdAt.equals(that.createdAt) &&
-      updatedAt.equals(that.updatedAt)
-    );
+    return (id == that.id
+        && uuidV4.equals(that.uuidV4)
+        && dispatchStatus.equals(that.dispatchStatus)
+        && recordsIncluded == that.recordsIncluded
+        && createdAt.equals(that.createdAt)
+        && updatedAt.equals(that.updatedAt));
   }
 
   @Override

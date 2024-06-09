@@ -11,9 +11,7 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 @Configuration
 public class BatchConfiguration {
 
-  /**
-   * JobBuilderFactory for JobBuilder which sets the JobRepository automatically
-   */
+  /** JobBuilderFactory for JobBuilder which sets the JobRepository automatically */
   public final JobBuilderFactory jobBuilderFactory;
 
   public BatchConfiguration(JobBuilderFactory jobBuilderFactory) {
@@ -21,8 +19,8 @@ public class BatchConfiguration {
   }
 
   /**
-   * If we need allow launch a job from an HTTP request we need to launch async,
-   * To launch a Job we need the job and a JobLauncher
+   * If we need allow launch a job from an HTTP request we need to launch async, To launch a Job we
+   * need the job and a JobLauncher
    *
    * @return
    * @throws Exception
@@ -37,8 +35,7 @@ public class BatchConfiguration {
   }
 
   /**
-   * Sync task executor.
-   * To launch a Job we need the job and a JobLauncher
+   * Sync task executor. To launch a Job we need the job and a JobLauncher
    *
    * @return
    * @throws Exception

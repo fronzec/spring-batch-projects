@@ -14,7 +14,8 @@ public class CustomerOutput {
 
   public CustomerOutput() {}
 
-  public CustomerOutput(String firstName, String lastName, String fullName, String email, String profession) {
+  public CustomerOutput(
+      String firstName, String lastName, String fullName, String email, String profession) {
     this.firstName = firstName;
     this.lastName = lastName;
     this.fullName = fullName;
@@ -24,12 +25,11 @@ public class CustomerOutput {
 
   public static CustomerOutput fromCustomer(Customer customer) {
     return new CustomerOutput(
-      customer.getFirstName(),
-      customer.getLastName(),
-      customer.getFirstName() + " " + customer.getLastName(),
-      customer.getEmail(),
-      customer.getProfession()
-    );
+        customer.getFirstName(),
+        customer.getLastName(),
+        customer.getFirstName() + " " + customer.getLastName(),
+        customer.getEmail(),
+        customer.getProfession());
   }
 
   public String getEmail() {
@@ -66,7 +66,17 @@ public class CustomerOutput {
 
   @Override
   public String toString() {
-    return ("Customer{" + ", firstName='" + firstName + '\'' + ", lastName='" + lastName + '\'' + ", fullName='" + fullName + '\'' + '}');
+    return ("Customer{"
+        + ", firstName='"
+        + firstName
+        + '\''
+        + ", lastName='"
+        + lastName
+        + '\''
+        + ", fullName='"
+        + fullName
+        + '\''
+        + '}');
   }
 
   public String getFullName() {

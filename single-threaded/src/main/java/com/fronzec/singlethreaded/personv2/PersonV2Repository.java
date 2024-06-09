@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 public interface PersonV2Repository extends JpaRepository<PersonsV2Entity, Long> {
   @Modifying
   @Query(
-    value = "update persons_v2 set fk_dispatched_group_id = :dispatchedGroupId, updated_at = CURRENT_TIMESTAMP where id in (:ids)",
-    nativeQuery = true
-  )
+      value =
+          "update persons_v2 set fk_dispatched_group_id = :dispatchedGroupId, updated_at = CURRENT_TIMESTAMP where id in (:ids)",
+      nativeQuery = true)
   int updateDispatchedGroupId(Long dispatchedGroupId, List<Long> ids);
 }
