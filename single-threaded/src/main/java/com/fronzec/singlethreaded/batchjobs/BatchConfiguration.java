@@ -31,7 +31,7 @@ public class BatchConfiguration {
   public JobLauncher asyncJobLauncher(JobRepository jobRepository) throws Exception {
     var jobLauncher = new SimpleJobLauncher();
     jobLauncher.setJobRepository(jobRepository);
-    jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor("asyncJobExecutor"));// Job exexutor
+    jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor("asyncJobExecutor")); // Job exexutor
     jobLauncher.afterPropertiesSet();
     return jobLauncher;
   }

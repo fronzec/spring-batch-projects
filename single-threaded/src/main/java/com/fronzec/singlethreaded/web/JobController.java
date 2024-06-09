@@ -1,6 +1,9 @@
 package com.fronzec.singlethreaded.web;
 
 import com.fronzec.singlethreaded.batchjobs.JobsManagerService;
+import java.util.HashMap;
+import java.util.Map;
+import javax.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -10,10 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import javax.validation.Valid;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Este controlador expone endpoints para la gestion de los jobs
@@ -31,22 +30,22 @@ public class JobController {
   }
 
   @PostMapping("/start-all/async")
-  public ResponseEntity<JobInfo> startAllJobsAsync(@Valid
-                                                   @RequestBody
-                                                           AllJobsDataRequest dataRequest) {
-    HashMap<String, String> stringStringHashMap =
-            jobsManagerService.launchAllNonAutoDetectedJobsAsync(dataRequest.getDate(), dataRequest.getTryNumber());
+  public ResponseEntity<JobInfo> startAllJobsAsync(@Valid @RequestBody AllJobsDataRequest dataRequest) {
+    HashMap<String, String> stringStringHashMap = jobsManagerService.launchAllNonAutoDetectedJobsAsync(
+      dataRequest.getDate(),
+      dataRequest.getTryNumber()
+    );
     JobInfo jobInfo = new JobInfo();
     jobInfo.setInfo(stringStringHashMap);
     return ResponseEntity.ok(jobInfo);
   }
 
   @PostMapping("/start-all/sync")
-  public ResponseEntity<JobInfo> startAllJobsSync(@Valid
-                                                  @RequestBody
-                                                          AllJobsDataRequest dataRequest) {
-    HashMap<String, String> stringStringHashMap =
-            jobsManagerService.launchAllNonAutoDetectedJobsSync(dataRequest.getLocalDate(), dataRequest.getTryNumber());
+  public ResponseEntity<JobInfo> startAllJobsSync(@Valid @RequestBody AllJobsDataRequest dataRequest) {
+    HashMap<String, String> stringStringHashMap = jobsManagerService.launchAllNonAutoDetectedJobsSync(
+      dataRequest.getLocalDate(),
+      dataRequest.getTryNumber()
+    );
     JobInfo jobsResultInfo = new JobInfo();
     jobsResultInfo.setInfo(stringStringHashMap);
     return ResponseEntity.ok(jobsResultInfo);
@@ -54,26 +53,21 @@ public class JobController {
 
   @PostMapping(value = "/start-single/async")
   public ResponseEntity<Map<String, String>> runJobAsync(
-          @RequestHeader(value = "X-User")
-                  String user,
-          @Valid
-          @RequestBody
-                  SingleJobDataRequest request) {
+    @RequestHeader(value = "X-User") String user,
+    @Valid @RequestBody SingleJobDataRequest request
+  ) {
     logger.info("user -> {}, reqBody -> {}", user, request);
     return ResponseEntity.ok(jobsManagerService.asyncRunJobWithParams(request));
   }
 
   @PostMapping(value = "/start-single/sync")
   public ResponseEntity<Map<String, String>> runJobSync(
-          @RequestHeader(value = "X-User")
-                  String user,
-          @Valid
-          @RequestBody
-                  SingleJobDataRequest request) {
+    @RequestHeader(value = "X-User") String user,
+    @Valid @RequestBody SingleJobDataRequest request
+  ) {
     logger.info("user -> {}, reqBody -> {}", user, request);
     return ResponseEntity.ok(jobsManagerService.syncRunJobWithParams(request));
   }
-
 
   @PostMapping("/stop-all")
   public ResponseEntity<JobInfo> stopAllAction() {
@@ -88,5 +82,4 @@ public class JobController {
     HashMap<String, Map<String, String>> running = jobsManagerService.getRunning();
     return ResponseEntity.ok(running);
   }
-
 }

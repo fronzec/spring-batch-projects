@@ -8,9 +8,7 @@ import java.util.UUID;
 
 public class PersonToPersonv2Mapper {
 
-  private PersonToPersonv2Mapper() {
-
-  }
+  private PersonToPersonv2Mapper() {}
 
   public static PersonsV2Entity fromTo(LocalDate processingDate, PersonsEntity entity, BigDecimal randomValueForSalary) {
     PersonsV2Entity personsV2Entity = new PersonsV2Entity();
@@ -19,8 +17,7 @@ public class PersonToPersonv2Mapper {
     personsV2Entity.setFirstName(entity.getFirstName());
     personsV2Entity.setLastName(entity.getLastName());
     personsV2Entity.setProfession(entity.getProfession());
-    personsV2Entity.setUuidV4(UUID.randomUUID()
-            .toString());
+    personsV2Entity.setUuidV4(UUID.randomUUID().toString());
     personsV2Entity.setSalary(randomValueForSalary);
 
     return personsV2Entity;

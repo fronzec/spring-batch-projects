@@ -10,8 +10,7 @@ public class Customer {
 
   private String profession;
 
-  public Customer() {
-  }
+  public Customer() {}
 
   public Customer(String firstName, String lastName, String email, String profession) {
     this.firstName = firstName;
@@ -19,7 +18,6 @@ public class Customer {
     this.email = email;
     this.profession = profession;
   }
-
 
   public String getEmail() {
     return email;
@@ -55,6 +53,6 @@ public class Customer {
 
   @Override
   public String toString() {
-    return "Customer{" + ", firstName='" + firstName + '\'' + ", lastName='" + lastName + '\'' + '}';
+    return ("Customer{" + ", firstName='" + firstName + '\'' + ", lastName='" + lastName + '\'' + '}');
   }
 }

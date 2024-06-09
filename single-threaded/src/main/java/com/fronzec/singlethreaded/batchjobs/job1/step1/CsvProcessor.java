@@ -7,14 +7,12 @@ import org.springframework.stereotype.Component;
 
 @StepScope
 @Component
-public class CsvProcessor implements ItemProcessor <Person, Person> {
+public class CsvProcessor implements ItemProcessor<Person, Person> {
 
   @Override
   public Person process(Person person) throws Exception {
-    final String firstName = person.getFirstName()
-            .toUpperCase();
-    final String lastName = person.getLastName()
-            .toUpperCase();
+    final String firstName = person.getFirstName().toUpperCase();
+    final String lastName = person.getLastName().toUpperCase();
     person.setFirstName(firstName);
     person.setLastName(lastName);
     return person;

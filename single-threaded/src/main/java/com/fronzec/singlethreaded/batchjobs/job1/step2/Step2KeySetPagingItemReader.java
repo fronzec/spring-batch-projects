@@ -44,7 +44,6 @@ public class Step2KeySetPagingItemReader extends AbstractPaginatedDataItemReader
     if (persons == null || persons.isEmpty()) {
       return 0L;
     }
-    return persons.get(persons.size() - 1)
-            .getId();
+    return persons.get(persons.size() - 1).getId();
   }
 }

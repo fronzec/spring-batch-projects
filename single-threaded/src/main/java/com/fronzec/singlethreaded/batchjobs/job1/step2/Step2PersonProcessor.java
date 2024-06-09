@@ -5,12 +5,11 @@ import com.fronzec.singlethreaded.person.PersonsEntity;
 import com.fronzec.singlethreaded.personv2.PersonsV2Entity;
 import com.fronzec.singlethreaded.restclients.ApiClient;
 import com.fronzec.singlethreaded.restclients.DataCalculatedResponse;
+import java.time.LocalDate;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDate;
 
 @StepScope
 @Component
@@ -19,8 +18,7 @@ public class Step2PersonProcessor implements ItemProcessor<PersonsEntity, Proces
   private final ApiClient apiClient;
   private final LocalDate processingDate;
 
-  public Step2PersonProcessor(ApiClient apiClient,
-                              @Value("#{jobParameters['DATE']}") String processingDateStr) {
+  public Step2PersonProcessor(ApiClient apiClient, @Value("#{jobParameters['DATE']}") String processingDateStr) {
     this.apiClient = apiClient;
     this.processingDate = LocalDate.parse(processingDateStr);
   }

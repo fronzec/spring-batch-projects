@@ -15,14 +15,18 @@ public class CsvReader {
   @StepScope
   @Bean
   public FlatFileItemReader<Person> readerPersons() {
-    return new FlatFileItemReaderBuilder<Person>().name("personsItemReader")
-            .resource(new ClassPathResource("sample-persons-1k.csv"))
-            .delimited()
-            .names("firstName", "lastName", "email", "profession")
-            .fieldSetMapper(new BeanWrapperFieldSetMapper<>() {{
-              setTargetType(Person.class);
-            }})
-            .build();
+    return new FlatFileItemReaderBuilder<Person>()
+      .name("personsItemReader")
+      .resource(new ClassPathResource("sample-persons-1k.csv"))
+      .delimited()
+      .names("firstName", "lastName", "email", "profession")
+      .fieldSetMapper(
+        new BeanWrapperFieldSetMapper<>() {
+          {
+            setTargetType(Person.class);
+          }
+        }
+      )
+      .build();
   }
-
 }

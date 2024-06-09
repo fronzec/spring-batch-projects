@@ -19,12 +19,10 @@ public class MyChunkListener implements ChunkListener {
   @Override
   public void afterChunk(ChunkContext context) {
     logger.info("After chunk listener -> {}", context);
-
   }
 
   @Override
   public void afterChunkError(ChunkContext context) {
     logger.info("Error chunk listener -> {}", context);
-
   }
 }

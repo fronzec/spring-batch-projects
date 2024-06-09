@@ -47,5 +47,4 @@ public class SingleJobDataRequest {
   public String toString() {
     return JsonUtils.parseObject2Json(this);
   }
-
 }

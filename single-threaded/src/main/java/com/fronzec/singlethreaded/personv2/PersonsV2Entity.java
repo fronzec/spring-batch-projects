@@ -1,7 +1,8 @@
 package com.fronzec.singlethreaded.personv2;
 
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -9,9 +10,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "persons_v2")
@@ -70,11 +70,11 @@ public class PersonsV2Entity {
   }
 
   public LocalDate getSnapshotDate() {
-      return snapshotDate;
+    return snapshotDate;
   }
 
   public void setSnapshotDate(LocalDate snapshotDate) {
-      this.snapshotDate = snapshotDate;
+    this.snapshotDate = snapshotDate;
   }
 
   public String getFirstName() {
@@ -108,7 +108,6 @@ public class PersonsV2Entity {
   public void setProfession(String profession) {
     this.profession = profession;
   }
-
 
   public BigDecimal getSalary() {
     return salary;
@@ -190,7 +189,6 @@ public class PersonsV2Entity {
   public void setCreatedAt(LocalDateTime createdAt) {
     this.createdAt = createdAt;
   }
-
 
   public LocalDateTime getUpdatedAt() {
     return updatedAt;

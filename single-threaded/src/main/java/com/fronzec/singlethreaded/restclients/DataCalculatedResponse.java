@@ -6,9 +6,7 @@ public class DataCalculatedResponse {
 
   BigDecimal value;
 
-  public DataCalculatedResponse() {
-
-  }
+  public DataCalculatedResponse() {}
 
   public BigDecimal getValue() {
     return value;
