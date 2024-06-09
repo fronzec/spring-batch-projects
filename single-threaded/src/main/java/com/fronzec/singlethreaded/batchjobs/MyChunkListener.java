@@ -1,3 +1,4 @@
+/* (C)2024 */
 package com.fronzec.singlethreaded.batchjobs;
 
 import org.slf4j.Logger;
@@ -9,20 +10,20 @@ import org.springframework.stereotype.Component;
 @Component
 public class MyChunkListener implements ChunkListener {
 
-  private static final Logger logger = LoggerFactory.getLogger(MyChunkListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(MyChunkListener.class);
 
-  @Override
-  public void beforeChunk(ChunkContext context) {
-    logger.info("Before chunk listener -> {}", context);
-  }
+    @Override
+    public void beforeChunk(ChunkContext context) {
+        logger.info("Before chunk listener -> {}", context);
+    }
 
-  @Override
-  public void afterChunk(ChunkContext context) {
-    logger.info("After chunk listener -> {}", context);
-  }
+    @Override
+    public void afterChunk(ChunkContext context) {
+        logger.info("After chunk listener -> {}", context);
+    }
 
-  @Override
-  public void afterChunkError(ChunkContext context) {
-    logger.info("Error chunk listener -> {}", context);
-  }
+    @Override
+    public void afterChunkError(ChunkContext context) {
+        logger.info("Error chunk listener -> {}", context);
+    }
 }
