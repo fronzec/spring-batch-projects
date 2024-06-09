@@ -23,8 +23,7 @@ public class AllJobsDataRequest {
   @NotNull
   private Integer tryNumber;
 
-  public AllJobsDataRequest() {
-  }
+  public AllJobsDataRequest() {}
 
   public Date getDate() {
     return date;

@@ -18,7 +18,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 @StepScope
-public class Step3Writer implements ItemWriter<ProcessIndicatorItemWrapper<PayloadItemInfo>> {
+public class Step3Writer
+  implements ItemWriter<ProcessIndicatorItemWrapper<PayloadItemInfo>> {
 
   Logger logger = Logger.getLogger(Step3Writer.class.getName());
 
@@ -26,8 +27,11 @@ public class Step3Writer implements ItemWriter<ProcessIndicatorItemWrapper<Paylo
   private final DispatchedGroupEntityRepository dispatchedGroupEntityRepository;
   private final PersonV2Repository personV2Repository;
 
-  public Step3Writer(ApiClient apiClient, DispatchedGroupEntityRepository dispatchedGroupEntityRepository,
-          PersonV2Repository personV2Repository) {
+  public Step3Writer(
+    ApiClient apiClient,
+    DispatchedGroupEntityRepository dispatchedGroupEntityRepository,
+    PersonV2Repository personV2Repository
+  ) {
     this.apiClient = apiClient;
     this.dispatchedGroupEntityRepository = dispatchedGroupEntityRepository;
     this.personV2Repository = personV2Repository;
@@ -35,9 +39,10 @@ public class Step3Writer implements ItemWriter<ProcessIndicatorItemWrapper<Paylo
 
   @Override
   public void write(List<? extends ProcessIndicatorItemWrapper<PayloadItemInfo>> items) {
-    List<PayloadItemInfo> payloadItemInfos = items.stream()
-            .map(ProcessIndicatorItemWrapper::getItem)
-            .collect(Collectors.toList());
+    List<PayloadItemInfo> payloadItemInfos = items
+      .stream()
+      .map(ProcessIndicatorItemWrapper::getItem)
+      .collect(Collectors.toList());
     DispatchedGroupEntity dispatchedGroup = new DispatchedGroupEntity();
     dispatchedGroup.setUuidV4(UUID.randomUUID().toString());
     dispatchedGroupEntityRepository.save(dispatchedGroup);

@@ -16,7 +16,6 @@ public class Job1Configuration {
    */
   public final JobBuilderFactory jobBuilderFactory;
 
-
   public Job1Configuration(JobBuilderFactory jobBuilderFactory) {
     this.jobBuilderFactory = jobBuilderFactory;
   }
@@ -31,16 +30,21 @@ public class Job1Configuration {
    * @return the Job
    */
   @Bean(name = "job1")
-  public Job job1(JobCompletionNotificationListener listener, Step step1, Step step2, Step step3) {
-
-    return jobBuilderFactory.get("job1")// JobName: The jobname could be different from bean name but is common to have the
-            // same value
-            .incrementer(new RunIdIncrementer())// Job id increment identifier
-            .listener(listener) // Job listeners that allow tracking of job lifecycle events
-            .flow(step1) // Configure the first step for this job
-            .next(step2) // Configure the second step for this job
-            .next(step3) // Configure the third step for this job
-            .end() // No more steps for our job, ready to build
-            .build();
+  public Job job1(
+    JobCompletionNotificationListener listener,
+    Step step1,
+    Step step2,
+    Step step3
+  ) {
+    return jobBuilderFactory
+      .get("job1") // JobName: The jobname could be different from bean name but is common to have the
+      // same value
+      .incrementer(new RunIdIncrementer()) // Job id increment identifier
+      .listener(listener) // Job listeners that allow tracking of job lifecycle events
+      .flow(step1) // Configure the first step for this job
+      .next(step2) // Configure the second step for this job
+      .next(step3) // Configure the third step for this job
+      .end() // No more steps for our job, ready to build
+      .build();
   }
 }

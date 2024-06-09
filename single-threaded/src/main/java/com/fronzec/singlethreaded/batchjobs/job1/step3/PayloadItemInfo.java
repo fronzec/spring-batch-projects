@@ -12,10 +12,15 @@ public class PayloadItemInfo {
 
   private String profession;
 
-  public PayloadItemInfo() {
-  }
+  public PayloadItemInfo() {}
 
-  public PayloadItemInfo(String uuidV4, String firstName, String lastName, String email, String profession) {
+  public PayloadItemInfo(
+    String uuidV4,
+    String firstName,
+    String lastName,
+    String email,
+    String profession
+  ) {
     this.uuidV4 = uuidV4;
     this.firstName = firstName;
     this.lastName = lastName;

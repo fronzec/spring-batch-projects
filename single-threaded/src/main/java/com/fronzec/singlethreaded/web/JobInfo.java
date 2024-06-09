@@ -1,6 +1,5 @@
 package com.fronzec.singlethreaded.web;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.HashMap;
 

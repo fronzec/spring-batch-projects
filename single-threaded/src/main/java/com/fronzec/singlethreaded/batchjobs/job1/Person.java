@@ -1,6 +1,7 @@
 package com.fronzec.singlethreaded.batchjobs.job1;
 
 public class Person {
+
   private String firstName;
 
   private String lastName;
@@ -9,8 +10,7 @@ public class Person {
 
   private String profession;
 
-  public Person() {
-  }
+  public Person() {}
 
   public Person(String firstName, String lastName, String email, String profession) {
     this.firstName = firstName;
@@ -18,7 +18,6 @@ public class Person {
     this.email = email;
     this.profession = profession;
   }
-
 
   public String getEmail() {
     return email;
@@ -54,6 +53,15 @@ public class Person {
 
   @Override
   public String toString() {
-    return "Person{" + ", firstName='" + firstName + '\'' + ", lastName='" + lastName + '\'' + '}';
+    return (
+      "Person{" +
+      ", firstName='" +
+      firstName +
+      '\'' +
+      ", lastName='" +
+      lastName +
+      '\'' +
+      '}'
+    );
   }
 }

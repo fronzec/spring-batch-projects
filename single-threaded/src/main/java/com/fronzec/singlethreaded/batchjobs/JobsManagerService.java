@@ -72,8 +72,15 @@ public class JobsManagerService {
    */
   private JobOperator jobOperator;
 
-  public JobsManagerService(JobLauncher asyncJobLauncher, JobLauncher syncJobLauncher, JobExplorer jobExplorer, JobRegistry jobRegistry,
-          BeanFactory beanFactory, List<Job> jobsList, JobOperator jobOperator) {
+  public JobsManagerService(
+    JobLauncher asyncJobLauncher,
+    JobLauncher syncJobLauncher,
+    JobExplorer jobExplorer,
+    JobRegistry jobRegistry,
+    BeanFactory beanFactory,
+    List<Job> jobsList,
+    JobOperator jobOperator
+  ) {
     this.asyncJobLauncher = asyncJobLauncher;
     this.syncJobLauncher = syncJobLauncher;
     this.jobExplorer = jobExplorer;
@@ -99,10 +106,12 @@ public class JobsManagerService {
     // NOTE: 16/05/21 Jobs loaded in our service using spring, see injection on constructor
     logger.info("jobs found by spring -> {}", jobsList.size());
     jobsList.forEach(job -> logger.info("job-> {}", job));
-
   }
 
-  public HashMap<String, String> launchAllNonAutoDetectedJobsAsync(Date date, final int runningNumber) {
+  public HashMap<String, String> launchAllNonAutoDetectedJobsAsync(
+    Date date,
+    final int runningNumber
+  ) {
     Objects.requireNonNull(date);
     // TODO: 15/05/21 get all jobs
     // TODO: 16/05/21 instance a job parameter and job names
@@ -140,13 +149,15 @@ public class JobsManagerService {
         logger.info("nobeanjob found", e);
         info.put(key, e.getMessage());
       }
-
     });
 
     return info;
   }
 
-  public HashMap<String, String> launchAllNonAutoDetectedJobsSync(LocalDate execDate, final int runningNumber) {
+  public HashMap<String, String> launchAllNonAutoDetectedJobsSync(
+    LocalDate execDate,
+    final int runningNumber
+  ) {
     Objects.requireNonNull(execDate);
     HashMap<String, String> resultInfoHolder = new HashMap<>(jobs.size());
     jobs.forEach((key, defaultJobParams) -> {
@@ -190,7 +201,10 @@ public class JobsManagerService {
    * @param runningNumber
    * @return
    */
-  public HashMap<String, String> launchAllJobsPreloaded(Date date, final Integer runningNumber) {
+  public HashMap<String, String> launchAllJobsPreloaded(
+    Date date,
+    final Integer runningNumber
+  ) {
     Objects.requireNonNull(date);
     var info = new HashMap<String, String>(jobsList.size());
     jobsList.forEach(job -> {
@@ -237,20 +251,27 @@ public class JobsManagerService {
         var jobParametersBuilder = new JobParametersBuilder();
         // Adding the date to our param we track the execution of the job for a day
         // That param allow for example filter data to be processed for that day
-        LocalDate execDate = LocalDate.parse(request.getParams()
-                .get("date"));
+        LocalDate execDate = LocalDate.parse(request.getParams().get("date"));
         jobExecParams.put("DATE", execDate.toString());
-        jobExecParams.put("ATTEMPT_NUMBER", request.getParams()
-                .get("execution_attempt_number"));
+        jobExecParams.put(
+          "ATTEMPT_NUMBER",
+          request.getParams().get("execution_attempt_number")
+        );
 
         // add param to the job builder
         jobExecParams.forEach(jobParametersBuilder::addString);
-        jobParametersBuilder.addString("DESCRIPTION", request.getParams()
-                .get("description"), false);
-        logger.info("Attempt to run job -> {} with params -> {}", theJob, JsonUtils.parseObject2Json(jobExecParams));
+        jobParametersBuilder.addString(
+          "DESCRIPTION",
+          request.getParams().get("description"),
+          false
+        );
+        logger.info(
+          "Attempt to run job -> {} with params -> {}",
+          theJob,
+          JsonUtils.parseObject2Json(jobExecParams)
+        );
         asyncJobLauncher.run(theJob, jobParametersBuilder.toJobParameters());
         launchedJobMetadata.put("result", JsonUtils.parseObject2Json(theJob.toString()));
-
       } catch (JobExecutionAlreadyRunningException e) {
         logger.error("already running job with the same params", e);
         launchedJobMetadata.put("error", e.getMessage());
@@ -265,7 +286,10 @@ public class JobsManagerService {
         launchedJobMetadata.put("error", e.getMessage());
       }
     } else {
-      launchedJobMetadata.put("error", String.format("Job <%s> not found", request.getJobBeanName()));
+      launchedJobMetadata.put(
+        "error",
+        String.format("Job <%s> not found", request.getJobBeanName())
+      );
     }
     return launchedJobMetadata;
   }
@@ -281,22 +305,34 @@ public class JobsManagerService {
         var jobParametersBuilder = new JobParametersBuilder();
         // Adding the date to our param we track the execution of the job for a day
         // That param allow for example filter data to be processed for that day
-        LocalDate execDate = LocalDate.parse(request.getParams()
-                .get("date"));
+        LocalDate execDate = LocalDate.parse(request.getParams().get("date"));
         jobExecParams.put("DATE", execDate.toString());
-        jobExecParams.put("ATTEMPT_NUMBER", request.getParams()
-                .get("execution_attempt_number"));
+        jobExecParams.put(
+          "ATTEMPT_NUMBER",
+          request.getParams().get("execution_attempt_number")
+        );
 
         // add param to the job builder
         jobExecParams.forEach(jobParametersBuilder::addString);
-        jobParametersBuilder.addString("DESCRIPTION", request.getParams()
-                .get("description"), false);
-        logger.info("Attempt to run job -> {} with identifying params -> {}", theJob, JsonUtils.parseObject2Json(jobExecParams));
-        JobExecution run = syncJobLauncher.run(theJob, jobParametersBuilder.toJobParameters());
-        launchedJobMetadata.put("parameters", JsonUtils.parseObject2Json(jobParametersBuilder.toJobParameters()));
-        launchedJobMetadata.put("result", run.getExitStatus()
-                .toString());
-
+        jobParametersBuilder.addString(
+          "DESCRIPTION",
+          request.getParams().get("description"),
+          false
+        );
+        logger.info(
+          "Attempt to run job -> {} with identifying params -> {}",
+          theJob,
+          JsonUtils.parseObject2Json(jobExecParams)
+        );
+        JobExecution run = syncJobLauncher.run(
+          theJob,
+          jobParametersBuilder.toJobParameters()
+        );
+        launchedJobMetadata.put(
+          "parameters",
+          JsonUtils.parseObject2Json(jobParametersBuilder.toJobParameters())
+        );
+        launchedJobMetadata.put("result", run.getExitStatus().toString());
       } catch (JobExecutionAlreadyRunningException e) {
         logger.error("already running job with the same params", e);
         launchedJobMetadata.put("error", e.getMessage());
@@ -311,58 +347,66 @@ public class JobsManagerService {
         launchedJobMetadata.put("error", e.getMessage());
       }
     } else {
-      launchedJobMetadata.put("error", String.format("Job <%s> not found", request.getJobBeanName()));
+      launchedJobMetadata.put(
+        "error",
+        String.format("Job <%s> not found", request.getJobBeanName())
+      );
     }
     return launchedJobMetadata;
   }
 
   public HashMap<String, String> stopAllJobs() {
     HashMap<String, String> singaledStopped = new HashMap<>();
-    jobs.keySet()
-            .forEach(name -> {
-              try {
-                Set<Long> runningExecutions = jobOperator.getRunningExecutions(name);
-                logger.info("Stopping job name -> {} :: running -> {} ", name, runningExecutions);
-                runningExecutions.forEach(exId -> {
-                  try {
-                    jobOperator.stop(exId);
-                  } catch (NoSuchJobExecutionException e) {
-                    logger.error("nosuch", e);
-                  } catch (JobExecutionNotRunningException e) {
-                    logger.error("no running", e);
-                  }
-                });
-                singaledStopped.put(name, runningExecutions.toString());
-              } catch (NoSuchJobException e) {
-                singaledStopped.put(name, "NOSUCHJOB");
-                logger.error("no such job", e);
-              }
-            });
+    jobs
+      .keySet()
+      .forEach(name -> {
+        try {
+          Set<Long> runningExecutions = jobOperator.getRunningExecutions(name);
+          logger.info(
+            "Stopping job name -> {} :: running -> {} ",
+            name,
+            runningExecutions
+          );
+          runningExecutions.forEach(exId -> {
+            try {
+              jobOperator.stop(exId);
+            } catch (NoSuchJobExecutionException e) {
+              logger.error("nosuch", e);
+            } catch (JobExecutionNotRunningException e) {
+              logger.error("no running", e);
+            }
+          });
+          singaledStopped.put(name, runningExecutions.toString());
+        } catch (NoSuchJobException e) {
+          singaledStopped.put(name, "NOSUCHJOB");
+          logger.error("no such job", e);
+        }
+      });
 
     return singaledStopped;
   }
 
   public HashMap<String, Map<String, String>> getRunning() {
     HashMap<String, Map<String, String>> running = new HashMap<>();
-    jobs.keySet()
-            .forEach(key -> {
-              HashMap<String, String> tmp = new HashMap<>();
-              try {
-                Set<Long> runningExecutions = jobOperator.getRunningExecutions(key);
-                runningExecutions.forEach(r -> {
-                  try {
-                    tmp.put(String.valueOf(r), jobOperator.getSummary(r));
-                  } catch (NoSuchJobExecutionException e) {
-                    tmp.put(String.valueOf(r), "NOSUCHEXECUTION");
-                  }
-                });
-                running.put(key, tmp);
-              } catch (NoSuchJobException e) {
-                logger.error("no such job", e);
-                running.put(key, Collections.singletonMap("error", "nosuch job"));
-              }
-            });
+    jobs
+      .keySet()
+      .forEach(key -> {
+        HashMap<String, String> tmp = new HashMap<>();
+        try {
+          Set<Long> runningExecutions = jobOperator.getRunningExecutions(key);
+          runningExecutions.forEach(r -> {
+            try {
+              tmp.put(String.valueOf(r), jobOperator.getSummary(r));
+            } catch (NoSuchJobExecutionException e) {
+              tmp.put(String.valueOf(r), "NOSUCHEXECUTION");
+            }
+          });
+          running.put(key, tmp);
+        } catch (NoSuchJobException e) {
+          logger.error("no such job", e);
+          running.put(key, Collections.singletonMap("error", "nosuch job"));
+        }
+      });
     return running;
   }
-
 }

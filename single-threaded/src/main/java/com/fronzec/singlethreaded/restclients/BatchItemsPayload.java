@@ -10,9 +10,7 @@ public class BatchItemsPayload {
 
   private List<PayloadItemInfo> items;
 
-  public BatchItemsPayload() {
-
-  }
+  public BatchItemsPayload() {}
 
   public BatchItemsPayload(List<PayloadItemInfo> items) {
     Objects.requireNonNull(items);
@@ -35,5 +33,4 @@ public class BatchItemsPayload {
   public void setItems(List<PayloadItemInfo> items) {
     this.items = items;
   }
-
 }

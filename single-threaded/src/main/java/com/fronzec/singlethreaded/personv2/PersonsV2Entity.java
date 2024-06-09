@@ -1,7 +1,8 @@
 package com.fronzec.singlethreaded.personv2;
 
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -9,9 +10,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "persons_v2")
@@ -70,11 +70,11 @@ public class PersonsV2Entity {
   }
 
   public LocalDate getSnapshotDate() {
-      return snapshotDate;
+    return snapshotDate;
   }
 
   public void setSnapshotDate(LocalDate snapshotDate) {
-      this.snapshotDate = snapshotDate;
+    this.snapshotDate = snapshotDate;
   }
 
   public String getFirstName() {
@@ -108,7 +108,6 @@ public class PersonsV2Entity {
   public void setProfession(String profession) {
     this.profession = profession;
   }
-
 
   public BigDecimal getSalary() {
     return salary;
@@ -157,14 +156,20 @@ public class PersonsV2Entity {
     if (email != null ? !email.equals(that.email) : that.email != null) {
       return false;
     }
-    if (profession != null ? !profession.equals(that.profession) : that.profession != null) {
+    if (
+      profession != null ? !profession.equals(that.profession) : that.profession != null
+    ) {
       return false;
     }
     if (uuidV4 != null ? !uuidV4.equals(that.uuidV4) : that.uuidV4 != null) {
       return false;
     }
 
-    if (fkDispatchedGroupId != null ? !fkDispatchedGroupId.equals(that.fkDispatchedGroupId) : that.fkDispatchedGroupId != null) {
+    if (
+      fkDispatchedGroupId != null
+        ? !fkDispatchedGroupId.equals(that.fkDispatchedGroupId)
+        : that.fkDispatchedGroupId != null
+    ) {
       return false;
     }
 
@@ -179,7 +184,8 @@ public class PersonsV2Entity {
     result = 31 * result + (email != null ? email.hashCode() : 0);
     result = 31 * result + (profession != null ? profession.hashCode() : 0);
     result = 31 * result + (uuidV4 != null ? uuidV4.hashCode() : 0);
-    result = 31 * result + (fkDispatchedGroupId != null ? fkDispatchedGroupId.hashCode() : 0);
+    result = 31 * result +
+    (fkDispatchedGroupId != null ? fkDispatchedGroupId.hashCode() : 0);
     return result;
   }
 
@@ -190,7 +196,6 @@ public class PersonsV2Entity {
   public void setCreatedAt(LocalDateTime createdAt) {
     this.createdAt = createdAt;
   }
-
 
   public LocalDateTime getUpdatedAt() {
     return updatedAt;

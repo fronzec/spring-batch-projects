@@ -13,7 +13,8 @@ import org.springframework.stereotype.Component;
 
 @StepScope
 @Component
-public class Step2KeySetPagingItemReader extends AbstractPaginatedDataItemReader<PersonsEntity> {
+public class Step2KeySetPagingItemReader
+  extends AbstractPaginatedDataItemReader<PersonsEntity> {
 
   long lastPersonId = 0;
 
@@ -36,7 +37,10 @@ public class Step2KeySetPagingItemReader extends AbstractPaginatedDataItemReader
   protected Iterator<PersonsEntity> doPageRead() {
     PageRequest pageRequest = PageRequest.of(0, chunkRead);
     lastPersonId = getLastChunkId(persons);
-    persons = personRepository.findByIdGreaterThanAndProcessedIsFalseOrderByIdAsc(lastPersonId, pageRequest);
+    persons = personRepository.findByIdGreaterThanAndProcessedIsFalseOrderByIdAsc(
+      lastPersonId,
+      pageRequest
+    );
     return persons.iterator();
   }
 
@@ -44,7 +48,6 @@ public class Step2KeySetPagingItemReader extends AbstractPaginatedDataItemReader
     if (persons == null || persons.isEmpty()) {
       return 0L;
     }
-    return persons.get(persons.size() - 1)
-            .getId();
+    return persons.get(persons.size() - 1).getId();
   }
 }

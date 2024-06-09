@@ -1,7 +1,8 @@
 package com.fronzec.singlethreaded.utils;
 
-import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
 class JsonUtilsTest {
