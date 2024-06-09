@@ -8,9 +8,7 @@ import org.springframework.stereotype.Component;
 
 @StepScope
 @Component
-public class Step3Processor
-  implements
-    ItemProcessor<PersonsV2Entity, ProcessIndicatorItemWrapper<PayloadItemInfo>> {
+public class Step3Processor implements ItemProcessor<PersonsV2Entity, ProcessIndicatorItemWrapper<PayloadItemInfo>> {
 
   @Override
   public ProcessIndicatorItemWrapper<PayloadItemInfo> process(PersonsV2Entity item) {

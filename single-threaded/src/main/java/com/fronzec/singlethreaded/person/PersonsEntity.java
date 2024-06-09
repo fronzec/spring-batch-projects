@@ -136,9 +136,7 @@ public class PersonsEntity {
     if (lastName != null ? !lastName.equals(that.lastName) : that.lastName != null) {
       return false;
     }
-    if (
-      profession != null ? !profession.equals(that.profession) : that.profession != null
-    ) {
+    if (profession != null ? !profession.equals(that.profession) : that.profession != null) {
       return false;
     }
     if (email != null ? !email.equals(that.email) : that.email != null) {
@@ -152,15 +150,6 @@ public class PersonsEntity {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-      id,
-      firstName,
-      lastName,
-      profession,
-      email,
-      processed,
-      createdAt,
-      updatedAt
-    );
+    return Objects.hash(id, firstName, lastName, profession, email, processed, createdAt, updatedAt);
   }
 }

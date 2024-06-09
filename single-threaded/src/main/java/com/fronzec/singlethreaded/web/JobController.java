@@ -30,28 +30,22 @@ public class JobController {
   }
 
   @PostMapping("/start-all/async")
-  public ResponseEntity<JobInfo> startAllJobsAsync(
-    @Valid @RequestBody AllJobsDataRequest dataRequest
-  ) {
-    HashMap<String, String> stringStringHashMap =
-      jobsManagerService.launchAllNonAutoDetectedJobsAsync(
-        dataRequest.getDate(),
-        dataRequest.getTryNumber()
-      );
+  public ResponseEntity<JobInfo> startAllJobsAsync(@Valid @RequestBody AllJobsDataRequest dataRequest) {
+    HashMap<String, String> stringStringHashMap = jobsManagerService.launchAllNonAutoDetectedJobsAsync(
+      dataRequest.getDate(),
+      dataRequest.getTryNumber()
+    );
     JobInfo jobInfo = new JobInfo();
     jobInfo.setInfo(stringStringHashMap);
     return ResponseEntity.ok(jobInfo);
   }
 
   @PostMapping("/start-all/sync")
-  public ResponseEntity<JobInfo> startAllJobsSync(
-    @Valid @RequestBody AllJobsDataRequest dataRequest
-  ) {
-    HashMap<String, String> stringStringHashMap =
-      jobsManagerService.launchAllNonAutoDetectedJobsSync(
-        dataRequest.getLocalDate(),
-        dataRequest.getTryNumber()
-      );
+  public ResponseEntity<JobInfo> startAllJobsSync(@Valid @RequestBody AllJobsDataRequest dataRequest) {
+    HashMap<String, String> stringStringHashMap = jobsManagerService.launchAllNonAutoDetectedJobsSync(
+      dataRequest.getLocalDate(),
+      dataRequest.getTryNumber()
+    );
     JobInfo jobsResultInfo = new JobInfo();
     jobsResultInfo.setInfo(stringStringHashMap);
     return ResponseEntity.ok(jobsResultInfo);

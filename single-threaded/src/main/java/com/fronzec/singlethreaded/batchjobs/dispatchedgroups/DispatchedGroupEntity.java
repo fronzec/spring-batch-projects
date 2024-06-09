@@ -108,13 +108,6 @@ public class DispatchedGroupEntity {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-      id,
-      uuidV4,
-      dispatchStatus,
-      recordsIncluded,
-      createdAt,
-      updatedAt
-    );
+    return Objects.hash(id, uuidV4, dispatchStatus, recordsIncluded, createdAt, updatedAt);
   }
 }

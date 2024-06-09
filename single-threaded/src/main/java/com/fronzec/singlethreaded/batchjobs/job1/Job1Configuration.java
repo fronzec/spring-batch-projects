@@ -30,12 +30,7 @@ public class Job1Configuration {
    * @return the Job
    */
   @Bean(name = "job1")
-  public Job job1(
-    JobCompletionNotificationListener listener,
-    Step step1,
-    Step step2,
-    Step step3
-  ) {
+  public Job job1(JobCompletionNotificationListener listener, Step step1, Step step2, Step step3) {
     return jobBuilderFactory
       .get("job1") // JobName: The jobname could be different from bean name but is common to have the
       // same value

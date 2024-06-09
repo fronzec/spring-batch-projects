@@ -156,20 +156,14 @@ public class PersonsV2Entity {
     if (email != null ? !email.equals(that.email) : that.email != null) {
       return false;
     }
-    if (
-      profession != null ? !profession.equals(that.profession) : that.profession != null
-    ) {
+    if (profession != null ? !profession.equals(that.profession) : that.profession != null) {
       return false;
     }
     if (uuidV4 != null ? !uuidV4.equals(that.uuidV4) : that.uuidV4 != null) {
       return false;
     }
 
-    if (
-      fkDispatchedGroupId != null
-        ? !fkDispatchedGroupId.equals(that.fkDispatchedGroupId)
-        : that.fkDispatchedGroupId != null
-    ) {
+    if (fkDispatchedGroupId != null ? !fkDispatchedGroupId.equals(that.fkDispatchedGroupId) : that.fkDispatchedGroupId != null) {
       return false;
     }
 
@@ -184,8 +178,7 @@ public class PersonsV2Entity {
     result = 31 * result + (email != null ? email.hashCode() : 0);
     result = 31 * result + (profession != null ? profession.hashCode() : 0);
     result = 31 * result + (uuidV4 != null ? uuidV4.hashCode() : 0);
-    result = 31 * result +
-    (fkDispatchedGroupId != null ? fkDispatchedGroupId.hashCode() : 0);
+    result = 31 * result + (fkDispatchedGroupId != null ? fkDispatchedGroupId.hashCode() : 0);
     return result;
   }
 

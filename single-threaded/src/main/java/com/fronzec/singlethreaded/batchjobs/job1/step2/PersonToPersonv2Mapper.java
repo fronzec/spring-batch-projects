@@ -10,11 +10,7 @@ public class PersonToPersonv2Mapper {
 
   private PersonToPersonv2Mapper() {}
 
-  public static PersonsV2Entity fromTo(
-    LocalDate processingDate,
-    PersonsEntity entity,
-    BigDecimal randomValueForSalary
-  ) {
+  public static PersonsV2Entity fromTo(LocalDate processingDate, PersonsEntity entity, BigDecimal randomValueForSalary) {
     PersonsV2Entity personsV2Entity = new PersonsV2Entity();
     personsV2Entity.setSnapshotDate(processingDate);
     personsV2Entity.setEmail(entity.getEmail());

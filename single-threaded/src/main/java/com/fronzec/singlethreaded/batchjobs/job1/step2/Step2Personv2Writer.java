@@ -16,8 +16,7 @@ import org.springframework.stereotype.Component;
 @StepScope
 @Component
 @Qualifier("step2Personv2Writer")
-public class Step2Personv2Writer
-  implements ItemWriter<ProcessIndicatorItemWrapper<PersonsV2Entity>> {
+public class Step2Personv2Writer implements ItemWriter<ProcessIndicatorItemWrapper<PersonsV2Entity>> {
 
   private final PersonV2Repository personV2Repository;
 
@@ -25,10 +24,7 @@ public class Step2Personv2Writer
 
   private final Logger logger = LoggerFactory.getLogger(Step2Personv2Writer.class);
 
-  public Step2Personv2Writer(
-    PersonV2Repository personV2Repository,
-    PersonRepository personRepository
-  ) {
+  public Step2Personv2Writer(PersonV2Repository personV2Repository, PersonRepository personRepository) {
     this.personV2Repository = personV2Repository;
     this.personRepository = personRepository;
   }

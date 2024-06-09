@@ -17,9 +17,7 @@ public class CsvWriter {
   public JdbcBatchItemWriter<Person> writer(DataSource dataSource) {
     return new JdbcBatchItemWriterBuilder<Person>()
       .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
-      .sql(
-        "INSERT INTO persons (first_name, last_name, email, profession) VALUES (:firstName, :lastName, :email, :profession)"
-      )
+      .sql("INSERT INTO persons (first_name, last_name, email, profession) VALUES (:firstName, :lastName, :email, :profession)")
       .dataSource(dataSource)
       .build();
   }

@@ -108,10 +108,7 @@ public class JobsManagerService {
     jobsList.forEach(job -> logger.info("job-> {}", job));
   }
 
-  public HashMap<String, String> launchAllNonAutoDetectedJobsAsync(
-    Date date,
-    final int runningNumber
-  ) {
+  public HashMap<String, String> launchAllNonAutoDetectedJobsAsync(Date date, final int runningNumber) {
     Objects.requireNonNull(date);
     // TODO: 15/05/21 get all jobs
     // TODO: 16/05/21 instance a job parameter and job names
@@ -154,10 +151,7 @@ public class JobsManagerService {
     return info;
   }
 
-  public HashMap<String, String> launchAllNonAutoDetectedJobsSync(
-    LocalDate execDate,
-    final int runningNumber
-  ) {
+  public HashMap<String, String> launchAllNonAutoDetectedJobsSync(LocalDate execDate, final int runningNumber) {
     Objects.requireNonNull(execDate);
     HashMap<String, String> resultInfoHolder = new HashMap<>(jobs.size());
     jobs.forEach((key, defaultJobParams) -> {
@@ -201,10 +195,7 @@ public class JobsManagerService {
    * @param runningNumber
    * @return
    */
-  public HashMap<String, String> launchAllJobsPreloaded(
-    Date date,
-    final Integer runningNumber
-  ) {
+  public HashMap<String, String> launchAllJobsPreloaded(Date date, final Integer runningNumber) {
     Objects.requireNonNull(date);
     var info = new HashMap<String, String>(jobsList.size());
     jobsList.forEach(job -> {
@@ -253,23 +244,12 @@ public class JobsManagerService {
         // That param allow for example filter data to be processed for that day
         LocalDate execDate = LocalDate.parse(request.getParams().get("date"));
         jobExecParams.put("DATE", execDate.toString());
-        jobExecParams.put(
-          "ATTEMPT_NUMBER",
-          request.getParams().get("execution_attempt_number")
-        );
+        jobExecParams.put("ATTEMPT_NUMBER", request.getParams().get("execution_attempt_number"));
 
         // add param to the job builder
         jobExecParams.forEach(jobParametersBuilder::addString);
-        jobParametersBuilder.addString(
-          "DESCRIPTION",
-          request.getParams().get("description"),
-          false
-        );
-        logger.info(
-          "Attempt to run job -> {} with params -> {}",
-          theJob,
-          JsonUtils.parseObject2Json(jobExecParams)
-        );
+        jobParametersBuilder.addString("DESCRIPTION", request.getParams().get("description"), false);
+        logger.info("Attempt to run job -> {} with params -> {}", theJob, JsonUtils.parseObject2Json(jobExecParams));
         asyncJobLauncher.run(theJob, jobParametersBuilder.toJobParameters());
         launchedJobMetadata.put("result", JsonUtils.parseObject2Json(theJob.toString()));
       } catch (JobExecutionAlreadyRunningException e) {
@@ -286,10 +266,7 @@ public class JobsManagerService {
         launchedJobMetadata.put("error", e.getMessage());
       }
     } else {
-      launchedJobMetadata.put(
-        "error",
-        String.format("Job <%s> not found", request.getJobBeanName())
-      );
+      launchedJobMetadata.put("error", String.format("Job <%s> not found", request.getJobBeanName()));
     }
     return launchedJobMetadata;
   }
@@ -307,31 +284,14 @@ public class JobsManagerService {
         // That param allow for example filter data to be processed for that day
         LocalDate execDate = LocalDate.parse(request.getParams().get("date"));
         jobExecParams.put("DATE", execDate.toString());
-        jobExecParams.put(
-          "ATTEMPT_NUMBER",
-          request.getParams().get("execution_attempt_number")
-        );
+        jobExecParams.put("ATTEMPT_NUMBER", request.getParams().get("execution_attempt_number"));
 
         // add param to the job builder
         jobExecParams.forEach(jobParametersBuilder::addString);
-        jobParametersBuilder.addString(
-          "DESCRIPTION",
-          request.getParams().get("description"),
-          false
-        );
-        logger.info(
-          "Attempt to run job -> {} with identifying params -> {}",
-          theJob,
-          JsonUtils.parseObject2Json(jobExecParams)
-        );
-        JobExecution run = syncJobLauncher.run(
-          theJob,
-          jobParametersBuilder.toJobParameters()
-        );
-        launchedJobMetadata.put(
-          "parameters",
-          JsonUtils.parseObject2Json(jobParametersBuilder.toJobParameters())
-        );
+        jobParametersBuilder.addString("DESCRIPTION", request.getParams().get("description"), false);
+        logger.info("Attempt to run job -> {} with identifying params -> {}", theJob, JsonUtils.parseObject2Json(jobExecParams));
+        JobExecution run = syncJobLauncher.run(theJob, jobParametersBuilder.toJobParameters());
+        launchedJobMetadata.put("parameters", JsonUtils.parseObject2Json(jobParametersBuilder.toJobParameters()));
         launchedJobMetadata.put("result", run.getExitStatus().toString());
       } catch (JobExecutionAlreadyRunningException e) {
         logger.error("already running job with the same params", e);
@@ -347,10 +307,7 @@ public class JobsManagerService {
         launchedJobMetadata.put("error", e.getMessage());
       }
     } else {
-      launchedJobMetadata.put(
-        "error",
-        String.format("Job <%s> not found", request.getJobBeanName())
-      );
+      launchedJobMetadata.put("error", String.format("Job <%s> not found", request.getJobBeanName()));
     }
     return launchedJobMetadata;
   }
@@ -362,11 +319,7 @@ public class JobsManagerService {
       .forEach(name -> {
         try {
           Set<Long> runningExecutions = jobOperator.getRunningExecutions(name);
-          logger.info(
-            "Stopping job name -> {} :: running -> {} ",
-            name,
-            runningExecutions
-          );
+          logger.info("Stopping job name -> {} :: running -> {} ", name, runningExecutions);
           runningExecutions.forEach(exId -> {
             try {
               jobOperator.stop(exId);

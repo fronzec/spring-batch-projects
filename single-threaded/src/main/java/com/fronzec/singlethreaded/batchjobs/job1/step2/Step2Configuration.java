@@ -30,9 +30,7 @@ public class Step2Configuration {
   public Step step2(
     AbstractPaginatedDataItemReader<PersonsEntity> reader,
     Step2PersonProcessor processor,
-    @Qualifier("step2Personv2Writer") ItemWriter<
-      ProcessIndicatorItemWrapper<PersonsV2Entity>
-    > writer
+    @Qualifier("step2Personv2Writer") ItemWriter<ProcessIndicatorItemWrapper<PersonsV2Entity>> writer
   ) {
     return stepBuilderFactory
       .get("job1Step2")

@@ -151,12 +151,13 @@
             <plugin>
                 <groupId>com.hubspot.maven.plugins</groupId>
                 <artifactId>prettier-maven-plugin</artifactId>
-                <!-- Find the latest version at https://github.com/HubSpot/prettier-maven-plugin/releases-->
+                <!-- Find the latest version at https://github.com/HubSpot/prettier-maven-plugin/releases -->
                 <version>0.22</version>
                 <configuration>
                     <!-- Find the latest version at https://github.com/jhipster/prettier-java/releases -->
+                    <!-- Configs https://github.com/HubSpot/prettier-maven-plugin?tab=readme-ov-file#configuration -->
                     <prettierJavaVersion>2.6.0</prettierJavaVersion>
-                    <printWidth>90</printWidth>
+                    <printWidth>140</printWidth>
                     <tabWidth>2</tabWidth>
                     <useTabs>false</useTabs>
                     <ignoreConfigFile>true</ignoreConfigFile>
