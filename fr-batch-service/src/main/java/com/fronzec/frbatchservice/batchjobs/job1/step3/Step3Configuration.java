@@ -4,7 +4,6 @@ import com.fronzec.frbatchservice.batchjobs.persons.ProcessIndicatorItemWrapper;
 import com.fronzec.frbatchservice.personv2.PersonsV2Entity;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobScope;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
