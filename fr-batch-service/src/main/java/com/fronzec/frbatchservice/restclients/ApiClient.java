@@ -23,13 +23,13 @@ public class ApiClient {
 
   public ApiClient(
       RestTemplateBuilder restTemplateBuilder,
-      @Value("${single_threaded.rest_clients.client1.base_url}") String batchServiceHost,
-      @Value("${single_threaded.rest_clients.client1.dispatch_path.post}")
+      @Value("${fr-batch-service.rest_clients.client1.base_url}") String batchServiceHost,
+      @Value("${fr-batch-service.rest_clients.client1.dispatch_path.post}")
           String batchServiceDispatchPath,
-      @Value("${single_threaded.rest_clients.client1.calculate.get}") String getRandomValuePath,
-      @Value("${single_threaded.rest_clients.client1.connection_timeout_millis}")
+      @Value("${fr-batch-service.rest_clients.client1.calculate.get}") String getRandomValuePath,
+      @Value("${fr-batch-service.rest_clients.client1.connection_timeout_millis}")
           int connectionTimeoutMillis,
-      @Value("${single_threaded.rest_clients.client1.response_timeout_millis}")
+      @Value("${fr-batch-service.rest_clients.client1.response_timeout_millis}")
           int readTimeoutMillis) {
     this.batchServiceDispatchUrl =
         UriComponentsBuilder.fromHttpUrl(batchServiceHost + batchServiceDispatchPath).toUriString();
@@ -68,7 +68,7 @@ public class ApiClient {
   private HttpHeaders createDefaultHeaders() {
     HttpHeaders httpHeaders = new HttpHeaders();
     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-    httpHeaders.add("X-FronzecInc-Caller", "SingleThreadedService");
+    httpHeaders.add("X-FronzecInc-Caller", "FrBatchService");
     return httpHeaders;
   }
 }

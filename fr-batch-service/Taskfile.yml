@@ -26,10 +26,10 @@ tasks:
       - echo "db bootstraping finished"
   dbschema:
     cmds:
-      - mysql -p singlethreadeddb < /workspace/spring-batch-projects/fr-batch-service/_devenvironment/db/00_create_schema.sql
+      - mysql -p frbatchservicedb < /workspace/spring-batch-projects/fr-batch-service/_devenvironment/db/00_create_schema.sql
   dbdata:
     cmds:
-      - mysql -p singlethreadeddb < /workspace/spring-batch-projects/fr-batch-service/_devenvironment/db/01_init_data.sql
+      - mysql -p frbatchservicedb < /workspace/spring-batch-projects/fr-batch-service/_devenvironment/db/01_init_data.sql
   prettier:
     cmds:
       # this is a basic config for prettier for java, see pom.xml for prettier-maven-plugin

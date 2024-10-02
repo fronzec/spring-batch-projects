@@ -1,4 +1,4 @@
-# Single threaded batch service
+# Example Batch service
 
 ## Tech Stack
 
