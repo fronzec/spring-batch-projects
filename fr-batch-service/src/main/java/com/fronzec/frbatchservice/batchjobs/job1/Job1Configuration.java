@@ -1,4 +1,4 @@
-/* (C)2024 */
+/* 2024 */
 package com.fronzec.frbatchservice.batchjobs.job1;
 
 import com.fronzec.frbatchservice.batchjobs.JobCompletionNotificationListener;

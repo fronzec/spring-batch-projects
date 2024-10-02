@@ -1,4 +1,4 @@
-/* (C)2024 */
+/* 2024 */
 package com.fronzec.frbatchservice.batchjobs;
 
 import org.springframework.batch.core.launch.JobLauncher;

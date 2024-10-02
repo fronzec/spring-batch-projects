@@ -1,4 +1,4 @@
-/* (C)2024 */
+/* 2024 */
 package com.fronzec.frbatchservice.personv2;
 
 import jakarta.persistence.Basic;

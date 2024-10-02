@@ -219,7 +219,7 @@
                             <endWithNewline/>
                             <indent>
                                 <tabs>true</tabs>
-                                <spacesPerTab>4</spacesPerTab>
+                                <spacesPerTab>2</spacesPerTab>
                             </indent>
                         </format>
                     </formats>
@@ -247,7 +247,7 @@
                           optionally, Spotless can set copyright years by digging
                           through git history (see "license" section below) -->
                         <licenseHeader>
-                            <content>/* (C)$YEAR */</content>  <!-- or <file>${project.basedir}/license-header</file> -->
+                            <content>/* $YEAR */</content>  <!-- or <file>${project.basedir}/license-header</file> -->
                         </licenseHeader>
                     </java>
                 </configuration>

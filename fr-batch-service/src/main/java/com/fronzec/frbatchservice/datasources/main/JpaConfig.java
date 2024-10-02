@@ -1,4 +1,4 @@
-/* (C)2024 */
+/* 2024 */
 package com.fronzec.frbatchservice.datasources.main;
 
 import jakarta.persistence.EntityManagerFactory;

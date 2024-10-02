@@ -1,4 +1,4 @@
-/* (C)2024 */
+/* 2024 */
 package com.fronzec.frbatchservice.batchjobs.dispatchedgroups;
 
 import jakarta.persistence.Basic;
