@@ -1,3 +1,4 @@
+/* (C)2024 */
 package com.fronzec.frbatchservice.batchjobs.job1.step1;
 
 import com.fronzec.frbatchservice.batchjobs.job1.Person;
@@ -15,26 +16,24 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 public class Step1Configuration {
 
+    @Value("${fr-batch-service.jobs.job1.step1.chunk-size:1000}")
+    private int chunkSize;
 
-  @Value("${fr-batch-service.jobs.job1.step1.chunk-size:1000}")
-  private int chunkSize;
+    public Step1Configuration() {}
 
-  public Step1Configuration() {
-  }
-
-  @JobScope
-  @Bean
-  public Step step1(
-          FlatFileItemReader<Person> readerPersons,
-          CsvProcessor processor,
-          JdbcBatchItemWriter<Person> writer,
-          PlatformTransactionManager transactionManager,
-          JobRepository jobRepository) {
-    return new StepBuilder("job1Step1", jobRepository )
-        .<Person, Person>chunk(chunkSize, transactionManager)
-        .reader(readerPersons)
-        .processor(processor)
-        .writer(writer)
-        .build();
-  }
+    @JobScope
+    @Bean
+    public Step step1(
+            FlatFileItemReader<Person> readerPersons,
+            CsvProcessor processor,
+            JdbcBatchItemWriter<Person> writer,
+            PlatformTransactionManager transactionManager,
+            JobRepository jobRepository) {
+        return new StepBuilder("job1Step1", jobRepository)
+                .<Person, Person>chunk(chunkSize, transactionManager)
+                .reader(readerPersons)
+                .processor(processor)
+                .writer(writer)
+                .build();
+    }
 }

@@ -1,3 +1,4 @@
+/* (C)2024 */
 package com.fronzec.frbatchservice.batchjobs.job1.step3;
 
 import com.fronzec.frbatchservice.batchjobs.persons.ProcessIndicatorItemWrapper;
@@ -15,24 +16,25 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 public class Step3Configuration {
 
+    @Value("${fr-batch-service.jobs.job1.step3.chunk-size:1000}")
+    private int chunkSize;
 
-  @Value("${fr-batch-service.jobs.job1.step3.chunk-size:1000}")
-  private int chunkSize;
+    public Step3Configuration() {}
 
-  public Step3Configuration() {
-  }
-
-  @JobScope
-  @Bean
-  public Step step3(
-          JdbcPagingItemReader<PersonsV2Entity> reader, Step3Processor processor, Step3Writer writter,
-          PlatformTransactionManager transactionManager,
-          JobRepository jobRepository) {
-    return new StepBuilder("job1Step3", jobRepository)
-        .<PersonsV2Entity, ProcessIndicatorItemWrapper<PayloadItemInfo>>chunk(chunkSize, transactionManager)
-        .reader(reader)
-        .processor(processor)
-        .writer(writter)
-        .build();
-  }
+    @JobScope
+    @Bean
+    public Step step3(
+            JdbcPagingItemReader<PersonsV2Entity> reader,
+            Step3Processor processor,
+            Step3Writer writter,
+            PlatformTransactionManager transactionManager,
+            JobRepository jobRepository) {
+        return new StepBuilder("job1Step3", jobRepository)
+                .<PersonsV2Entity, ProcessIndicatorItemWrapper<PayloadItemInfo>>chunk(
+                        chunkSize, transactionManager)
+                .reader(reader)
+                .processor(processor)
+                .writer(writter)
+                .build();
+    }
 }

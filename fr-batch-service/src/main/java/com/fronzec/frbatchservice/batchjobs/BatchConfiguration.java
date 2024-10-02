@@ -11,9 +11,7 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 @Configuration
 public class BatchConfiguration {
 
-
-    public BatchConfiguration() {
-    }
+    public BatchConfiguration() {}
 
     /**
      * If we need allow launch a job from an HTTP request we need to launch async, To launch a Job we
