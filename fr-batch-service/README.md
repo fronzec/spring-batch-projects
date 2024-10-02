@@ -45,3 +45,10 @@ Pending ...
 - [ ] Thirdparty services mocking using mockintosh
 - [ ] Metrics with prometheus and grafana
 - [ ] Web admin using svelte or react
+
+## How to set up mock service powered by mockintosh
+1. Fist install `pipx` to isolate `mockintosh` environment
+2. Install `mockintosh` using pipx `pipx install mockintosh`. Latest version `0.13.17`
+3. Sometimetimes mockintosh venv doesn't work correctly by incompatible version of `markupsafe`, install a compatible version with the 
+   mockintosh version using `pipx inject mockintosh markupsafe==2.0.1`
+4. Test using `mockintosh --version` command
