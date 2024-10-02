@@ -1,0 +1,37 @@
+# Task reference usage https://taskfile.dev/usage/
+---
+version: '3'
+silent: true
+tasks:
+  hello:
+    cmds:
+      - echo "Task works ok!!!"
+  setup-envs:
+    cmds:
+      - cp gitpod.env .env
+    # test existence of files
+    preconditions:
+      - sh: "! test -f .env"
+        msg: "==========> .env file already exists, their values will be used"
+  runmocksservices:
+    cmds:
+      - PYTHONPATH=./_devenvironment/mocks/ mockintosh ./_devenvironment/mocks/mocks.yaml
+  runmocksservicesquiet:
+    cmds:
+      - PYTHONPATH=./_devenvironment/mocks/ mockintosh --quiet ./_devenvironment/mocks/mocks.yaml
+  dbbootstraping:
+    cmds:
+      - task: dbschema
+      - task: dbdata
+      - echo "db bootstraping finished"
+  dbschema:
+    cmds:
+      - mysql -p singlethreadeddb < /workspace/spring-batch-projects/fr-batch-service/_devenvironment/db/00_create_schema.sql
+  dbdata:
+    cmds:
+      - mysql -p singlethreadeddb < /workspace/spring-batch-projects/fr-batch-service/_devenvironment/db/01_init_data.sql
+  prettier:
+    cmds:
+      # this is a basic config for prettier for java, see pom.xml for prettier-maven-plugin
+      # https://github.com/jhipster/prettier-java
+      - prettier --write "**/*.java"
