@@ -3,19 +3,18 @@ package com.fronzec.frbatchservice.batchjobs.job1;
 import com.fronzec.frbatchservice.batchjobs.JobCompletionNotificationListener;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class Job1Configuration {
 
-  /** JobBuilderFactory for JobBuilder which sets the JobRepository automatically */
-  public final JobBuilderFactory jobBuilderFactory;
 
-  public Job1Configuration(JobBuilderFactory jobBuilderFactory) {
-    this.jobBuilderFactory = jobBuilderFactory;
+  public Job1Configuration() {
+
   }
 
   /**
@@ -28,12 +27,8 @@ public class Job1Configuration {
    * @return the Job
    */
   @Bean(name = "job1")
-  public Job job1(JobCompletionNotificationListener listener, Step step1, Step step2, Step step3) {
-    return jobBuilderFactory
-        .get(
-            "job1") // JobName: The jobname could be different from bean name but is common to have
-                    // the
-        // same value
+  public Job job1(JobCompletionNotificationListener listener, Step step1, Step step2, Step step3, JobRepository jobRepository) {
+    return new JobBuilder("job1", jobRepository)
         .incrementer(new RunIdIncrementer()) // Job id increment identifier
         .listener(listener) // Job listeners that allow tracking of job lifecycle events
         .flow(step1) // Configure the first step for this job

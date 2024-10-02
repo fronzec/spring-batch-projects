@@ -4,14 +4,16 @@ import com.fronzec.frbatchservice.batchjobs.persons.ProcessIndicatorItemWrapper;
 import com.fronzec.frbatchservice.person.PersonRepository;
 import com.fronzec.frbatchservice.personv2.PersonV2Repository;
 import com.fronzec.frbatchservice.personv2.PersonsV2Entity;
-import java.util.ArrayList;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @StepScope
 @Component
@@ -32,7 +34,8 @@ public class Step2Personv2Writer
   }
 
   @Override
-  public void write(List<? extends ProcessIndicatorItemWrapper<PersonsV2Entity>> items) {
+  public void write(Chunk<? extends ProcessIndicatorItemWrapper<PersonsV2Entity>> chunk) {
+    List<? extends ProcessIndicatorItemWrapper<PersonsV2Entity>> items = chunk.getItems();
     List<PersonsV2Entity> entities = new ArrayList<>(items.size());
     List<Long> originItemIds = new ArrayList<>(items.size());
     items.forEach(

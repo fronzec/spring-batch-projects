@@ -7,14 +7,16 @@ import com.fronzec.frbatchservice.batchjobs.persons.ProcessIndicatorItemWrapper;
 import com.fronzec.frbatchservice.personv2.PersonV2Repository;
 import com.fronzec.frbatchservice.restclients.ApiClient;
 import com.fronzec.frbatchservice.restclients.BatchItemsPayload;
+import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.item.Chunk;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.item.ItemWriter;
-import org.springframework.stereotype.Component;
 
 @Component
 @StepScope
@@ -36,7 +38,8 @@ public class Step3Writer implements ItemWriter<ProcessIndicatorItemWrapper<Paylo
   }
 
   @Override
-  public void write(List<? extends ProcessIndicatorItemWrapper<PayloadItemInfo>> items) {
+  public void write(Chunk<? extends ProcessIndicatorItemWrapper<PayloadItemInfo>> chunk) {
+    List<? extends ProcessIndicatorItemWrapper<PayloadItemInfo>> items = chunk.getItems();
     List<PayloadItemInfo> payloadItemInfos =
         items.stream().map(ProcessIndicatorItemWrapper::getItem).collect(Collectors.toList());
     DispatchedGroupEntity dispatchedGroup = new DispatchedGroupEntity();
