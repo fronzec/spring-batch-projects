@@ -3,7 +3,7 @@ package com.fronzec.frbatchservice.web;
 import com.fronzec.frbatchservice.batchjobs.JobsManagerService;
 import java.util.HashMap;
 import java.util.Map;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;

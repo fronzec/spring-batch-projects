@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fronzec.frbatchservice.utils.JsonUtils;
 import java.util.HashMap;
 import java.util.Map;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 @JsonNaming(value = PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class SingleJobDataRequest {
