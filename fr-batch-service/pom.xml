@@ -114,6 +114,8 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- https://spockframework.org -->
         <dependency>
             <groupId>org.spockframework</groupId>
             <artifactId>spock-core</artifactId>
@@ -247,11 +249,13 @@
                         </includes>
 
                         <removeUnusedImports>
-                            <engine>google-java-format</engine>    <!-- optional. Defaults to `google-java-format`. Can be switched to `cleanthat-javaparser-unnecessaryimport` (e.g. to process JDK17 source files with a JDK8+ Runtime) -->
+                            <engine>google-java-format
+                            </engine>    <!-- optional. Defaults to `google-java-format`. Can be switched to `cleanthat-javaparser-unnecessaryimport` (e.g. to process JDK17 source files with a JDK8+ Runtime) -->
                         </removeUnusedImports>
                         <!-- apply a specific flavor of google-java-format and reflow long strings -->
                         <googleJavaFormat>
-                            <version>1.22.0</version>     <!-- https://github.com/google/google-java-format/releases optional, 1.8 is the minimum supported version for Java 11-->
+                            <version>1.22.0
+                            </version>     <!-- https://github.com/google/google-java-format/releases optional, 1.8 is the minimum supported version for Java 11-->
                             <style>AOSP</style>                       <!-- GOOGLE or AOSP (optional) -->
                             <reflowLongStrings>true</reflowLongStrings> <!-- optional -->
                             <formatJavadoc>false</formatJavadoc>        <!-- optional -->
