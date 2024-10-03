@@ -1,11 +1,11 @@
-/* (C)2024 */
+/* 2024 */
 package com.fronzec.frbatchservice.batchjobs;
 
 import com.fronzec.frbatchservice.utils.JsonUtils;
 import com.fronzec.frbatchservice.web.SingleJobDataRequest;
+import jakarta.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.util.*;
-import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
