@@ -252,6 +252,12 @@
                             <engine>google-java-format
                             </engine>    <!-- optional. Defaults to `google-java-format`. Can be switched to `cleanthat-javaparser-unnecessaryimport` (e.g. to process JDK17 source files with a JDK8+ Runtime) -->
                         </removeUnusedImports>
+                        <importOrder>  <!-- or a custom ordering -->
+                            <wildcardsLast>false</wildcardsLast> <!-- Optional, default false. Sort wildcard import after specific imports -->
+                            <order>java|javax,org,com,com.diffplug,,\#com.diffplug,\#</order>  <!-- or use <file>${project.basedir}/eclipse.importorder</file> -->
+                            <!-- you can use an empty string for all the imports you didn't specify explicitly, '|' to join group without blank line, and '\#` prefix for static imports. -->
+                            <semanticSort>false</semanticSort> <!-- Optional, default false. Sort by package, then class, then member (for static imports). Splitting is based on common conventions (packages are lower case, classes start with upper case). Use <treatAsPackage> and <treatAsClass> for exceptions. -->
+                        </importOrder>
                         <!-- apply a specific flavor of google-java-format and reflow long strings -->
                         <googleJavaFormat>
                             <version>1.22.0
