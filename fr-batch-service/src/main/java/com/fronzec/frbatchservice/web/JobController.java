@@ -33,7 +33,7 @@ public class JobController {
             @Valid @RequestBody AllJobsDataRequest dataRequest) {
         HashMap<String, String> stringStringHashMap =
                 jobsManagerService.launchAllNonAutoDetectedJobsAsync(
-                        dataRequest.getDate(), dataRequest.getTryNumber());
+                        dataRequest.getLocalDate(), dataRequest.getTryNumber());
         JobInfo jobInfo = new JobInfo();
         jobInfo.setInfo(stringStringHashMap);
         return ResponseEntity.ok(jobInfo);

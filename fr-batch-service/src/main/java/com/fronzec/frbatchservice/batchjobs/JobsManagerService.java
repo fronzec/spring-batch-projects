@@ -3,6 +3,7 @@ package com.fronzec.frbatchservice.batchjobs;
 
 import com.fronzec.frbatchservice.utils.JsonUtils;
 import com.fronzec.frbatchservice.web.SingleJobDataRequest;
+import io.vavr.control.Try;
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.util.*;
@@ -19,17 +20,16 @@ import org.springframework.batch.core.repository.JobExecutionAlreadyRunningExcep
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.stereotype.Service;
 
 /** Esta clas se encarga de proveer y gestionar la vida de los jobs */
 @Service
 public class JobsManagerService {
 
-    // TODO esto se debe mover a la BD a un modelo entidad relacion
+    // TODO This must be moved to the DB to an entity relationship model
 
     /** Saves jobBeanNames and jobsParams */
-    private Map<String, Map<String, String>> jobs = new HashMap<>();
+    private Map<String, Map<String, String>> manualDefinedJobs = new HashMap<>();
 
     private static final Logger logger = LoggerFactory.getLogger(JobsManagerService.class);
 
@@ -85,100 +85,72 @@ public class JobsManagerService {
         Map<String, String> params = new HashMap<>();
         params.put("paramname", "paramvalue");
 
-        jobs.put("job1", params);
-        jobs.put("job2", params);
-        jobs.put("job3", params);
+        manualDefinedJobs.put("job1", params);
+        manualDefinedJobs.put("job2", params);
+        manualDefinedJobs.put("job3", params);
         // TODO: 16/05/21 trying to run non existing job
-        jobs.put("nonExistingJob", params);
+        manualDefinedJobs.put("nonExistingJob", params);
 
         // NOTE: 16/05/21 Jobs loaded in our service using spring, see injection on constructor
-        logger.info("jobs found by spring -> {}", jobsList.size());
-        jobsList.forEach(job -> logger.info("job-> {}", job));
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("jobs found by spring -> < count= %s >", jobsList.size()));
+        jobsList.forEach(job -> sb.append(String.format(" | [job -> %s]", job)));
+        logger.info("-> {}", sb);
     }
 
     public HashMap<String, String> launchAllNonAutoDetectedJobsAsync(
-            Date date, final int runningNumber) {
-        Objects.requireNonNull(date);
-        // TODO: 15/05/21 get all jobs
-        // TODO: 16/05/21 instance a job parameter and job names
-        HashMap<String, String> info = new HashMap<>(jobs.size());
-        jobs.forEach(
-                (key, params) -> {
-                    try {
-                        var theJob = (Job) beanFactory.getBean(key);
-                        Objects.requireNonNull(theJob);
-                        var jobParametersBuilder = new JobParametersBuilder();
-                        // Adding the date to our param we set and allow run a single job only for
-                        // one day
-                        int day = date.getDay();
-                        int month = date.getMonth();
-                        int year = date.getYear();
-                        params.put("DATE", String.format("%s-%s-%s", day, month, year));
-                        params.put("RUNNING_NUMBER", String.valueOf(runningNumber));
-                        params.forEach(jobParametersBuilder::addString);
-                        try {
-                            logger.info("Running job: {} with params -> {}", theJob, params);
-                            asyncJobLauncher.run(theJob, jobParametersBuilder.toJobParameters());
-                            info.put(key, theJob.toString());
-                        } catch (JobExecutionAlreadyRunningException e) {
-                            logger.error("already", e);
-                            info.put(key, e.getMessage());
-                        } catch (JobRestartException e) {
-                            logger.error("restart", e);
-                            info.put(key, e.getMessage());
-                        } catch (JobInstanceAlreadyCompleteException e) {
-                            logger.error("completed", e);
-                            info.put(key, e.getMessage());
-                        } catch (JobParametersInvalidException e) {
-                            logger.info("parameters", e);
-                            info.put(key, e.getMessage());
-                        }
-                    } catch (NoSuchBeanDefinitionException e) {
-                        logger.info("nobeanjob found", e);
-                        info.put(key, e.getMessage());
-                    }
-                });
-
-        return info;
+            LocalDate date, final int runningNumber) {
+        return launchAllNonAutoDetectedJobs(date, runningNumber, false);
     }
 
     public HashMap<String, String> launchAllNonAutoDetectedJobsSync(
             LocalDate execDate, final int runningNumber) {
+        return launchAllNonAutoDetectedJobs(execDate, runningNumber, true);
+    }
+
+    private HashMap<String, String> launchAllNonAutoDetectedJobs(
+            LocalDate execDate, final int runningNumber, boolean useSyncExecutor) {
         Objects.requireNonNull(execDate);
-        HashMap<String, String> resultInfoHolder = new HashMap<>(jobs.size());
-        jobs.forEach(
+        HashMap<String, String> resultInfoHolder = new HashMap<>(manualDefinedJobs.size());
+        manualDefinedJobs.forEach(
                 (key, defaultJobParams) -> {
+                    Try<Job> theJob = Try.of(() -> (Job) beanFactory.getBean(key));
+                    if (theJob.isFailure()) {
+                        Throwable e = theJob.getCause();
+                        logger.info("nobeanjob found {}", e.toString());
+                        resultInfoHolder.put(key, e.getMessage());
+                        logger.warn("failure building the bean for the job, continuing with next");
+                        return;
+                    }
+
+                    var jobParametersBuilder = new JobParametersBuilder();
+                    // note: Params used as part of identifying a job instance
+                    defaultJobParams.put("DATE", execDate.toString());
+                    defaultJobParams.put("ATTEMPT_NUMBER", String.valueOf(runningNumber));
+                    defaultJobParams.forEach(jobParametersBuilder::addString);
+                    // note: Params not used to identify a job instance
+                    jobParametersBuilder.addString("DESCRIPTION", "some useful description", false);
                     try {
-                        var theJob = (Job) beanFactory.getBean(key);
-                        Objects.requireNonNull(theJob, "Bean Job cannot be instantiated");
-                        var jobParametersBuilder = new JobParametersBuilder();
-                        // note: Params used as part of identifying a job instance
-                        defaultJobParams.put("DATE", execDate.toString());
-                        defaultJobParams.put("ATTEMPT_NUMBER", String.valueOf(runningNumber));
-                        defaultJobParams.forEach(jobParametersBuilder::addString);
-                        // note: Params not used to identify a job instance
-                        jobParametersBuilder.addString(
-                                "DESCRIPTION", "some useful description", false);
-                        try {
-                            logger.info(
-                                    "Running job: {} with params -> {}", theJob, defaultJobParams);
-                            syncJobLauncher.run(theJob, jobParametersBuilder.toJobParameters());
-                            resultInfoHolder.put(key, theJob.toString());
-                        } catch (JobExecutionAlreadyRunningException e) {
-                            logger.error("already", e);
-                            resultInfoHolder.put(key, e.getMessage());
-                        } catch (JobRestartException e) {
-                            logger.error("restart", e);
-                            resultInfoHolder.put(key, e.getMessage());
-                        } catch (JobInstanceAlreadyCompleteException e) {
-                            logger.error("completed", e);
-                            resultInfoHolder.put(key, e.getMessage());
-                        } catch (JobParametersInvalidException e) {
-                            logger.info("parameters", e);
-                            resultInfoHolder.put(key, e.getMessage());
+                        Job jobToRun = theJob.get();
+                        logger.info(
+                                "Running job: {} with params -> {}", jobToRun, defaultJobParams);
+                        if (useSyncExecutor) {
+                            syncJobLauncher.run(jobToRun, jobParametersBuilder.toJobParameters());
+                        } else {
+                            asyncJobLauncher.run(jobToRun, jobParametersBuilder.toJobParameters());
                         }
-                    } catch (NoSuchBeanDefinitionException e) {
-                        logger.info("nobeanjob found", e);
+                        resultInfoHolder.put(key, jobToRun.toString());
+                    } catch (JobExecutionAlreadyRunningException e) {
+                        logger.error("already", e);
+                        resultInfoHolder.put(key, e.getMessage());
+                    } catch (JobRestartException e) {
+                        logger.error("restart", e);
+                        resultInfoHolder.put(key, e.getMessage());
+                    } catch (JobInstanceAlreadyCompleteException e) {
+                        logger.error("completed", e);
+                        resultInfoHolder.put(key, e.getMessage());
+                    } catch (JobParametersInvalidException e) {
+                        logger.info("parameters", e);
                         resultInfoHolder.put(key, e.getMessage());
                     }
                 });
@@ -231,7 +203,7 @@ public class JobsManagerService {
     public Map<String, String> asyncRunJobWithParams(SingleJobDataRequest request) {
         Map<String, String> launchedJobMetadata = new HashMap<>();
         Map<String, String> jobExecParams = new HashMap<>();
-        if (jobs.containsKey(request.getJobBeanName())) {
+        if (manualDefinedJobs.containsKey(request.getJobBeanName())) {
             try {
                 var theJob = (Job) beanFactory.getBean(request.getJobBeanName());
                 Objects.requireNonNull(theJob);
@@ -277,7 +249,7 @@ public class JobsManagerService {
     public Map<String, String> syncRunJobWithParams(SingleJobDataRequest request) {
         Map<String, String> launchedJobMetadata = new HashMap<>();
         Map<String, String> jobExecParams = new HashMap<>();
-        if (jobs.containsKey(request.getJobBeanName())) {
+        if (manualDefinedJobs.containsKey(request.getJobBeanName())) {
             try {
                 var theJob = (Job) beanFactory.getBean(request.getJobBeanName());
                 Objects.requireNonNull(theJob);
@@ -326,7 +298,8 @@ public class JobsManagerService {
 
     public HashMap<String, String> stopAllJobs() {
         HashMap<String, String> singaledStopped = new HashMap<>();
-        jobs.keySet()
+        manualDefinedJobs
+                .keySet()
                 .forEach(
                         name -> {
                             try {
@@ -358,7 +331,8 @@ public class JobsManagerService {
 
     public HashMap<String, Map<String, String>> getRunning() {
         HashMap<String, Map<String, String>> running = new HashMap<>();
-        jobs.keySet()
+        manualDefinedJobs
+                .keySet()
                 .forEach(
                         key -> {
                             HashMap<String, String> tmp = new HashMap<>();
