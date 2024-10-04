@@ -27,4 +27,4 @@ jobs:
           distribution: "temurin"
           cache: maven
       - name: Build with Maven (Fr-Batch-Service)
-        run: mvn -B package --file pom.xml
+        run: cd fr-batch-service && mvn -B package --file pom.xml
