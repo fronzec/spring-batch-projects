@@ -28,6 +28,7 @@ public class JobsManagerService {
 
     // TODO This must be moved to the DB to an entity relationship model
 
+  // TODO: 04/10/24 remove the manual defined jobs and use the autodetected by spring
     /** Saves jobBeanNames and jobsParams */
     private Map<String, Map<String, String>> manualDefinedJobs = new HashMap<>();
 
@@ -130,6 +131,7 @@ public class JobsManagerService {
                     defaultJobParams.forEach(jobParametersBuilder::addString);
                     // note: Params not used to identify a job instance
                     jobParametersBuilder.addString("DESCRIPTION", "some useful description", false);
+                  // TODO: 04/10/24 refactor this to use vavr pattern matching
                     try {
                         Job jobToRun = theJob.get();
                         logger.info(
