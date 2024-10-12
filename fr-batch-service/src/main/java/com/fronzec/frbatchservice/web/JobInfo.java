@@ -3,16 +3,10 @@ package com.fronzec.frbatchservice.web;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.HashMap;
 
-public class JobInfo {
+public record JobInfo(HashMap<String, String> info) {
 
-  private HashMap<String, String> info = new HashMap<>();
-
-  public HashMap<String, String> getInfo() {
-    return info;
-  }
-
-  public void setInfo(HashMap<String, String> info) {
-    this.info = info;
+  public JobInfo() {
+    this(new HashMap<>());
   }
 
   @JsonIgnore
