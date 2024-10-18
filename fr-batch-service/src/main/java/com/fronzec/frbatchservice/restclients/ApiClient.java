@@ -1,9 +1,6 @@
 package com.fronzec.frbatchservice.restclients;
 
-import java.time.Duration;
-import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -12,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import java.util.logging.Logger;
 
 @Component
 public class ApiClient {
@@ -22,24 +21,17 @@ public class ApiClient {
   Logger logger = Logger.getLogger(ApiClient.class.getName());
 
   public ApiClient(
-      RestTemplateBuilder restTemplateBuilder,
+      RestTemplate restTemplate,
       @Value("${fr-batch-service.rest_clients.client1.base_url}") String batchServiceHost,
       @Value("${fr-batch-service.rest_clients.client1.dispatch_path.post}")
           String batchServiceDispatchPath,
-      @Value("${fr-batch-service.rest_clients.client1.calculate.get}") String getRandomValuePath,
-      @Value("${fr-batch-service.rest_clients.client1.connection_timeout_millis}")
-          int connectionTimeoutMillis,
-      @Value("${fr-batch-service.rest_clients.client1.response_timeout_millis}")
-          int readTimeoutMillis) {
+      @Value("${fr-batch-service.rest_clients.client1.calculate.get}") String getRandomValuePath) {
     this.batchServiceDispatchUrl =
         UriComponentsBuilder.fromHttpUrl(batchServiceHost + batchServiceDispatchPath).toUriString();
     this.getRandomNumberUrl =
         UriComponentsBuilder.fromHttpUrl(batchServiceHost + getRandomValuePath).toUriString();
-    this.restTemplateDispatch =
-        restTemplateBuilder
-            .setConnectTimeout(Duration.ofMillis(connectionTimeoutMillis))
-            .setReadTimeout(Duration.ofMillis(readTimeoutMillis))
-            .build();
+    this.restTemplateDispatch = restTemplate;
+
   }
 
   public boolean sendBatch(BatchItemsPayload payload) {
