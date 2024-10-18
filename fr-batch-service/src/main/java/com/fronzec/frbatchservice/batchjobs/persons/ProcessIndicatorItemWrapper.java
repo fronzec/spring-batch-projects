@@ -1,3 +1,4 @@
+/* 2024 */
 package com.fronzec.frbatchservice.batchjobs.persons;
 
 /**
