@@ -28,7 +28,7 @@ public class JobsManagerService {
 
     // TODO This must be moved to the DB to an entity relationship model
 
-  // TODO: 04/10/24 remove the manual defined jobs and use the autodetected by spring
+    // TODO: 04/10/24 remove the manual defined jobs and use the autodetected by spring
     /** Saves jobBeanNames and jobsParams */
     private Map<String, Map<String, String>> manualDefinedJobs = new HashMap<>();
 
