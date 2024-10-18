@@ -131,7 +131,7 @@ public class JobsManagerService {
                     defaultJobParams.forEach(jobParametersBuilder::addString);
                     // note: Params not used to identify a job instance
                     jobParametersBuilder.addString("DESCRIPTION", "some useful description", false);
-                  // TODO: 04/10/24 refactor this to use vavr pattern matching
+                    // TODO: 04/10/24 refactor this to use vavr pattern matching
                     try {
                         Job jobToRun = theJob.get();
                         logger.info(
