@@ -34,7 +34,8 @@ public class JobController {
         HashMap<String, String> stringStringHashMap =
                 jobsManagerService.launchAllNonAutoDetectedJobsAsync(
                         dataRequest.getLocalDate(), dataRequest.getTryNumber());
-        JobInfo jobInfo = new JobInfo(stringStringHashMap);
+        JobInfo jobInfo = new JobInfo();
+        jobInfo.setInfo(stringStringHashMap);
         return ResponseEntity.ok(jobInfo);
     }
 
@@ -44,7 +45,8 @@ public class JobController {
         HashMap<String, String> stringStringHashMap =
                 jobsManagerService.launchAllNonAutoDetectedJobsSync(
                         dataRequest.getLocalDate(), dataRequest.getTryNumber());
-        JobInfo jobsResultInfo = new JobInfo(stringStringHashMap);
+        JobInfo jobsResultInfo = new JobInfo();
+        jobsResultInfo.setInfo(stringStringHashMap);
         return ResponseEntity.ok(jobsResultInfo);
     }
 
@@ -67,7 +69,8 @@ public class JobController {
     @PostMapping("/stop-all")
     public ResponseEntity<JobInfo> stopAllAction() {
         HashMap<String, String> stringStringHashMap = jobsManagerService.stopAllJobs();
-        JobInfo jobInfo = new JobInfo(stringStringHashMap);
+        JobInfo jobInfo = new JobInfo();
+        jobInfo.setInfo(stringStringHashMap);
         return ResponseEntity.ok(jobInfo);
     }
 
