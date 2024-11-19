@@ -2,10 +2,4 @@
 
 This are my personal tests using spring batch :)
 
-- [ ] async-process
-- [ ] message-job-launch
-- [ ] multi-threaded
-- [ ] remote-chunking
-- [ ] remote-partitioning
-- [ ] single-thread
-- [ ] xd-multi-threaded
+![Alt](https://repobeats.axiom.co/api/embed/5a20dd25b052df95717ac3950a707392ef561bc5.svg "Repobeats analytics image")
