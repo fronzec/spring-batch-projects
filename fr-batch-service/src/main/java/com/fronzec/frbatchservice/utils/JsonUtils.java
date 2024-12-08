@@ -1,3 +1,4 @@
+/* 2024 */
 package com.fronzec.frbatchservice.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -9,28 +10,31 @@ import org.slf4j.LoggerFactory;
 
 public class JsonUtils {
 
-  public static final ObjectMapper mapper = new ObjectMapper();
+    public static final ObjectMapper mapper = new ObjectMapper();
 
-  static {
-    mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-  }
+    static {
+        mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+    }
 
-  private static final Logger logger = LoggerFactory.getLogger(JsonUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(JsonUtils.class);
 
-  private JsonUtils() {}
+    private JsonUtils() {}
 
-  public static String parseObject2Json(final Object object) {
-    return Optional.ofNullable(object)
-        .map(
-            o -> {
-              var result = "{}";
-              try {
-                result = mapper.writeValueAsString(o);
-              } catch (JsonProcessingException e) {
-                logger.warn("Object cannot be parsed to json by -> {}", e.getMessage(), e);
-              }
-              return result;
-            })
-        .orElseGet(() -> "{}");
-  }
+    public static String parseObject2Json(final Object object) {
+        return Optional.ofNullable(object)
+                .map(
+                        o -> {
+                            var result = "{}";
+                            try {
+                                result = mapper.writeValueAsString(o);
+                            } catch (JsonProcessingException e) {
+                                logger.warn(
+                                        "Object cannot be parsed to json by -> {}",
+                                        e.getMessage(),
+                                        e);
+                            }
+                            return result;
+                        })
+                .orElseGet(() -> "{}");
+    }
 }

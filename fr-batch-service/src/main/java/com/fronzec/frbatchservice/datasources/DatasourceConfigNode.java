@@ -1,3 +1,4 @@
+/* 2024 */
 package com.fronzec.frbatchservice.datasources;
 
 public record DatasourceConfigNode(
@@ -18,7 +19,4 @@ public record DatasourceConfigNode(
         Integer connsIdleTimeoutMillis,
         Integer connsMaxPoolSize,
         Integer connsMaxLifetimeMillis,
-        Integer connsTimeoutMillis
-) {
-
-}
+        Integer connsTimeoutMillis) {}

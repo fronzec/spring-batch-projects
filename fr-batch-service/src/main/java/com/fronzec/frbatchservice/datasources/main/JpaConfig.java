@@ -3,9 +3,10 @@ package com.fronzec.frbatchservice.datasources.main;
 
 import com.fronzec.frbatchservice.datasources.DataSourcesConfig;
 import com.fronzec.frbatchservice.datasources.DatasourceConfigNode;
-import com.fronzec.frbatchservice.web.JobController;
 import com.zaxxer.hikari.HikariDataSource;
 import jakarta.persistence.EntityManagerFactory;
+import java.util.Properties;
+import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,19 +21,15 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import javax.sql.DataSource;
-import java.util.Properties;
-
 @Configuration
 @EnableTransactionManagement
 public class JpaConfig {
 
     private final Logger logger = LoggerFactory.getLogger(JpaConfig.class);
 
-    @Autowired
-    DataSourcesConfig dataSourcesConfig;
+    @Autowired DataSourcesConfig dataSourcesConfig;
 
-    @Bean(name =  "dataSource")
+    @Bean(name = "dataSource")
     @Profile({"production"})
     public DataSource mainDatasourceProduction() {
         logger.info("Using production datasource [main]");
@@ -45,8 +42,10 @@ public class JpaConfig {
         return dataSourcesConfig.buildDatasource(config, host, password);
     }
 
-    @Bean(name =  "dataSource")
-    @ConfigurationProperties(prefix = "datasources.main")// NOTE for local development we access directly to the keys
+    @Bean(name = "dataSource")
+    @ConfigurationProperties(
+            prefix =
+                    "datasources.main") // NOTE for local development we access directly to the keys
     public DataSource mainDatasourceDevelopment() {
         logger.info("Using development datasource [main]");
         return DataSourceBuilder.create().type(HikariDataSource.class).build();
