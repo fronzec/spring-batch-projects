@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.4</version><!-- https://spring.io/projects/spring-boot#support -->
+        <version>3.3.6</version><!-- https://spring.io/projects/spring-boot#support -->
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.fronzec</groupId>
@@ -171,23 +171,25 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <!-- prettier configuration -->
+            <!-- commented to disable plugin and keep as reference
             <plugin>
                 <groupId>com.hubspot.maven.plugins</groupId>
                 <artifactId>prettier-maven-plugin</artifactId>
-                <!-- Find the latest version at https://github.com/HubSpot/prettier-maven-plugin/releases -->
+                <!- Find the latest version at https://github.com/HubSpot/prettier-maven-plugin/releases ->
                 <version>0.22</version>
                 <configuration>
-                    <!-- Find the latest version at https://github.com/jhipster/prettier-java/releases -->
-                    <!-- Configs https://github.com/HubSpot/prettier-maven-plugin?tab=readme-ov-file#configuration -->
+                    <!- Find the latest version at https://github.com/jhipster/prettier-java/releases ->
+                    <!- Configs https://github.com/HubSpot/prettier-maven-plugin?tab=readme-ov-file#configuration ->
                     <prettierJavaVersion>2.6.0</prettierJavaVersion>
                     <printWidth>140</printWidth>
                     <tabWidth>2</tabWidth>
                     <useTabs>false</useTabs>
                     <ignoreConfigFile>true</ignoreConfigFile>
                     <ignoreEditorConfig>true</ignoreEditorConfig>
-                    <!-- Use <inputGlobs> to override the default input patterns -->
+                    <!- Use <inputGlobs> to override the default input patterns ->
                     <inputGlobs>
-                        <!-- These are the default patterns, you can omit <inputGlobs> entirely unless you want to override them -->
+                        <!- These are the default patterns, you can omit <inputGlobs> entirely unless you want to override them ->
                         <inputGlob>src/main/java/**/*.java</inputGlob>
                         <inputGlob>src/test/java/**/*.java</inputGlob>
                     </inputGlobs>
@@ -201,8 +203,11 @@
                     </execution>
                 </executions>
             </plugin>
+            -->
+            <!-- spotify formatter configuration https://github.com/spotify/fmt-maven-plugin -->
+            <!-- commented to disable plugin and keep as reference
             <plugin>
-                <!-- https://github.com/spotify/fmt-maven-plugin -->
+
                 <groupId>com.spotify.fmt</groupId>
                 <artifactId>fmt-maven-plugin</artifactId>
                 <version>2.23</version>
@@ -214,10 +219,24 @@
                     </execution>
                 </executions>
             </plugin>
+            -->
+            <!-- spotless configuration -->
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>${spotless.version}</version>
+                <!-- disabled temporarily dec 2024
+                <executions>
+                    <execution>
+                         Runs in compile phase to fail fast in case of formatting issues.
+                        <id>spotless-check</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                -->
                 <configuration>
 
                     <!-- optional: limit format enforcement to just the files changed by this feature branch -->
@@ -277,6 +296,7 @@
                 </configuration>
             </plugin>
             <plugin>
+                <!-- groovy maven plugin -->
                 <groupId>org.codehaus.gmavenplus</groupId>
                 <artifactId>gmavenplus-plugin</artifactId>
                 <version>3.0.2</version>

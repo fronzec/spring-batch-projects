@@ -1,3 +1,4 @@
+/* 2024 */
 package com.fronzec.frbatchservice.batchjobs.persons;
 
 /**
@@ -9,20 +10,20 @@ package com.fronzec.frbatchservice.batchjobs.persons;
  */
 public class ProcessIndicatorItemWrapper<T> {
 
-  private final long id;
+    private final long id;
 
-  private final T item;
+    private final T item;
 
-  public ProcessIndicatorItemWrapper(long id, T item) {
-    this.id = id;
-    this.item = item;
-  }
+    public ProcessIndicatorItemWrapper(long id, T item) {
+        this.id = id;
+        this.item = item;
+    }
 
-  public long getId() {
-    return id;
-  }
+    public long getId() {
+        return id;
+    }
 
-  public T getItem() {
-    return item;
-  }
+    public T getItem() {
+        return item;
+    }
 }
