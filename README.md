@@ -2,4 +2,4 @@
 
 This are my personal tests using spring batch :)
 
-![Alt](https://repobeats.axiom.co/api/embed/5a20dd25b052df95717ac3950a707392ef561bc5.svg "Repobeats analytics image")
+![Alt](https://repobeats.axiom.co/api/embed/4c25e73ac0dba14cbc5ce187c36e5963a85e58a8.svg "Repobeats analytics image")
