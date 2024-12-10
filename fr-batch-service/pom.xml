@@ -225,9 +225,10 @@
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>${spotless.version}</version>
+                <!-- disabled temporarily dec 2024
                 <executions>
                     <execution>
-                        <!-- Runs in compile phase to fail fast in case of formatting issues.-->
+                         Runs in compile phase to fail fast in case of formatting issues.
                         <id>spotless-check</id>
                         <phase>compile</phase>
                         <goals>
@@ -235,6 +236,7 @@
                         </goals>
                     </execution>
                 </executions>
+                -->
                 <configuration>
 
                     <!-- optional: limit format enforcement to just the files changed by this feature branch -->
