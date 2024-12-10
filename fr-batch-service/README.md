@@ -2,7 +2,7 @@
 
 ## Tech Stack
 
-- Java 17
+- Java 21
 - Spring Framework [multiple modules]
 - MySQL as DB
 
@@ -11,9 +11,9 @@
 ### Requeriments
 
 - Your favorite IDE: I prefer IntelliJ or VsCode
-- Java 17 SDK
+- Java 21 SDK
 - Maven 3, also you can use Maven Wrapper
-- Mysql 5.7.x
+- Mysql 8.0.23
 - Some HTTP Rest Client: e.g. Postman
 - Some mocking service alternative: e.g. Mockoon or Mockintosh
 
