@@ -13,7 +13,7 @@ import java.sql.Statement
 
 // Note:: we need to import the test containers annotation coming from spock package
 @Testcontainers
-class MySQLContainerIT extends Specification {
+class MySQLContainerIntegrationTest extends Specification {
 
     //Note the image version used is compatible with ARM64, some images doesn't have an available compatible version, we can choose other
     // version or enable in docker for MAC the emulation for x86_64 with QEMU but sometimes doesn't work very well
