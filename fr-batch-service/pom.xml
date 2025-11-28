@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.0</version><!-- https://spring.io/projects/spring-boot#support -->
+        <version>3.5.0</version><!-- https://spring.io/projects/spring-boot#support -->
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.fronzec</groupId>
@@ -15,7 +15,6 @@
     <description>Demo project for Spring Boot</description>
     <properties>
         <java.version>21</java.version>
-        <testcontainers.version>1.17.4</testcontainers.version>
         <!-- By default just re-write code with prettier -->
         <plugin.prettier.goal>write</plugin.prettier.goal>
         <spotless.version>2.43.0</spotless.version>
@@ -90,7 +89,6 @@
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>8.2.0</version>
             <scope>runtime</scope>
         </dependency>
         <!--https://github.com/vavr-io/vavr/releases-->
@@ -153,17 +151,6 @@
             <version>11.1.0</version>
         </dependency>
     </dependencies>
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers-bom</artifactId>
-                <version>${testcontainers.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <build>
         <plugins>
