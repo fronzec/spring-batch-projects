@@ -13,6 +13,15 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class CsvWriter {
 
+    /**
+     * Configures a step-scoped JDBC batch item writer for inserting Person records into the `persons` table.
+     *
+     * The writer maps Person bean properties to named SQL parameters (`:firstName`, `:lastName`, `:email`, `:profession`)
+     * and executes batched INSERT statements against the provided data source.
+     *
+     * @param dataSource the JDBC DataSource used to execute the batch inserts
+     * @return a configured JdbcBatchItemWriter that writes Person instances to the `persons` table
+     */
     @StepScope
     @Bean
     public JdbcBatchItemWriter<Person> writer(DataSource dataSource) {

@@ -20,6 +20,12 @@ public class JsonUtils {
 
     private JsonUtils() {}
 
+    /**
+     * Produce a JSON string representation of the given object.
+     *
+     * @param object the object to serialize; may be {@code null}
+     * @return the object's JSON string representation, or "{}" if the input is {@code null} or serialization fails
+     */
     public static String parseObject2Json(final Object object) {
         return Optional.ofNullable(object)
                 .map(

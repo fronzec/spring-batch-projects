@@ -25,6 +25,14 @@ public class Step2KeySetPagingItemReader extends AbstractPaginatedDataItemReader
 
     private List<PersonsEntity> persons = new ArrayList<>();
 
+    /**
+     * Create a Step2KeySetPagingItemReader backed by the given PersonRepository.
+     *
+     * The constructor sets the reader's name for Spring Batch and disables state saving,
+     * since processed state is tracked by a column on the entity rather than reader position.
+     *
+     * @param personRepository repository used to page through PersonsEntity records
+     */
     public Step2KeySetPagingItemReader(PersonRepository personRepository) {
         this.personRepository = personRepository;
         // note: required set the name for spring batch
@@ -37,6 +45,14 @@ public class Step2KeySetPagingItemReader extends AbstractPaginatedDataItemReader
         // applicable for readers and writers
     }
 
+    /**
+     * Read the next page of PersonsEntity using key-set paging and return an iterator over the results.
+     *
+     * <p>Updates the reader's internal lastPersonId from the prior page and fetches the next batch of
+     * unprocessed PersonsEntity records ordered by ascending ID.</p>
+     *
+     * @return an Iterator over the PersonsEntity records retrieved for the current page
+     */
     @Override
     protected Iterator<PersonsEntity> doPageRead() {
         PageRequest pageRequest = PageRequest.of(0, chunkRead);
@@ -47,6 +63,12 @@ public class Step2KeySetPagingItemReader extends AbstractPaginatedDataItemReader
         return persons.iterator();
     }
 
+    /**
+     * Get the ID of the last person in the provided page.
+     *
+     * @param persons the current page of persons; may be null or empty
+     * @return the ID of the last person in the list, or 0 if the list is null or empty
+     */
     private long getLastChunkId(List<PersonsEntity> persons) {
         if (persons == null || persons.isEmpty()) {
             return 0L;

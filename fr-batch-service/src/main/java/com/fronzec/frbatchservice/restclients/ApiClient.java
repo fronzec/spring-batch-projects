@@ -20,6 +20,15 @@ public class ApiClient {
     private final String getRandomNumberUrl;
     Logger logger = Logger.getLogger(ApiClient.class.getName());
 
+    /**
+     * Constructs an ApiClient and builds the full dispatch and random-value endpoint URLs
+     * from the provided base URL and paths.
+     *
+     * @param restTemplate               the RestTemplate used for HTTP requests
+     * @param batchServiceHost           the base URL of the batch service (e.g. "https://api.example.com")
+     * @param batchServiceDispatchPath   the path appended to the base URL for the dispatch endpoint (e.g. "/dispatch")
+     * @param getRandomValuePath         the path appended to the base URL for the random-value endpoint (e.g. "/calculate/random")
+     */
     public ApiClient(
             RestTemplate restTemplate,
             @Value("${fr-batch-service.rest_clients.client1.base_url}") String batchServiceHost,

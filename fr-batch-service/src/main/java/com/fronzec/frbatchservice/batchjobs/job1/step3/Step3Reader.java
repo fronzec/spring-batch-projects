@@ -20,6 +20,15 @@ public class Step3Reader {
     @Value("${fr-batch-service.jobs.job1.step3.reader.chunk-size:1000}")
     private int chunkSize;
 
+    /**
+     * Creates a JdbcPagingItemReader configured to page PersonsV2Entity rows filtered by fk_dispatched_group_id.
+     *
+     * @param  pagingQueryProvider      the paging query provider used to build the SQL for pagination
+     * @param  entityPersonV2RowMapper  a RowMapper that converts result set rows into PersonsV2Entity instances
+     * @return                          a configured JdbcPagingItemReader for PersonsV2Entity with page size from configuration,
+     *                                  parameter `fk_dispatched_group_id` set to `null`, and state saving disabled
+     * @throws Exception                if the reader cannot be constructed
+     */
     @Bean
     @StepScope
     public JdbcPagingItemReader<PersonsV2Entity> itemReader(
@@ -41,11 +50,23 @@ public class Step3Reader {
                 .build();
     }
 
+    /**
+     * Create an EntityPersonV2RowMapper used to map JDBC result set rows to PersonsV2Entity instances.
+     *
+     * @return a new EntityPersonV2RowMapper instance
+     */
     @Bean
     public EntityPersonV2RowMapper entityPersonV2RowMapper() {
         return new EntityPersonV2RowMapper();
     }
 
+    /**
+     * Creates a SqlPagingQueryProviderFactoryBean configured to page over the persons_v2 table,
+     * selecting common person columns, filtering by the `fk_dispatched_group_id` parameter,
+     * and ordering results by `id`.
+     *
+     * @return a configured SqlPagingQueryProviderFactoryBean for paging queries against `persons_v2`
+     */
     @Bean
     public SqlPagingQueryProviderFactoryBean pagingQueryProvider(DataSource dataSource) {
         SqlPagingQueryProviderFactoryBean provider = new SqlPagingQueryProviderFactoryBean();

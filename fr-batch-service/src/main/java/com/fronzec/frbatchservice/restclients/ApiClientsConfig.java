@@ -8,6 +8,11 @@ import org.springframework.web.client.RestClient;
 @Configuration
 public class ApiClientsConfig {
 
+    /**
+     * Provides a Spring-managed RestClient bean for making HTTP requests to external services.
+     *
+     * @return a RestClient instance for performing HTTP requests
+     */
     @Bean
     public RestClient restTemplateApiClient() {
         return RestClient.builder().build();

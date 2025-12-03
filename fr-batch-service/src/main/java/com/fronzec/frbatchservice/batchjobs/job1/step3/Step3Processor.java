@@ -12,6 +12,12 @@ import org.springframework.stereotype.Component;
 public class Step3Processor
         implements ItemProcessor<PersonsV2Entity, ProcessIndicatorItemWrapper<PayloadItemInfo>> {
 
+    /**
+     * Transforms a PersonsV2Entity into a ProcessIndicatorItemWrapper carrying a PayloadItemInfo.
+     *
+     * @param item the source person entity whose uuidV4, firstName, lastName, email, and profession are used to build the payload
+     * @return a ProcessIndicatorItemWrapper whose process id is the entity's id and whose payload is a PayloadItemInfo built from the entity's fields
+     */
     @Override
     public ProcessIndicatorItemWrapper<PayloadItemInfo> process(PersonsV2Entity item) {
         PayloadItemInfo payloadItemInfo =
