@@ -2,7 +2,7 @@ package com.fronzec.frbatchservice.batchjobs.job1.step1;
 
 import com.fronzec.frbatchservice.batchjobs.job1.Person;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.infrastructure.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
 @StepScope

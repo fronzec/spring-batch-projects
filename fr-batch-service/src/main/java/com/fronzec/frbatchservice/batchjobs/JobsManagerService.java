@@ -9,16 +9,12 @@ import java.time.LocalDate;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.JobParametersInvalidException;
+import org.springframework.batch.core.job.Job;
+import org.springframework.batch.core.job.JobExecution;
+import org.springframework.batch.core.job.parameters.JobParametersBuilder;
 import org.springframework.batch.core.configuration.JobRegistry;
-import org.springframework.batch.core.explore.JobExplorer;
+import org.springframework.batch.core.repository.explore.JobExplorer;
 import org.springframework.batch.core.launch.*;
-import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
-import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
-import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Service;
 
@@ -149,10 +145,10 @@ public class JobsManagerService {
                     } catch (JobInstanceAlreadyCompleteException e) {
                         logger.error("completed", e);
                         resultInfoHolder.put(key, e.getMessage());
-                    } catch (JobParametersInvalidException e) {
+                    }/* catch (JobParametersInvalidException e) {
                         logger.info("parameters", e);
                         resultInfoHolder.put(key, e.getMessage());
-                    }
+                    }*/
                 });
         return resultInfoHolder;
     }
@@ -191,10 +187,10 @@ public class JobsManagerService {
                     } catch (JobInstanceAlreadyCompleteException e) {
                         logger.error("completed", e);
                         info.put(key, e.getMessage());
-                    } catch (JobParametersInvalidException e) {
+                    }/* catch (JobParametersInvalidException e) {
                         logger.info("parameters", e);
                         info.put(key, e.getMessage());
-                    }
+                    }*/
                 });
 
         return info;
@@ -235,10 +231,10 @@ public class JobsManagerService {
             } catch (JobInstanceAlreadyCompleteException e) {
                 logger.error("completed", e);
                 launchedJobMetadata.put("error", e.getMessage());
-            } catch (JobParametersInvalidException e) {
+            }/* catch (JobParametersInvalidException e) {
                 logger.info("parameters", e);
                 launchedJobMetadata.put("error", e.getMessage());
-            }
+            }*/
         } else {
             launchedJobMetadata.put(
                     "error", String.format("Job <%s> not found", request.getJobBeanName()));
@@ -285,10 +281,10 @@ public class JobsManagerService {
             } catch (JobInstanceAlreadyCompleteException e) {
                 logger.error("completed", e);
                 launchedJobMetadata.put("error", e.getMessage());
-            } catch (JobParametersInvalidException e) {
+            }/* catch (JobParametersInvalidException e) {
                 logger.info("parameters", e);
                 launchedJobMetadata.put("error", e.getMessage());
-            }
+            }*/
         } else {
             launchedJobMetadata.put(
                     "error", String.format("Job <%s> not found", request.getJobBeanName()));

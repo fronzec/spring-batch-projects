@@ -7,7 +7,7 @@ import com.fronzec.frbatchservice.restclients.ApiClient;
 import com.fronzec.frbatchservice.restclients.DataCalculatedResponse;
 import java.time.LocalDate;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.infrastructure.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

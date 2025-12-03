@@ -28,10 +28,10 @@ public class ApiClient {
             @Value("${fr-batch-service.rest_clients.client1.calculate.get}")
                     String getRandomValuePath) {
         this.batchServiceDispatchUrl =
-                UriComponentsBuilder.fromHttpUrl(batchServiceHost + batchServiceDispatchPath)
+                UriComponentsBuilder.fromUriString(batchServiceHost + batchServiceDispatchPath)
                         .toUriString();
         this.getRandomNumberUrl =
-                UriComponentsBuilder.fromHttpUrl(batchServiceHost + getRandomValuePath)
+                UriComponentsBuilder.fromUriString(batchServiceHost + getRandomValuePath)
                         .toUriString();
         this.restTemplateDispatch = restTemplate;
     }

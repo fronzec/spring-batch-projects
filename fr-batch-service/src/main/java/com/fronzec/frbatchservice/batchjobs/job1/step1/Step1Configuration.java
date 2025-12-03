@@ -2,12 +2,12 @@
 package com.fronzec.frbatchservice.batchjobs.job1.step1;
 
 import com.fronzec.frbatchservice.batchjobs.job1.Person;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.step.Step;
 import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
-import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.infrastructure.item.database.JdbcBatchItemWriter;
+import org.springframework.batch.infrastructure.item.file.FlatFileItemReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
