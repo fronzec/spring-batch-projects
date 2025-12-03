@@ -10,6 +10,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class CsvProcessor implements ItemProcessor<Person, Person> {
 
+    /**
+     * Converts the given person's first and last names to uppercase.
+     *
+     * @param person the Person whose firstName and lastName will be converted to uppercase; modified in-place
+     * @return the same Person instance with firstName and lastName set to uppercase
+     */
     @Override
     public Person process(Person person) throws Exception {
         final String firstName = person.getFirstName().toUpperCase();

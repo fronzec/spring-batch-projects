@@ -105,6 +105,19 @@ public class JobsManagerService {
         return launchAllNonAutoDetectedJobs(execDate, runningNumber, true);
     }
 
+    /**
+     * Launches all manually registered (non-auto-detected) jobs using the provided execution date and attempt number.
+     *
+     * Each job receives job parameters where "DATE" is set from {@code execDate} and "ATTEMPT_NUMBER" is set from
+     * {@code runningNumber}; a non-identifying "DESCRIPTION" parameter is also added. Jobs are executed synchronously
+     * when {@code useSyncExecutor} is true, otherwise they are executed asynchronously.
+     *
+     * @param execDate        the execution date to add as the "DATE" job parameter (must not be null)
+     * @param runningNumber   the attempt number to add as the "ATTEMPT_NUMBER" job parameter
+     * @param useSyncExecutor when true, use the synchronous JobLauncher; when false, use the asynchronous JobLauncher
+     * @return a map from job name to either the job's identifier string on successful launch or an error message if the job
+     *         could not be obtained or failed to start
+     */
     private HashMap<String, String> launchAllNonAutoDetectedJobs(
             LocalDate execDate, final int runningNumber, boolean useSyncExecutor) {
         Objects.requireNonNull(execDate);
@@ -155,9 +168,11 @@ public class JobsManagerService {
     }
 
     /**
-     * @param date
-     * @param runningNumber
-     * @return
+     * Launches every job discovered by Spring (preloaded) using the async launcher with the provided execution date and running number.
+     *
+     * @param date the execution date used to populate the `DATE` job parameter; must not be null
+     * @param runningNumber an integer placed into the `RUNNING_NUMBER` job parameter
+     * @return a map from job name to either the job's identifying string on successful launch or an error message when launch failed
      */
     public HashMap<String, String> launchAllJobsPreloaded(Date date, final Integer runningNumber) {
         Objects.requireNonNull(date);
@@ -197,6 +212,18 @@ public class JobsManagerService {
         return info;
     }
 
+    /**
+     * Launches a manually registered job asynchronously using parameters from the request.
+     *
+     * Builds job parameters from the request (expects a "date" and "execution_attempt_number" entry, and optionally "description"),
+     * attempts to run the job via the asynchronous JobLauncher, and returns a small metadata map describing the outcome.
+     *
+     * @param request container holding the target job bean name and a map of string parameters; must include "date" and "execution_attempt_number"
+     * @return a map containing outcome details:
+     *         - "jobName": the requested job bean name when found,
+     *         - "result": a JSON-serialized representation of the started job when launch succeeds,
+     *         - "error": an error message when the job cannot be started or the job is not found
+     */
     public Map<String, String> asyncRunJobWithParams(SingleJobDataRequest request) {
         Map<String, String> launchedJobMetadata = new HashMap<>();
         Map<String, String> jobExecParams = new HashMap<>();
@@ -243,6 +270,23 @@ public class JobsManagerService {
         return launchedJobMetadata;
     }
 
+    /**
+     * Runs the specified manually defined job synchronously using parameters supplied in the request.
+     *
+     * The request must reference a job known to the manual registry. The method builds job parameters
+     * from request.params (see below), executes the job with the synchronous JobLauncher, and returns
+     * a map containing execution metadata or an error message.
+     *
+     * @param request a SingleJobDataRequest whose params map is expected to contain:
+     *                - "date": ISO-8601 date string used as the job's `DATE` parameter
+     *                - "execution_attempt_number": a string used as the job's `ATTEMPT_NUMBER` parameter
+     *                - "description": a non-identifying description added as `DESCRIPTION`
+     * @return a map of result keys:
+     *         - "jobName": the invoked job bean name (on success)
+     *         - "parameters": JSON string of the JobParameters used (on success)
+     *         - "result": job exit status as string (on success)
+     *         - "error": error message when execution fails or job is not found
+     */
     public Map<String, String> syncRunJobWithParams(SingleJobDataRequest request) {
         Map<String, String> launchedJobMetadata = new HashMap<>();
         Map<String, String> jobExecParams = new HashMap<>();

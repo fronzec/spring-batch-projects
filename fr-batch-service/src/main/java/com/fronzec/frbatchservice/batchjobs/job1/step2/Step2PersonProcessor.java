@@ -20,12 +20,23 @@ public class Step2PersonProcessor
     private final ApiClient apiClient;
     private final LocalDate processingDate;
 
+    /**
+     * Creates a processor configured with an API client and a processing date.
+     *
+     * @param processingDateStr the job parameter "DATE" as an ISO-8601 date string (yyyy-MM-dd); parsed into the processor's LocalDate
+     */
     public Step2PersonProcessor(
             ApiClient apiClient, @Value("#{jobParameters['DATE']}") String processingDateStr) {
         this.apiClient = apiClient;
         this.processingDate = LocalDate.parse(processingDateStr);
     }
 
+    /**
+     * Converts a PersonsEntity into a PersonsV2Entity using the job processing date and an external calculated value, and returns it wrapped with the original entity id.
+     *
+     * @param item the source PersonsEntity to process
+     * @return a ProcessIndicatorItemWrapper containing the source id and the mapped PersonsV2Entity
+     */
     @Override
     public ProcessIndicatorItemWrapper<PersonsV2Entity> process(PersonsEntity item) {
         DataCalculatedResponse randomValue = apiClient.getRandomValue(item.getId());

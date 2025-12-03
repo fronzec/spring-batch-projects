@@ -13,6 +13,13 @@ import org.springframework.core.io.ClassPathResource;
 @Configuration
 public class CsvReader {
 
+    /**
+     * Configures a FlatFileItemReader that reads CSV records from the classpath resource "sample-persons-1k.csv"
+     * and maps each record to a Person instance.
+     *
+     * @return a FlatFileItemReader that parses delimited records with fields `firstName`, `lastName`, `email`, and `profession`
+     *         and maps them to Person objects
+     */
     @StepScope
     @Bean
     public FlatFileItemReader<Person> readerPersons() {
