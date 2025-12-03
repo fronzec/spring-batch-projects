@@ -1,3 +1,4 @@
+/* 2025 */
 package com.fronzec.frbatchservice.batchjobs.job1.step1;
 
 import com.fronzec.frbatchservice.batchjobs.job1.Person;
@@ -12,20 +13,20 @@ import org.springframework.core.io.ClassPathResource;
 @Configuration
 public class CsvReader {
 
-  @StepScope
-  @Bean
-  public FlatFileItemReader<Person> readerPersons() {
-    return new FlatFileItemReaderBuilder<Person>()
-        .name("personsItemReader")
-        .resource(new ClassPathResource("sample-persons-1k.csv"))
-        .delimited()
-        .names("firstName", "lastName", "email", "profession")
-        .fieldSetMapper(
-            new BeanWrapperFieldSetMapper<>() {
-              {
-                setTargetType(Person.class);
-              }
-            })
-        .build();
-  }
+    @StepScope
+    @Bean
+    public FlatFileItemReader<Person> readerPersons() {
+        return new FlatFileItemReaderBuilder<Person>()
+                .name("personsItemReader")
+                .resource(new ClassPathResource("sample-persons-1k.csv"))
+                .delimited()
+                .names("firstName", "lastName", "email", "profession")
+                .fieldSetMapper(
+                        new BeanWrapperFieldSetMapper<>() {
+                            {
+                                setTargetType(Person.class);
+                            }
+                        })
+                .build();
+    }
 }

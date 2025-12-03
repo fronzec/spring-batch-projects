@@ -1,4 +1,4 @@
-/* 2024 */
+/* 2024-2025 */
 package com.fronzec.frbatchservice.batchjobs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,13 +11,15 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.JobExecution;
+import org.springframework.batch.core.job.JobInstance;
+import org.springframework.batch.core.job.parameters.InvalidJobParametersException;
 import org.springframework.batch.core.job.parameters.JobParameters;
 import org.springframework.batch.core.job.parameters.JobParametersBuilder;
-import org.springframework.batch.core.job.parameters.JobParametersInvalidException;
+import org.springframework.batch.core.launch.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.launch.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
-import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
-import org.springframework.batch.core.repository.JobRestartException;
+
+import org.springframework.batch.core.launch.JobRestartException;
 import org.springframework.beans.factory.BeanFactory;
 
 public class JobsManagerServiceTest {
@@ -43,9 +45,9 @@ public class JobsManagerServiceTest {
     @Disabled
     void testLaunchAllJobsPreloaded()
             throws JobExecutionAlreadyRunningException,
-                    JobRestartException,
-                    JobInstanceAlreadyCompleteException,
-                    JobParametersInvalidException {
+            JobRestartException,
+            JobInstanceAlreadyCompleteException,
+            InvalidJobParametersException {
 
         Date date = new Date();
         Integer runningNumber = 1;
@@ -57,7 +59,7 @@ public class JobsManagerServiceTest {
 
         when(job.getName()).thenReturn("TestJob");
         when(jobLauncher.run(any(Job.class), any(JobParameters.class)))
-                .thenReturn(new JobExecution(1L));
+                .thenReturn(new JobExecution(1L, new JobInstance(1L, "TestJob"), jobParametersBuilder.toJobParameters()));
 
         HashMap<String, String> result =
                 jobsManagerService.launchAllJobsPreloaded(date, runningNumber);
@@ -74,7 +76,7 @@ public class JobsManagerServiceTest {
             throws JobExecutionAlreadyRunningException,
                     JobRestartException,
                     JobInstanceAlreadyCompleteException,
-                    JobParametersInvalidException {
+            InvalidJobParametersException {
 
         Date date = new Date();
         Integer runningNumber = 1;

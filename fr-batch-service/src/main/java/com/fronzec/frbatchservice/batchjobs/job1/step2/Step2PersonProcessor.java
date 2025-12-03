@@ -1,3 +1,4 @@
+/* 2025 */
 package com.fronzec.frbatchservice.batchjobs.job1.step2;
 
 import com.fronzec.frbatchservice.batchjobs.persons.ProcessIndicatorItemWrapper;
@@ -14,22 +15,22 @@ import org.springframework.stereotype.Component;
 @StepScope
 @Component
 public class Step2PersonProcessor
-    implements ItemProcessor<PersonsEntity, ProcessIndicatorItemWrapper<PersonsV2Entity>> {
+        implements ItemProcessor<PersonsEntity, ProcessIndicatorItemWrapper<PersonsV2Entity>> {
 
-  private final ApiClient apiClient;
-  private final LocalDate processingDate;
+    private final ApiClient apiClient;
+    private final LocalDate processingDate;
 
-  public Step2PersonProcessor(
-      ApiClient apiClient, @Value("#{jobParameters['DATE']}") String processingDateStr) {
-    this.apiClient = apiClient;
-    this.processingDate = LocalDate.parse(processingDateStr);
-  }
+    public Step2PersonProcessor(
+            ApiClient apiClient, @Value("#{jobParameters['DATE']}") String processingDateStr) {
+        this.apiClient = apiClient;
+        this.processingDate = LocalDate.parse(processingDateStr);
+    }
 
-  @Override
-  public ProcessIndicatorItemWrapper<PersonsV2Entity> process(PersonsEntity item) {
-    DataCalculatedResponse randomValue = apiClient.getRandomValue(item.getId());
-    PersonsV2Entity personsV2Entity =
-        PersonToPersonv2Mapper.fromTo(processingDate, item, randomValue.getValue());
-    return new ProcessIndicatorItemWrapper<>(item.getId(), personsV2Entity);
-  }
+    @Override
+    public ProcessIndicatorItemWrapper<PersonsV2Entity> process(PersonsEntity item) {
+        DataCalculatedResponse randomValue = apiClient.getRandomValue(item.getId());
+        PersonsV2Entity personsV2Entity =
+                PersonToPersonv2Mapper.fromTo(processingDate, item, randomValue.getValue());
+        return new ProcessIndicatorItemWrapper<>(item.getId(), personsV2Entity);
+    }
 }

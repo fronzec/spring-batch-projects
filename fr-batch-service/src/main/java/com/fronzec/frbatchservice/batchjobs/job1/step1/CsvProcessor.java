@@ -1,3 +1,4 @@
+/* 2025 */
 package com.fronzec.frbatchservice.batchjobs.job1.step1;
 
 import com.fronzec.frbatchservice.batchjobs.job1.Person;
@@ -9,12 +10,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class CsvProcessor implements ItemProcessor<Person, Person> {
 
-  @Override
-  public Person process(Person person) throws Exception {
-    final String firstName = person.getFirstName().toUpperCase();
-    final String lastName = person.getLastName().toUpperCase();
-    person.setFirstName(firstName);
-    person.setLastName(lastName);
-    return person;
-  }
+    @Override
+    public Person process(Person person) throws Exception {
+        final String firstName = person.getFirstName().toUpperCase();
+        final String lastName = person.getLastName().toUpperCase();
+        person.setFirstName(firstName);
+        person.setLastName(lastName);
+        return person;
+    }
 }

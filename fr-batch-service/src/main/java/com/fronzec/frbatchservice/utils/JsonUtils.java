@@ -1,20 +1,20 @@
-/* 2024 */
+/* 2024-2025 */
 package com.fronzec.frbatchservice.utils;
-
 
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.json.JsonMapper;
 
 public class JsonUtils {
 
-    public static final ObjectMapper mapper = new ObjectMapper();
-
-    static {
-        mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-    }
+    public static final JsonMapper mapper =
+            JsonMapper.builder()
+                    .findAndAddModules()
+                    .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+                    .build();
 
     private static final Logger logger = LoggerFactory.getLogger(JsonUtils.class);
 
@@ -27,7 +27,7 @@ public class JsonUtils {
                             var result = "{}";
                             try {
                                 result = mapper.writeValueAsString(o);
-                            } catch (JsonProcessingException e) {
+                            } catch (JacksonException e) {
                                 logger.warn(
                                         "Object cannot be parsed to json by -> {}",
                                         e.getMessage(),
