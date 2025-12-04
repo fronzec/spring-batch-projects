@@ -3,7 +3,7 @@ package com.fronzec.frbatchservice.restclients;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
 
 @Configuration
 public class ApiClientsConfig {
@@ -14,7 +14,7 @@ public class ApiClientsConfig {
      * @return a RestClient instance for performing HTTP requests
      */
     @Bean
-    public RestClient restTemplateApiClient() {
-        return RestClient.builder().build();
+    public RestTemplate restTemplateApiClient() {
+        return new RestTemplate();
     }
 }

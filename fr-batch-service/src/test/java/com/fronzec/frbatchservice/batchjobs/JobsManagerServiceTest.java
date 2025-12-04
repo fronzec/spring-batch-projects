@@ -38,7 +38,7 @@ public class JobsManagerServiceTest {
         jobList.add(job);
         jobsManagerService =
                 new JobsManagerService(
-                        jobLauncher, jobLauncher, null, null, beanFactory, jobList, null);
+                        jobLauncher, jobLauncher, null, beanFactory, jobList, null);
     }
 
     @Test

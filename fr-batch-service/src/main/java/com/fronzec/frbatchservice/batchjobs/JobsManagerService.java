@@ -40,9 +40,6 @@ public class JobsManagerService {
      */
     private JobExplorer jobExplorer;
 
-    /** Allow keep track of which jobs are available in the context */
-    private JobRegistry jobRegistry;
-
     private BeanFactory beanFactory;
 
     private List<Job> jobsList;
@@ -60,14 +57,12 @@ public class JobsManagerService {
             JobLauncher asyncJobLauncher,
             JobLauncher syncJobLauncher,
             JobExplorer jobExplorer,
-            JobRegistry jobRegistry,
             BeanFactory beanFactory,
             List<Job> jobsList,
             JobOperator jobOperator) {
         this.asyncJobLauncher = asyncJobLauncher;
         this.syncJobLauncher = syncJobLauncher;
         this.jobExplorer = jobExplorer;
-        this.jobRegistry = jobRegistry;
         this.beanFactory = beanFactory;
         this.jobsList = jobsList;
         this.jobOperator = jobOperator;
