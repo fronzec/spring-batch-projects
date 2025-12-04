@@ -23,10 +23,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
 
 public class ApiClientJavaVersionTest {
 
-    @Mock private RestClient restTemplate;
+    @Mock private RestTemplate restTemplate;
 
     private ApiClient apiClient;
 
