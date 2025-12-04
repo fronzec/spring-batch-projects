@@ -47,7 +47,8 @@ public class ApiClient {
 
     public boolean sendBatch(BatchItemsPayload payload) {
         HttpEntity<BatchItemsPayload> request = new HttpEntity<>(payload, createDefaultHeaders());
-        ResponseEntity<Object> response = restTemplateDispatch.postForEntity(batchServiceDispatchUrl, request, Object.class);
+        ResponseEntity<Object> response =
+                restTemplateDispatch.postForEntity(batchServiceDispatchUrl, request, Object.class);
         // TODO: 12/09/2022 handle exceptions
         if (response.getStatusCode() == HttpStatus.OK) {
             return true;

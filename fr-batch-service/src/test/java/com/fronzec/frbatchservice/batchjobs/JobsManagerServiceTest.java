@@ -18,7 +18,6 @@ import org.springframework.batch.core.job.parameters.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.launch.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.launch.JobLauncher;
-
 import org.springframework.batch.core.launch.JobRestartException;
 import org.springframework.beans.factory.BeanFactory;
 
@@ -37,17 +36,16 @@ public class JobsManagerServiceTest {
         List<Job> jobList = new ArrayList<>();
         jobList.add(job);
         jobsManagerService =
-                new JobsManagerService(
-                        jobLauncher, jobLauncher, null, beanFactory, jobList, null);
+                new JobsManagerService(jobLauncher, jobLauncher, null, beanFactory, jobList, null);
     }
 
     @Test
     @Disabled
     void testLaunchAllJobsPreloaded()
             throws JobExecutionAlreadyRunningException,
-            JobRestartException,
-            JobInstanceAlreadyCompleteException,
-            InvalidJobParametersException {
+                    JobRestartException,
+                    JobInstanceAlreadyCompleteException,
+                    InvalidJobParametersException {
 
         Date date = new Date();
         Integer runningNumber = 1;
@@ -59,7 +57,11 @@ public class JobsManagerServiceTest {
 
         when(job.getName()).thenReturn("TestJob");
         when(jobLauncher.run(any(Job.class), any(JobParameters.class)))
-                .thenReturn(new JobExecution(1L, new JobInstance(1L, "TestJob"), jobParametersBuilder.toJobParameters()));
+                .thenReturn(
+                        new JobExecution(
+                                1L,
+                                new JobInstance(1L, "TestJob"),
+                                jobParametersBuilder.toJobParameters()));
 
         HashMap<String, String> result =
                 jobsManagerService.launchAllJobsPreloaded(date, runningNumber);
@@ -76,7 +78,7 @@ public class JobsManagerServiceTest {
             throws JobExecutionAlreadyRunningException,
                     JobRestartException,
                     JobInstanceAlreadyCompleteException,
-            InvalidJobParametersException {
+                    InvalidJobParametersException {
 
         Date date = new Date();
         Integer runningNumber = 1;

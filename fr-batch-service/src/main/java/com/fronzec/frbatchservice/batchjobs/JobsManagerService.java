@@ -9,7 +9,6 @@ import java.time.LocalDate;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.JobExecution;
 import org.springframework.batch.core.job.parameters.InvalidJobParametersException;
@@ -199,9 +198,9 @@ public class JobsManagerService {
                         logger.error("completed", e);
                         info.put(key, e.getMessage());
                     } catch (InvalidJobParametersException e) {
-                          logger.info("parameters", e);
-                          info.put(key, e.getMessage());
-                      }
+                        logger.info("parameters", e);
+                        info.put(key, e.getMessage());
+                    }
                 });
 
         return info;
@@ -255,9 +254,9 @@ public class JobsManagerService {
                 logger.error("completed", e);
                 launchedJobMetadata.put("error", e.getMessage());
             } catch (InvalidJobParametersException e) {
-                  logger.info("parameters", e);
-                  launchedJobMetadata.put("error", e.getMessage());
-              }
+                logger.info("parameters", e);
+                launchedJobMetadata.put("error", e.getMessage());
+            }
         } else {
             launchedJobMetadata.put(
                     "error", String.format("Job <%s> not found", request.getJobBeanName()));
@@ -322,9 +321,9 @@ public class JobsManagerService {
                 logger.error("completed", e);
                 launchedJobMetadata.put("error", e.getMessage());
             } catch (InvalidJobParametersException e) {
-                  logger.info("parameters", e);
-                  launchedJobMetadata.put("error", e.getMessage());
-              }
+                logger.info("parameters", e);
+                launchedJobMetadata.put("error", e.getMessage());
+            }
         } else {
             launchedJobMetadata.put(
                     "error", String.format("Job <%s> not found", request.getJobBeanName()));
