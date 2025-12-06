@@ -75,7 +75,8 @@ public class Step3Reader {
                 "select id, first_name, last_name, email, profession, salary, uuid_v4, created_at,"
                         + " updated_at");
         provider.setFromClause("from persons_v2");
-        provider.setWhereClause("where fk_dispatched_group_id = :fk_dispatched_group_id");
+        // operator 'is' because we are searching all pending rows
+        provider.setWhereClause("where fk_dispatched_group_id is :fk_dispatched_group_id");
         provider.setSortKey("id");
         return provider;
     }

@@ -2,9 +2,14 @@
 package com.fronzec.frbatchservice.batchjobs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -17,7 +22,7 @@ import org.springframework.batch.core.job.parameters.JobParameters;
 import org.springframework.batch.core.job.parameters.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.launch.JobInstanceAlreadyCompleteException;
-import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.batch.core.launch.JobRestartException;
 import org.springframework.beans.factory.BeanFactory;
 
@@ -25,7 +30,7 @@ public class JobsManagerServiceTest {
 
     private JobsManagerService jobsManagerService;
 
-    @Mock private JobLauncher jobLauncher;
+    @Mock private JobOperator jobOperator;
 
     @Mock private BeanFactory beanFactory;
 
@@ -36,7 +41,7 @@ public class JobsManagerServiceTest {
         List<Job> jobList = new ArrayList<>();
         jobList.add(job);
         jobsManagerService =
-                new JobsManagerService(jobLauncher, jobLauncher, null, beanFactory, jobList, null);
+                new JobsManagerService(jobOperator, jobOperator, beanFactory, jobList, null);
     }
 
     @Test
@@ -56,7 +61,7 @@ public class JobsManagerServiceTest {
         jobParametersBuilder.addString("RUNNING_NUMBER", runningNumber.toString());
 
         when(job.getName()).thenReturn("TestJob");
-        when(jobLauncher.run(any(Job.class), any(JobParameters.class)))
+        when(jobOperator.run(any(Job.class), any(JobParameters.class)))
                 .thenReturn(
                         new JobExecution(
                                 1L,
@@ -66,7 +71,7 @@ public class JobsManagerServiceTest {
         HashMap<String, String> result =
                 jobsManagerService.launchAllJobsPreloaded(date, runningNumber);
 
-        verify(jobLauncher).run(job, jobParametersBuilder.toJobParameters());
+        verify(jobOperator).run(job, jobParametersBuilder.toJobParameters());
 
         assertEquals(result.size(), 1);
         assertEquals(result.get("TestJob"), job.toString());
@@ -89,13 +94,13 @@ public class JobsManagerServiceTest {
         jobParametersBuilder.addString("RUNNING_NUMBER", runningNumber.toString());
 
         when(job.getName()).thenReturn("TestJob");
-        when(jobLauncher.run(any(Job.class), any(JobParameters.class)))
+        when(jobOperator.run(any(Job.class), any(JobParameters.class)))
                 .thenThrow(JobExecutionAlreadyRunningException.class);
 
         HashMap<String, String> result =
                 jobsManagerService.launchAllJobsPreloaded(date, runningNumber);
 
-        verify(jobLauncher).run(job, jobParametersBuilder.toJobParameters());
+        verify(jobOperator).run(job, jobParametersBuilder.toJobParameters());
 
         assertEquals(result.size(), 1);
         assertEquals(
