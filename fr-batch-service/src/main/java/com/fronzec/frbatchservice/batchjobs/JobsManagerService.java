@@ -1,4 +1,4 @@
-/* 2024 */
+/* 2024-2025 */
 package com.fronzec.frbatchservice.batchjobs;
 
 import com.fronzec.frbatchservice.utils.JsonUtils;
@@ -6,19 +6,24 @@ import com.fronzec.frbatchservice.web.SingleJobDataRequest;
 import io.vavr.control.Try;
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.JobParametersInvalidException;
-import org.springframework.batch.core.configuration.JobRegistry;
-import org.springframework.batch.core.explore.JobExplorer;
-import org.springframework.batch.core.launch.*;
-import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
-import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
-import org.springframework.batch.core.repository.JobRestartException;
+import org.springframework.batch.core.job.Job;
+import org.springframework.batch.core.job.JobExecution;
+import org.springframework.batch.core.job.parameters.InvalidJobParametersException;
+import org.springframework.batch.core.job.parameters.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.launch.JobExecutionNotRunningException;
+import org.springframework.batch.core.launch.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.batch.core.launch.JobRestartException;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Service;
 
@@ -33,47 +38,27 @@ public class JobsManagerService {
 
     private static final Logger logger = LoggerFactory.getLogger(JobsManagerService.class);
 
-    private JobLauncher asyncJobLauncher;
+    private JobOperator asyncJobLauncher;
 
-    private JobLauncher syncJobLauncher;
+    private JobOperator syncJobLauncher;
 
-    /**
-     * JobExplorer is a readonly implementation of the JobRepository, it can be configured with custom
-     * props
-     */
-    private JobExplorer jobExplorer;
-
-    /** Allow keep track of which jobs are available in the context */
-    private JobRegistry jobRegistry;
+    private JobRepository jobRepository;
 
     private BeanFactory beanFactory;
 
     private List<Job> jobsList;
 
-    /**
-     * The JobRepository provides CRUD operations on the meta-data, and the JobExplorer provides
-     * read-only operations on the meta-data. However, those operations are most useful when used
-     * together to perform common monitoring tasks such as stopping, restarting, or summarizing a Job,
-     * as is commonly done by batch operators. Spring Batch provides these types of operations via the
-     * JobOperator interface:
-     */
-    private JobOperator jobOperator;
-
     public JobsManagerService(
-            JobLauncher asyncJobLauncher,
-            JobLauncher syncJobLauncher,
-            JobExplorer jobExplorer,
-            JobRegistry jobRegistry,
+            JobOperator asyncJobLauncher,
+            JobOperator syncJobLauncher,
             BeanFactory beanFactory,
             List<Job> jobsList,
-            JobOperator jobOperator) {
+            JobRepository jobRepository) {
         this.asyncJobLauncher = asyncJobLauncher;
         this.syncJobLauncher = syncJobLauncher;
-        this.jobExplorer = jobExplorer;
-        this.jobRegistry = jobRegistry;
         this.beanFactory = beanFactory;
         this.jobsList = jobsList;
-        this.jobOperator = jobOperator;
+        this.jobRepository = jobRepository;
     }
 
     @PostConstruct
@@ -108,6 +93,19 @@ public class JobsManagerService {
         return launchAllNonAutoDetectedJobs(execDate, runningNumber, true);
     }
 
+    /**
+     * Launches all manually registered (non-auto-detected) jobs using the provided execution date and attempt number.
+     *
+     * Each job receives job parameters where "DATE" is set from {@code execDate} and "ATTEMPT_NUMBER" is set from
+     * {@code runningNumber}; a non-identifying "DESCRIPTION" parameter is also added. Jobs are executed synchronously
+     * when {@code useSyncExecutor} is true, otherwise they are executed asynchronously.
+     *
+     * @param execDate        the execution date to add as the "DATE" job parameter (must not be null)
+     * @param runningNumber   the attempt number to add as the "ATTEMPT_NUMBER" job parameter
+     * @param useSyncExecutor when true, use the synchronous JobLauncher; when false, use the asynchronous JobLauncher
+     * @return a map from job name to either the job's identifier string on successful launch or an error message if the job
+     *         could not be obtained or failed to start
+     */
     private HashMap<String, String> launchAllNonAutoDetectedJobs(
             LocalDate execDate, final int runningNumber, boolean useSyncExecutor) {
         Objects.requireNonNull(execDate);
@@ -149,7 +147,7 @@ public class JobsManagerService {
                     } catch (JobInstanceAlreadyCompleteException e) {
                         logger.error("completed", e);
                         resultInfoHolder.put(key, e.getMessage());
-                    } catch (JobParametersInvalidException e) {
+                    } catch (InvalidJobParametersException e) {
                         logger.info("parameters", e);
                         resultInfoHolder.put(key, e.getMessage());
                     }
@@ -158,9 +156,11 @@ public class JobsManagerService {
     }
 
     /**
-     * @param date
-     * @param runningNumber
-     * @return
+     * Launches every job discovered by Spring (preloaded) using the async launcher with the provided execution date and running number.
+     *
+     * @param date the execution date used to populate the `DATE` job parameter; must not be null
+     * @param runningNumber an integer placed into the `RUNNING_NUMBER` job parameter
+     * @return a map from job name to either the job's identifying string on successful launch or an error message when launch failed
      */
     public HashMap<String, String> launchAllJobsPreloaded(Date date, final Integer runningNumber) {
         Objects.requireNonNull(date);
@@ -191,7 +191,7 @@ public class JobsManagerService {
                     } catch (JobInstanceAlreadyCompleteException e) {
                         logger.error("completed", e);
                         info.put(key, e.getMessage());
-                    } catch (JobParametersInvalidException e) {
+                    } catch (InvalidJobParametersException e) {
                         logger.info("parameters", e);
                         info.put(key, e.getMessage());
                     }
@@ -200,6 +200,18 @@ public class JobsManagerService {
         return info;
     }
 
+    /**
+     * Launches a manually registered job asynchronously using parameters from the request.
+     *
+     * Builds job parameters from the request (expects a "date" and "execution_attempt_number" entry, and optionally "description"),
+     * attempts to run the job via the asynchronous JobLauncher, and returns a small metadata map describing the outcome.
+     *
+     * @param request container holding the target job bean name and a map of string parameters; must include "date" and "execution_attempt_number"
+     * @return a map containing outcome details:
+     *         - "jobName": the requested job bean name when found,
+     *         - "result": a JSON-serialized representation of the started job when launch succeeds,
+     *         - "error": an error message when the job cannot be started or the job is not found
+     */
     public Map<String, String> asyncRunJobWithParams(SingleJobDataRequest request) {
         Map<String, String> launchedJobMetadata = new HashMap<>();
         Map<String, String> jobExecParams = new HashMap<>();
@@ -235,7 +247,7 @@ public class JobsManagerService {
             } catch (JobInstanceAlreadyCompleteException e) {
                 logger.error("completed", e);
                 launchedJobMetadata.put("error", e.getMessage());
-            } catch (JobParametersInvalidException e) {
+            } catch (InvalidJobParametersException e) {
                 logger.info("parameters", e);
                 launchedJobMetadata.put("error", e.getMessage());
             }
@@ -246,6 +258,23 @@ public class JobsManagerService {
         return launchedJobMetadata;
     }
 
+    /**
+     * Runs the specified manually defined job synchronously using parameters supplied in the request.
+     *
+     * The request must reference a job known to the manual registry. The method builds job parameters
+     * from request.params (see below), executes the job with the synchronous JobLauncher, and returns
+     * a map containing execution metadata or an error message.
+     *
+     * @param request a SingleJobDataRequest whose params map is expected to contain:
+     *                - "date": ISO-8601 date string used as the job's `DATE` parameter
+     *                - "execution_attempt_number": a string used as the job's `ATTEMPT_NUMBER` parameter
+     *                - "description": a non-identifying description added as `DESCRIPTION`
+     * @return a map of result keys:
+     *         - "jobName": the invoked job bean name (on success)
+     *         - "parameters": JSON string of the JobParameters used (on success)
+     *         - "result": job exit status as string (on success)
+     *         - "error": error message when execution fails or job is not found
+     */
     public Map<String, String> syncRunJobWithParams(SingleJobDataRequest request) {
         Map<String, String> launchedJobMetadata = new HashMap<>();
         Map<String, String> jobExecParams = new HashMap<>();
@@ -285,7 +314,7 @@ public class JobsManagerService {
             } catch (JobInstanceAlreadyCompleteException e) {
                 logger.error("completed", e);
                 launchedJobMetadata.put("error", e.getMessage());
-            } catch (JobParametersInvalidException e) {
+            } catch (InvalidJobParametersException e) {
                 logger.info("parameters", e);
                 launchedJobMetadata.put("error", e.getMessage());
             }
@@ -302,28 +331,21 @@ public class JobsManagerService {
                 .keySet()
                 .forEach(
                         name -> {
-                            try {
-                                Set<Long> runningExecutions =
-                                        jobOperator.getRunningExecutions(name);
-                                logger.info(
-                                        "Stopping job name -> {} :: running -> {} ",
-                                        name,
-                                        runningExecutions);
-                                runningExecutions.forEach(
-                                        exId -> {
-                                            try {
-                                                jobOperator.stop(exId);
-                                            } catch (NoSuchJobExecutionException e) {
-                                                logger.error("nosuch", e);
-                                            } catch (JobExecutionNotRunningException e) {
-                                                logger.error("no running", e);
-                                            }
-                                        });
-                                singaledStopped.put(name, runningExecutions.toString());
-                            } catch (NoSuchJobException e) {
-                                singaledStopped.put(name, "NOSUCHJOB");
-                                logger.error("no such job", e);
-                            }
+                            Set<JobExecution> runningExecutions =
+                                    jobRepository.findRunningJobExecutions(name);
+                            logger.info(
+                                    "Stopping job name -> {} :: running -> {} ",
+                                    name,
+                                    runningExecutions);
+                            runningExecutions.forEach(
+                                    exId -> {
+                                        try {
+                                            syncJobLauncher.stop(exId);
+                                        } catch (JobExecutionNotRunningException e) {
+                                            logger.error("no running", e);
+                                        }
+                                    });
+                            singaledStopped.put(name, runningExecutions.toString());
                         });
 
         return singaledStopped;
@@ -336,23 +358,15 @@ public class JobsManagerService {
                 .forEach(
                         key -> {
                             HashMap<String, String> tmp = new HashMap<>();
-                            try {
-                                Set<Long> runningExecutions = jobOperator.getRunningExecutions(key);
-                                runningExecutions.forEach(
-                                        r -> {
-                                            try {
-                                                tmp.put(
-                                                        String.valueOf(r),
-                                                        jobOperator.getSummary(r));
-                                            } catch (NoSuchJobExecutionException e) {
-                                                tmp.put(String.valueOf(r), "NOSUCHEXECUTION");
-                                            }
-                                        });
-                                running.put(key, tmp);
-                            } catch (NoSuchJobException e) {
-                                logger.error("no such job", e);
-                                running.put(key, Collections.singletonMap("error", "nosuch job"));
-                            }
+                            Set<JobExecution> runningExecutions =
+                                    jobRepository.findRunningJobExecutions(key);
+                            runningExecutions.forEach(
+                                    r -> {
+                                        tmp.put(
+                                                String.valueOf(r.getId()),
+                                                r.getJobParameters().toString());
+                                    });
+                            running.put(key, tmp);
                         });
         return running;
     }
