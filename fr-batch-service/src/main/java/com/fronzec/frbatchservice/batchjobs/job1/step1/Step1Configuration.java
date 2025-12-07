@@ -30,7 +30,8 @@ public class Step1Configuration {
             PlatformTransactionManager transactionManager,
             JobRepository jobRepository) {
         return new StepBuilder("job1Step1", jobRepository)
-                .<Person, Person>chunk(chunkSize, transactionManager)
+                .<Person, Person>chunk(chunkSize)
+                .transactionManager(transactionManager)
                 .reader(readerPersons)
                 .processor(processor)
                 .writer(writer)
