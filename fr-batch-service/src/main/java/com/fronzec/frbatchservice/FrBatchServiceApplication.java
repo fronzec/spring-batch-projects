@@ -2,12 +2,14 @@
 package com.fronzec.frbatchservice;
 
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.EnableJdbcJobRepository;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 
 @SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
 @EnableBatchProcessing
+@EnableJdbcJobRepository
 public class FrBatchServiceApplication {
 
     public static void main(String[] args) {
