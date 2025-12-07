@@ -34,8 +34,7 @@ public class Step2Configuration {
             PlatformTransactionManager transactionManager,
             JobRepository jobRepository) {
         return new StepBuilder("job1Step2", jobRepository)
-                .<PersonsEntity, ProcessIndicatorItemWrapper<PersonsV2Entity>>chunk(
-                        chunkSize)
+                .<PersonsEntity, ProcessIndicatorItemWrapper<PersonsV2Entity>>chunk(chunkSize)
                 .transactionManager(transactionManager)
                 .reader(reader)
                 .processor(processor)

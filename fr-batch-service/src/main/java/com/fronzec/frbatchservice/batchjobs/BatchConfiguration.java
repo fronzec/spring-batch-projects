@@ -2,8 +2,6 @@
 package com.fronzec.frbatchservice.batchjobs;
 
 import org.springframework.batch.core.configuration.JobRegistry;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
-import org.springframework.batch.core.configuration.annotation.EnableJdbcJobRepository;
 import org.springframework.batch.core.configuration.support.MapJobRegistry;
 import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.batch.core.launch.support.TaskExecutorJobOperator;
