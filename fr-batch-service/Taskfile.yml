@@ -35,3 +35,6 @@ tasks:
       # this is a basic config for prettier for java, see pom.xml for prettier-maven-plugin
       # https://github.com/jhipster/prettier-java
       - prettier --write "**/*.java"
+  runapp:
+    cmds:
+      - infisical run --env=dev -- ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=dev"
