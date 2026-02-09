@@ -37,7 +37,7 @@ This project uses Maven for dependency management and build automation.
 
 ### Linting and Formatting
 
-The project uses `spotless-maven-plugin` for code formatting, although it is currently temporarily disabled. When enabled, it enforces `googleJavaFormat` with AOSP style.
+The project uses `spotless-maven-plugin` (version 2.43.0) for code formatting. It is currently temporarily disabled in `pom.xml`. When enabled, it enforces `googleJavaFormat` (version 1.22.0) with AOSP style. Older `prettier-maven-plugin` and `fmt-maven-plugin` configurations are present but commented out in the `pom.xml` to keep them as reference.
 
 *   **Check Formatting (if enabled):** Verifies code formatting without applying changes.
     ```bash
@@ -50,6 +50,15 @@ The project uses `spotless-maven-plugin` for code formatting, although it is cur
 
 **Note:** If `spotless-maven-plugin` is re-enabled, ensure to run `mvn spotless:apply` to format your code before committing.
 
+### Other Formatting Tools (Taskfile.yml)
+
+The project also uses `Taskfile.yml` for other task automation, including a `prettier` task for Java code.
+
+*   **Apply Prettier Formatting:** Formats Java files using Prettier.
+    ```bash
+    task prettier
+    ```
+
 ## 2. Code Style Guidelines
 
 The `fr-batch-service` project follows a consistent code style primarily enforced by `googleJavaFormat` (AOSP style) via Spotless.
@@ -58,12 +67,12 @@ The `fr-batch-service` project follows a consistent code style primarily enforce
 
 *   **Language Version:** Java 21.
 *   **Line Length:** Aim for a maximum line length of 140 characters, although Google Java Format (AOSP) will handle most of this automatically.
-*   **Indentation:** 2 spaces (configured by Google Java Format and indicated by commented Prettier plugin). Do not use tabs for Java code.
+*   **Indentation:** 2 spaces (configured by `googleJavaFormat` in Spotless and also indicated by commented `prettier-maven-plugin`). Do not use tabs for Java code.
 *   **Braces:** Use K&R style for braces (opening brace on the same line as the declaration, closing brace on its own line). This is the default for Google Java Format.
 
 ### Imports
 
-*   **Ordering:** Imports are organized as `java|javax,org,com,com.diffplug,,\#com.diffplug,\#`. Static imports are grouped separately after regular imports.
+*   **Ordering:** Imports are organized as `java|javax,org,com,com.diffplug,,\#com.diffplug,\#`. Static imports are grouped separately after regular imports. `wildcardsLast` is `false`.
 *   **Wildcards:** Wildcard imports (`import com.example.*`) are generally discouraged; prefer explicit imports. If used, they will appear *after* specific imports as `wildcardsLast` is `false`.
 *   **Unused Imports:** Unused imports should be removed. Spotless has `removeUnusedImports` configured.
 
