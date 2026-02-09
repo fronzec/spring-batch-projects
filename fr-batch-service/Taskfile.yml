@@ -13,10 +13,10 @@ tasks:
     preconditions:
       - sh: "! test -f .env"
         msg: "==========> .env file already exists, their values will be used"
-  runmocksservices:
+  runmocks:
     cmds:
       - PYTHONPATH=./_devenvironment/mocks/ mockintosh ./_devenvironment/mocks/mocks.yaml
-  runmocksservicesquiet:
+  runmocksquiet:
     cmds:
       - PYTHONPATH=./_devenvironment/mocks/ mockintosh --quiet ./_devenvironment/mocks/mocks.yaml
   dbbootstraping:
@@ -35,3 +35,6 @@ tasks:
       # this is a basic config for prettier for java, see pom.xml for prettier-maven-plugin
       # https://github.com/jhipster/prettier-java
       - prettier --write "**/*.java"
+  runapp:
+    cmds:
+      - infisical run --env=dev -- ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=dev"

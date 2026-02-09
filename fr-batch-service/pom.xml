@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.0</version><!-- https://spring.io/projects/spring-boot#support -->
+        <version>4.0.0</version><!-- https://spring.io/projects/spring-boot#support -->
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.fronzec</groupId>
@@ -18,6 +18,8 @@
         <!-- By default just re-write code with prettier -->
         <plugin.prettier.goal>write</plugin.prettier.goal>
         <spotless.version>2.43.0</spotless.version>
+
+
     </properties>
     <dependencies>
         <dependency>
@@ -107,32 +109,8 @@
             <artifactId>spring-batch-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
 
-        <!-- https://spockframework.org -->
-        <dependency>
-            <groupId>org.spockframework</groupId>
-            <artifactId>spock-core</artifactId>
-            <version>2.4-M4-groovy-4.0</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.spockframework</groupId>
-            <artifactId>spock-spring</artifactId>
-            <version>2.4-M4-groovy-4.0</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>mysql</artifactId>
-            <scope>test</scope>
-        </dependency>
+        <!-- Removed Groovy/Spock test dependencies as part of Spring Boot 4 + Java 21 migration -->
         <dependency>
             <groupId>org.eclipse.collections</groupId>
             <artifactId>eclipse-collections-api</artifactId>
@@ -151,6 +129,7 @@
             <version>11.1.0</version>
         </dependency>
     </dependencies>
+
 
     <build>
         <plugins>
