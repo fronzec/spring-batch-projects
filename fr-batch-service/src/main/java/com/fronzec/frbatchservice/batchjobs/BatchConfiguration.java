@@ -1,8 +1,10 @@
-/* 2024 */
+/* 2024-2025 */
 package com.fronzec.frbatchservice.batchjobs;
 
-import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
+import org.springframework.batch.core.configuration.JobRegistry;
+import org.springframework.batch.core.configuration.support.MapJobRegistry;
+import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.batch.core.launch.support.TaskExecutorJobOperator;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,8 +12,6 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 
 @Configuration
 public class BatchConfiguration {
-
-    public BatchConfiguration() {}
 
     /**
      * If we need allow launch a job from an HTTP request we need to launch async, To launch a Job we
@@ -21,9 +21,11 @@ public class BatchConfiguration {
      * @throws Exception
      */
     @Bean
-    public JobLauncher asyncJobLauncher(JobRepository jobRepository) throws Exception {
-        var jobLauncher = new TaskExecutorJobLauncher();
+    public JobOperator asyncJobLauncher(JobRepository jobRepository, JobRegistry jobRegistry)
+            throws Exception {
+        var jobLauncher = new TaskExecutorJobOperator();
         jobLauncher.setJobRepository(jobRepository);
+        jobLauncher.setJobRegistry(jobRegistry);
         jobLauncher.setTaskExecutor(
                 new SimpleAsyncTaskExecutor("asyncJobExecutor")); // Job exexutor
         jobLauncher.afterPropertiesSet();
@@ -37,10 +39,17 @@ public class BatchConfiguration {
      * @throws Exception
      */
     @Bean
-    public JobLauncher syncJobLauncher(JobRepository jobRepository) throws Exception {
-        var jobLauncher = new TaskExecutorJobLauncher();
+    public JobOperator syncJobLauncher(JobRepository jobRepository, JobRegistry jobRegistry)
+            throws Exception {
+        var jobLauncher = new TaskExecutorJobOperator();
         jobLauncher.setJobRepository(jobRepository);
+        jobLauncher.setJobRegistry(jobRegistry);
         jobLauncher.afterPropertiesSet();
         return jobLauncher;
+    }
+
+    @Bean
+    public JobRegistry jobRegistry() {
+        return new MapJobRegistry();
     }
 }
