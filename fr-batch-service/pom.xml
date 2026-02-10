@@ -108,11 +108,7 @@
         </dependency>
 
         <!-- Removed Groovy/Spock test dependencies as part of Spring Boot 4 + Java 21 migration -->
-        <dependency>
-            <groupId>org.eclipse.collections</groupId>
-            <artifactId>eclipse-collections-api</artifactId>
-            <version>11.1.0</version>
-        </dependency>
+
         <!-- https://mvnrepository.com/artifact/io.micrometer/micrometer-registry-prometheus -->
         <dependency>
             <groupId>io.micrometer</groupId>
@@ -120,11 +116,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.eclipse.collections</groupId>
-            <artifactId>eclipse-collections</artifactId>
-            <version>11.1.0</version>
-        </dependency>
+
     </dependencies>
 
 
