@@ -15,8 +15,9 @@ import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+@ExtendWith(MockitoExtension.class)
 public class ApiClientJavaVersionTest {
 
     @Mock private RestTemplate restTemplate;
@@ -32,7 +34,6 @@ public class ApiClientJavaVersionTest {
 
     @BeforeEach
     public void setUp() {
-        MockitoAnnotations.openMocks(this);
         String batchServiceHost = "http://batchservice.com";
         String batchServiceDispatchPath = "/dispatch";
         String getRandomValuePath = "/calculate";
