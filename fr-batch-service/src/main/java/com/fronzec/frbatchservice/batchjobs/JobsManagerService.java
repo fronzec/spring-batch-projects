@@ -62,24 +62,24 @@ public class JobsManagerService {
 
     @PostConstruct
     public void init() {
-        // NOTE: 16/05/21 Jobs configurations associated manually
-        // TODO: 19/02/2022 refactor default params to add boolean that allow indicate if param is
-        // used
-        // as identifying a job instance
-        Map<String, String> params = new HashMap<>();
-        params.put("paramname", "paramvalue");
+        // Register only jobs that actually exist as Spring beans
+        // TODO: Consider moving job definitions to DB for dynamic configuration
+        Map<String, String> defaultParams = new HashMap<>();
+        defaultParams.put("paramname", "paramvalue");
 
-        manualDefinedJobs.put("job1", params);
-        manualDefinedJobs.put("job2", params);
-        manualDefinedJobs.put("job3", params);
-        // TODO: 16/05/21 trying to run non existing job
-        manualDefinedJobs.put("nonExistingJob", params);
+        manualDefinedJobs.put("job1", defaultParams);
 
-        // NOTE: 16/05/21 Jobs loaded in our service using spring, see injection on constructor
+        // Log jobs discovered by Spring via auto-detection
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("jobs found by spring -> < count= %s >", jobsList.size()));
+        sb.append(String.format("Jobs found by Spring -> < count= %s >", jobsList.size()));
         jobsList.forEach(job -> sb.append(String.format(" | [job -> %s]", job)));
-        logger.info("-> {}", sb);
+        logger.info("{}", sb);
+
+        // Log manually registered jobs
+        logger.info(
+                "Manually registered jobs -> < count= {} > | {}",
+                manualDefinedJobs.size(),
+                manualDefinedJobs.keySet());
     }
 
     public HashMap<String, String> launchAllNonAutoDetectedJobsAsync(
