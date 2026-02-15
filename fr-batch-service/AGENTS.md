@@ -1,6 +1,27 @@
 # Agent Guidelines for fr-batch-service
 
-This document outlines the essential commands and coding standards for AI agents operating within the `fr-batch-service` repository. Adhering to these guidelines ensures consistency, maintainability, and proper integration with the existing codebase.
+This document outlines the essential commands and coding standards for AI agents operating within the `fr-batch-service` repository.
+
+## Project Context
+
+**This is a learning and experimentation project** for Spring Batch and Spring Framework features. The codebase intentionally contains multiple approaches to solve similar problems, serving as a reference implementation.
+
+### What This Means for Agents
+
+- **Mixed patterns are acceptable**: You may find different ways to do the same thing (e.g., JDBC vs JPA, different pagination strategies). This is intentional.
+- **Preserve diversity**: When fixing bugs or making improvements, maintain the variety of implementation approaches unless explicitly asked to standardize.
+- **Document alternatives**: When adding new features, consider documenting alternative approaches in comments or separate implementations.
+- **Learning-friendly code**: Prioritize clarity and educational value. Well-commented code showing different techniques is valued.
+
+### Examples of Intentional Diversity
+
+| Area | Approaches Used |
+|------|-----------------|
+| Data Access | JDBC templates, JPA repositories, custom readers |
+| Pagination | Offset-based, keyset pagination |
+| Configuration | Java config, annotations, properties |
+| Job Execution | Sync and async launchers |
+| Testing | Unit tests with Mockito, integration patterns |
 
 ## 1. Build, Lint, and Test Commands
 
