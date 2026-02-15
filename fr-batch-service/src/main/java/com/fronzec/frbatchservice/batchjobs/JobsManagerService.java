@@ -6,7 +6,6 @@ import com.fronzec.frbatchservice.web.SingleJobDataRequest;
 import io.vavr.control.Try;
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -162,7 +161,8 @@ public class JobsManagerService {
      * @param runningNumber an integer placed into the `RUNNING_NUMBER` job parameter
      * @return a map from job name to either the job's identifying string on successful launch or an error message when launch failed
      */
-    public HashMap<String, String> launchAllJobsPreloaded(Date date, final Integer runningNumber) {
+    public HashMap<String, String> launchAllJobsPreloaded(
+            LocalDate date, final Integer runningNumber) {
         Objects.requireNonNull(date);
         var info = new HashMap<String, String>(jobsList.size());
         jobsList.forEach(
@@ -172,10 +172,7 @@ public class JobsManagerService {
                     var jobParametersBuilder = new JobParametersBuilder();
                     // Adding the date to our param we set and allow run a single job only for one
                     // day
-                    var day = date.getDay();
-                    var month = date.getMonth();
-                    var year = date.getYear();
-                    params.put("DATE", String.format("%s-%s-%s", day, month, year));
+                    params.put("DATE", date.toString());
                     params.put("RUNNING_NUMBER", runningNumber.toString());
                     params.forEach(jobParametersBuilder::addString);
                     try {

@@ -8,8 +8,8 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,12 +47,11 @@ public class JobsManagerServiceTest {
 
     @Test
     void testLaunchAllJobsPreloaded() throws Exception {
-        Date date = new Date();
+        LocalDate date = LocalDate.now();
         Integer runningNumber = 1;
 
         JobParametersBuilder jobParametersBuilder = new JobParametersBuilder();
-        jobParametersBuilder.addString(
-                "DATE", String.format("%s-%s-%s", date.getDay(), date.getMonth(), date.getYear()));
+        jobParametersBuilder.addString("DATE", date.toString());
         jobParametersBuilder.addString("RUNNING_NUMBER", runningNumber.toString());
 
         when(job.getName()).thenReturn("TestJob");
@@ -76,7 +75,7 @@ public class JobsManagerServiceTest {
 
     @Test
     void testLaunchAllJobsPreloadedWithException() throws Exception {
-        Date date = new Date();
+        LocalDate date = LocalDate.now();
         Integer runningNumber = 1;
 
         when(job.getName()).thenReturn("TestJob");
