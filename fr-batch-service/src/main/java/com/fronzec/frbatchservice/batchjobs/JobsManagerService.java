@@ -121,16 +121,18 @@ public class JobsManagerService {
                     }
 
                     var jobParametersBuilder = new JobParametersBuilder();
+                    // Create a copy to avoid mutating the original default params stored in
+                    // manualDefinedJobs
+                    var jobParams = new HashMap<>(defaultJobParams);
                     // note: Params used as part of identifying a job instance
-                    defaultJobParams.put("DATE", execDate.toString());
-                    defaultJobParams.put("ATTEMPT_NUMBER", String.valueOf(runningNumber));
-                    defaultJobParams.forEach(jobParametersBuilder::addString);
+                    jobParams.put("DATE", execDate.toString());
+                    jobParams.put("ATTEMPT_NUMBER", String.valueOf(runningNumber));
+                    jobParams.forEach(jobParametersBuilder::addString);
                     // note: Params not used to identify a job instance
                     jobParametersBuilder.addString("DESCRIPTION", "some useful description", false);
                     try {
                         Job jobToRun = theJob.get();
-                        logger.info(
-                                "Running job: {} with params -> {}", jobToRun, defaultJobParams);
+                        logger.info("Running job: {} with params -> {}", jobToRun, jobParams);
                         if (useSyncExecutor) {
                             syncJobLauncher.run(jobToRun, jobParametersBuilder.toJobParameters());
                         } else {
