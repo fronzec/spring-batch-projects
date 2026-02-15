@@ -1,0 +1,128 @@
+{
+  // OpenCode configuration for fr-batch-service
+  // Spring Batch service with Java 21 and Spring Boot 4.0
+
+  "$schema": "https://opencode.ai/config.schema.json",
+
+  // Project metadata
+  "name": "fr-batch-service",
+  "description": "Spring Batch service for batch processing operations",
+
+  // Language and framework context
+  "context": {
+    "language": "java",
+    "version": "21",
+    "framework": "spring-boot",
+    "frameworkVersion": "4.0.0",
+    "buildTool": "maven"
+  },
+
+  // Important files for AI context
+  "include": [
+    "src/main/java/**/*.java",
+    "src/test/java/**/*.java",
+    "src/main/resources/**/*.yml",
+    "src/main/resources/**/*.yaml",
+    "src/main/resources/**/*.properties",
+    "src/main/resources/**/*.xml",
+    "pom.xml",
+    "AGENTS.md",
+    "README.md"
+  ],
+
+  // Files to exclude from AI context
+  "exclude": [
+    "target/**",
+    ".idea/**",
+    ".settings/**",
+    "*.iml",
+    ".classpath",
+    ".project",
+    ".mvn/wrapper/**",
+    "*.log"
+  ],
+
+  // Commands available for the project
+  "commands": {
+    "build": {
+      "command": "mvn clean install",
+      "description": "Clean, compile, test, and install the project"
+    },
+    "package": {
+      "command": "mvn package",
+      "description": "Compile, test, and package the application"
+    },
+    "test": {
+      "command": "mvn test",
+      "description": "Run all unit and integration tests"
+    },
+    "testSingle": {
+      "command": "mvn test -Dtest=${CLASS_NAME}",
+      "description": "Run a single test class (e.g., com.fronzec.batch.MyTestClass)"
+    },
+    "format": {
+      "command": "mvn spotless:apply",
+      "description": "Apply code formatting using Spotless (Google Java Format AOSP)"
+    },
+    "formatCheck": {
+      "command": "mvn spotless:check",
+      "description": "Check code formatting without applying changes"
+    },
+    "prettier": {
+      "command": "task prettier",
+      "description": "Format Java files using Prettier via Taskfile"
+    }
+  },
+
+  // Code style guidelines
+  "codeStyle": {
+    "indentation": {
+      "style": "spaces",
+      "size": 2
+    },
+    "lineLength": 140,
+    "formatter": "google-java-format",
+    "formatterStyle": "AOSP",
+    "braceStyle": "k&r",
+    "importOrder": "java|javax,org,com,com.diffplug,,#com.diffplug,#"
+  },
+
+  // Naming conventions
+  "namingConventions": {
+    "classes": "PascalCase",
+    "interfaces": "PascalCase",
+    "methods": "camelCase",
+    "variables": "camelCase",
+    "constants": "SCREAMING_SNAKE_CASE",
+    "packages": "lowercase"
+  },
+
+  // Best practices and guidelines
+  "guidelines": [
+    "Use Spring dependency injection; avoid manual bean instantiation",
+    "Favor immutability for DTOs and configuration classes",
+    "Use Optional to indicate potentially absent values",
+    "Prefer Java Stream API for collection processing",
+    "Avoid magic numbers/strings; use constants or enums",
+    "Provide Javadoc for public classes, interfaces, and methods",
+    "Use checked exceptions for recoverable errors",
+    "Use unchecked exceptions for programming errors",
+    "Log errors using SLF4J; avoid System.err",
+    "Follow Single Responsibility Principle"
+  ],
+
+  // Testing configuration
+  "testing": {
+    "framework": "junit5",
+    "additionalFrameworks": ["spring-batch-test"],
+    "testDirectory": "src/test/java",
+    "runCommand": "mvn test"
+  },
+
+  // Database configuration hints
+  "database": {
+    "type": "mysql",
+    "testDatabase": "h2",
+    "migrations": "migrations/"
+  }
+}
