@@ -6,7 +6,6 @@ import com.fronzec.frbatchservice.web.SingleJobDataRequest;
 import io.vavr.control.Try;
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,24 +62,24 @@ public class JobsManagerService {
 
     @PostConstruct
     public void init() {
-        // NOTE: 16/05/21 Jobs configurations associated manually
-        // TODO: 19/02/2022 refactor default params to add boolean that allow indicate if param is
-        // used
-        // as identifying a job instance
-        Map<String, String> params = new HashMap<>();
-        params.put("paramname", "paramvalue");
+        // Register only jobs that actually exist as Spring beans
+        // TODO: Consider moving job definitions to DB for dynamic configuration
+        Map<String, String> defaultParams = new HashMap<>();
+        defaultParams.put("paramname", "paramvalue");
 
-        manualDefinedJobs.put("job1", params);
-        manualDefinedJobs.put("job2", params);
-        manualDefinedJobs.put("job3", params);
-        // TODO: 16/05/21 trying to run non existing job
-        manualDefinedJobs.put("nonExistingJob", params);
+        manualDefinedJobs.put("job1", defaultParams);
 
-        // NOTE: 16/05/21 Jobs loaded in our service using spring, see injection on constructor
+        // Log jobs discovered by Spring via auto-detection
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("jobs found by spring -> < count= %s >", jobsList.size()));
+        sb.append(String.format("Jobs found by Spring -> < count= %s >", jobsList.size()));
         jobsList.forEach(job -> sb.append(String.format(" | [job -> %s]", job)));
-        logger.info("-> {}", sb);
+        logger.info("{}", sb);
+
+        // Log manually registered jobs
+        logger.info(
+                "Manually registered jobs -> < count= {} > | {}",
+                manualDefinedJobs.size(),
+                manualDefinedJobs.keySet());
     }
 
     public HashMap<String, String> launchAllNonAutoDetectedJobsAsync(
@@ -122,16 +121,18 @@ public class JobsManagerService {
                     }
 
                     var jobParametersBuilder = new JobParametersBuilder();
+                    // Create a copy to avoid mutating the original default params stored in
+                    // manualDefinedJobs
+                    var jobParams = new HashMap<>(defaultJobParams);
                     // note: Params used as part of identifying a job instance
-                    defaultJobParams.put("DATE", execDate.toString());
-                    defaultJobParams.put("ATTEMPT_NUMBER", String.valueOf(runningNumber));
-                    defaultJobParams.forEach(jobParametersBuilder::addString);
+                    jobParams.put("DATE", execDate.toString());
+                    jobParams.put("ATTEMPT_NUMBER", String.valueOf(runningNumber));
+                    jobParams.forEach(jobParametersBuilder::addString);
                     // note: Params not used to identify a job instance
                     jobParametersBuilder.addString("DESCRIPTION", "some useful description", false);
                     try {
                         Job jobToRun = theJob.get();
-                        logger.info(
-                                "Running job: {} with params -> {}", jobToRun, defaultJobParams);
+                        logger.info("Running job: {} with params -> {}", jobToRun, jobParams);
                         if (useSyncExecutor) {
                             syncJobLauncher.run(jobToRun, jobParametersBuilder.toJobParameters());
                         } else {
@@ -162,7 +163,8 @@ public class JobsManagerService {
      * @param runningNumber an integer placed into the `RUNNING_NUMBER` job parameter
      * @return a map from job name to either the job's identifying string on successful launch or an error message when launch failed
      */
-    public HashMap<String, String> launchAllJobsPreloaded(Date date, final Integer runningNumber) {
+    public HashMap<String, String> launchAllJobsPreloaded(
+            LocalDate date, final Integer runningNumber) {
         Objects.requireNonNull(date);
         var info = new HashMap<String, String>(jobsList.size());
         jobsList.forEach(
@@ -172,10 +174,7 @@ public class JobsManagerService {
                     var jobParametersBuilder = new JobParametersBuilder();
                     // Adding the date to our param we set and allow run a single job only for one
                     // day
-                    var day = date.getDay();
-                    var month = date.getMonth();
-                    var year = date.getYear();
-                    params.put("DATE", String.format("%s-%s-%s", day, month, year));
+                    params.put("DATE", date.toString());
                     params.put("RUNNING_NUMBER", runningNumber.toString());
                     params.forEach(jobParametersBuilder::addString);
                     try {

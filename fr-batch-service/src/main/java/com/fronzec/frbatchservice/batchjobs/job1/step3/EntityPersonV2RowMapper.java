@@ -1,3 +1,4 @@
+/* 2024-2025 */
 package com.fronzec.frbatchservice.batchjobs.job1.step3;
 
 import com.fronzec.frbatchservice.personv2.PersonsV2Entity;
@@ -18,7 +19,7 @@ public class EntityPersonV2RowMapper implements RowMapper<PersonsV2Entity> {
     personsV2.setSalary(rs.getBigDecimal("salary"));
     personsV2.setUuidV4(rs.getString("uuid_v4"));
     personsV2.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-    personsV2.setCreatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+    personsV2.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
     return personsV2;
   }
 }

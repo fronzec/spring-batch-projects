@@ -11,8 +11,9 @@ import com.fronzec.frbatchservice.restclients.BatchItemsPayload;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.infrastructure.item.Chunk;
 import org.springframework.batch.infrastructure.item.ItemWriter;
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Component;
 @StepScope
 public class Step3Writer implements ItemWriter<ProcessIndicatorItemWrapper<PayloadItemInfo>> {
 
-    Logger logger = Logger.getLogger(Step3Writer.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(Step3Writer.class);
 
     private final ApiClient apiClient;
     private final DispatchedGroupEntityRepository dispatchedGroupEntityRepository;
@@ -48,7 +49,7 @@ public class Step3Writer implements ItemWriter<ProcessIndicatorItemWrapper<Paylo
         dispatchedGroup.setUuidV4(UUID.randomUUID().toString());
         dispatchedGroupEntityRepository.save(dispatchedGroup);
         if (apiClient.sendBatch(new BatchItemsPayload(payloadItemInfos))) {
-            logger.info("items size sent -> " + items.size());
+            logger.info("items size sent -> {}", items.size());
             dispatchedGroup.setDispatchStatus(DispatchStatus.SENT);
             dispatchedGroup.setRecordsIncluded(items.size());
             List<Long> ids = new ArrayList<>(items.size());
@@ -56,7 +57,7 @@ public class Step3Writer implements ItemWriter<ProcessIndicatorItemWrapper<Paylo
             personV2Repository.updateDispatchedGroupId(dispatchedGroup.getId(), ids);
         } else {
             // TODO: 13/09/2022 finalize the job manually
-            logger.info("cannot send items -> " + items.size());
+            logger.warn("cannot send items -> {}", items.size());
             dispatchedGroup.setDispatchStatus(DispatchStatus.ERROR);
         }
     }
