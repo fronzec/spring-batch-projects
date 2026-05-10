@@ -56,16 +56,14 @@
 
   <!-- Publishing is intentionally not enabled for Phase 1.
        Add distributionManagement and credentials when ready to deploy. -->
-  <!--
   <distributionManagement>
     <repository>
-      <id>company-releases</id>
-      <url>https://maven.example.com/releases</url>
+      <id>github</id>
+      <url>https://maven.pkg.github.com/fronzec/spring-batch-projects</url>
     </repository>
     <snapshotRepository>
-      <id>company-snapshots</id>
-      <url>https://maven.example.com/snapshots</url>
+      <id>github</id>
+      <url>https://maven.pkg.github.com/fronzec/spring-batch-projects</url>
     </snapshotRepository>
   </distributionManagement>
-  -->
 </project>
