@@ -16,30 +16,52 @@ If you want `fr-batch-service` to resolve this dependency from your local Maven 
 mvn -f batch-job-api/pom.xml clean install
 ```
 
-## Publishing (prepared, not enabled by default)
+## Publishing
 
-To publish this artifact to a remote Maven repository (e.g. GitHub Packages, Nexus, Artifactory), you will need:
+This artifact is published to **GitHub Packages** at `https://maven.pkg.github.com/fronzec/spring-batch-projects`.
 
-- A `<distributionManagement>` section in `pom.xml`
-- Matching credentials in your `~/.m2/settings.xml`
+### 1. GitHub Personal Access Token
 
-Example snippet (enable later as needed):
+Create a token with `write:packages` scope at:
+**GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)**
+
+### 2. Configure credentials
+
+Add the following to `~/.m2/settings.xml`:
 
 ```xml
-<distributionManagement>
-  <repository>
-    <id>company-releases</id>
-    <url>https://maven.example.com/releases</url>
-  </repository>
-  <snapshotRepository>
-    <id>company-snapshots</id>
-    <url>https://maven.example.com/snapshots</url>
-  </snapshotRepository>
-</distributionManagement>
+<settings>
+  <servers>
+    <server>
+      <id>github</id>
+      <username>your-github-username</username>
+      <password>ghp_xxxxxxxxxxxxxxxxxxxx</password>
+    </server>
+  </servers>
+</settings>
 ```
 
-Then you can publish with:
+### 3. Publish
 
 ```bash
 mvn -f batch-job-api/pom.xml deploy
+```
+
+Releases are immutable on GitHub Packages. Use `-SNAPSHOT` versions during development — they can be overwritten.
+
+### Consuming
+
+```xml
+<repositories>
+  <repository>
+    <id>github</id>
+    <url>https://maven.pkg.github.com/fronzec/spring-batch-projects</url>
+  </repository>
+</repositories>
+
+<dependency>
+  <groupId>com.fronzec</groupId>
+  <artifactId>batch-job-api</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+</dependency>
 ```
