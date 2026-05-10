@@ -124,6 +124,12 @@
 
     </dependencies>
 
+    <repositories>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/fronzec/spring-batch-projects</url>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>
