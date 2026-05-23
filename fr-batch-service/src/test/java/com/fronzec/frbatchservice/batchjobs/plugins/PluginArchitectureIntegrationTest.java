@@ -5,24 +5,31 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fronzec.api.BatchJobPlugin;
 import com.fronzec.frbatchservice.batchjobs.JobsManagerService;
+import com.fronzec.frbatchservice.restclients.ApiClient;
+import com.fronzec.frbatchservice.restclients.DataCalculatedResponse;
 import com.fronzec.frbatchservice.web.SingleJobDataRequest;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.job.Job;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -44,6 +51,9 @@ class PluginArchitectureIntegrationTest {
     @Autowired private List<BatchJobPlugin> plugins;
     @Autowired private JobRegistry jobRegistry;
     @Autowired private JobsManagerService jobsManagerService;
+
+    @MockitoBean
+    private ApiClient apiClient;
 
     private MockMvc mockMvc;
 
@@ -101,28 +111,27 @@ class PluginArchitectureIntegrationTest {
     }
 
     /**
-     * SC-03, SC-09: syncRunJobWithParams resolves job1 via registry and launches it.
+     * SC-03, SC-09: syncRunJobWithParams resolves job1 via registry, launches it,
+     * and all three steps complete successfully with ExitStatus.COMPLETED.
      *
-     * <p>The job may FAIL internally (missing CSV fixture), but the important thing is that
-     * the response map does NOT contain "error" from a not-found/launch error — meaning
-     * the registry wiring succeeded.
+     * <p>The ApiClient is mocked so step3's HTTP sendBatch does not leave the JVM.
+     * The assertion on "result" key proves the job ran to completion end-to-end.
      */
     @Test
-    void syncRunJobWithParams_job1_launchesWithoutRegistryError() {
+    void syncRunJobWithParams_job1_completesWithExitStatusCompleted() {
         SingleJobDataRequest request = new SingleJobDataRequest();
         request.setJobBeanName("job1");
         request.setParam("date", LocalDate.now().toString());
         request.setParam("execution_attempt_number", "1");
         request.setParam("description", "integration-test");
 
+        DataCalculatedResponse salaryResponse = new DataCalculatedResponse();
+        salaryResponse.setValue(BigDecimal.valueOf(50000));
+        when(apiClient.getRandomValue(any())).thenReturn(salaryResponse);
+        when(apiClient.sendBatch(any())).thenReturn(true);
+
         Map<String, String> result = jobsManagerService.syncRunJobWithParams(request);
 
-        // "error" key would be set only if the job name is not found in the registry
-        // or if the launch itself threw. Step-level failure returns "result" with FAILED status.
-        assertFalse(
-                result.containsKey("error"),
-                "Expected no 'error' key — job1 must be resolvable via plugin registry. Got: " + result);
-        assertTrue(result.containsKey("jobName"), "Result must contain 'jobName' key");
-        assertEquals("job1", result.get("jobName"));
+        assertEquals(ExitStatus.COMPLETED.toString(), result.get("result"));
     }
 }

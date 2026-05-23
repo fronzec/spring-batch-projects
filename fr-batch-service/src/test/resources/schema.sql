@@ -132,3 +132,37 @@ CREATE TABLE IF NOT EXISTS job_executions_audit (
         FOREIGN KEY (job_definition_id)
         REFERENCES job_definitions(id)
 );
+
+CREATE TABLE IF NOT EXISTS persons (
+    id         BIGINT PRIMARY KEY AUTO_INCREMENT,
+    first_name VARCHAR(50)  NOT NULL,
+    last_name  VARCHAR(50),
+    profession VARCHAR(30)  NOT NULL,
+    email      VARCHAR(50)  NOT NULL,
+    processed  BOOLEAN      NOT NULL DEFAULT false,
+    created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS persons_v2 (
+    id                     BIGINT PRIMARY KEY AUTO_INCREMENT,
+    snapshot_date          DATE          NOT NULL,
+    first_name             VARCHAR(50)   NOT NULL,
+    last_name              VARCHAR(50)   NOT NULL,
+    email                  VARCHAR(50)   NOT NULL,
+    profession             VARCHAR(15)   NOT NULL,
+    salary                 DECIMAL(19,2) NOT NULL,
+    uuid_v4                VARCHAR(36)   NOT NULL,
+    created_at             TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at             TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fk_dispatched_group_id BIGINT        NULL
+);
+
+CREATE TABLE IF NOT EXISTS dispatched_group (
+    id               BIGINT PRIMARY KEY AUTO_INCREMENT,
+    uuid_v4          VARCHAR(36) NOT NULL,
+    dispatch_status  VARCHAR(10) NOT NULL DEFAULT 'UNKNOWN',
+    records_included INT         NOT NULL DEFAULT 0,
+    created_at       TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
