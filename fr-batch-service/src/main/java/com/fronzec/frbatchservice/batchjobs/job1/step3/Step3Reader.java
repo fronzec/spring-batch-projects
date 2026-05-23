@@ -2,8 +2,6 @@
 package com.fronzec.frbatchservice.batchjobs.job1.step3;
 
 import com.fronzec.frbatchservice.personv2.PersonsV2Entity;
-import java.util.HashMap;
-import java.util.Map;
 import javax.sql.DataSource;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.infrastructure.item.database.JdbcPagingItemReader;
@@ -36,14 +34,10 @@ public class Step3Reader {
             PagingQueryProvider pagingQueryProvider,
             EntityPersonV2RowMapper entityPersonV2RowMapper)
             throws Exception {
-        Map<String, Object> parameterValues = new HashMap<>();
-        parameterValues.put("fk_dispatched_group_id", null);
-
         return new JdbcPagingItemReaderBuilder<PersonsV2Entity>()
                 .name("step3Reader")
                 .dataSource(dataSource)
                 .queryProvider(pagingQueryProvider)
-                .parameterValues(parameterValues)
                 .pageSize(chunkSize)
                 .rowMapper(entityPersonV2RowMapper)
                 .saveState(false)
@@ -75,8 +69,8 @@ public class Step3Reader {
                 "select id, first_name, last_name, email, profession, salary, uuid_v4, created_at,"
                         + " updated_at");
         provider.setFromClause("from persons_v2");
-        // operator 'is' because we are searching all pending rows
-        provider.setWhereClause("where fk_dispatched_group_id is :fk_dispatched_group_id");
+        // H2 2.4.x rejects parameterized IS ? — use literal IS NULL
+        provider.setWhereClause("where fk_dispatched_group_id IS NULL");
         provider.setSortKey("id");
         return provider;
     }
