@@ -77,12 +77,18 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jetty</artifactId>
         </dependency>
-        <!-- TODO agregar al momento de modelar en la base de datos los jobs
+        <!-- Flyway: database migration management -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
-        -->
+        <!-- Override transitive jackson-core (brought by flyway-core)
+             with 2.21.3 to fix Snyk: resource exhaustion CVE -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.21.3</version>
+        </dependency>
 
         <dependency>
             <groupId>com.h2database</groupId>
