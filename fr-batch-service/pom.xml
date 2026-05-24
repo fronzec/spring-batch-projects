@@ -77,12 +77,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jetty</artifactId>
         </dependency>
-        <!-- TODO agregar al momento de modelar en la base de datos los jobs
+        <!-- Flyway: database migration management -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
-        -->
 
         <dependency>
             <groupId>com.h2database</groupId>
