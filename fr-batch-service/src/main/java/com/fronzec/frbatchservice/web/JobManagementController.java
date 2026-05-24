@@ -1,18 +1,33 @@
 /* 2024-2025 */
 package com.fronzec.frbatchservice.web;
 
+import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
+import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
+import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobParameterTemplateRepository;
 import com.fronzec.frbatchservice.batchjobs.plugins.service.DuplicateJobDefinitionException;
 import com.fronzec.frbatchservice.batchjobs.plugins.service.InvalidJarException;
 import com.fronzec.frbatchservice.batchjobs.plugins.service.JarUploadService;
 import com.fronzec.frbatchservice.web.dto.ErrorResponse;
 import com.fronzec.frbatchservice.web.dto.JarUploadResponse;
+import com.fronzec.frbatchservice.web.dto.JobDefinitionResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,9 +38,19 @@ import org.springframework.web.multipart.MultipartFile;
  *
  * <p>Effective URL prefix (with context-path): {@code /api/batch-service/jobs}
  *
- * <p>Validation errors are caught inline (PR 2). When {@code GlobalExceptionHandler}
+ * <p>Validation errors are caught inline (PR 2–3). When {@code GlobalExceptionHandler}
  * is introduced in PR 5, the try/catch blocks will be removed in favor of
  * {@code @ExceptionHandler} methods.
+ *
+ * <p>Endpoints:
+ * <ul>
+ *   <li>{@code POST /upload} — upload a JAR and register a job definition</li>
+ *   <li>{@code GET  /definitions} — list all job definitions</li>
+ *   <li>{@code GET  /definitions/{id}} — get single definition</li>
+ *   <li>{@code PUT  /definitions/{id}/enable} — enable a definition</li>
+ *   <li>{@code PUT  /definitions/{id}/disable} — disable a definition</li>
+ *   <li>{@code DELETE /definitions/{id}} — remove DB row + JAR file from disk</li>
+ * </ul>
  */
 @RestController
 @RequestMapping("/jobs")
@@ -34,9 +59,19 @@ public class JobManagementController {
     private static final Logger log = LoggerFactory.getLogger(JobManagementController.class);
 
     private final JarUploadService jarUploadService;
+    private final JobDefinitionRepository jobDefinitionRepository;
+    private final JobParameterTemplateRepository jobParameterTemplateRepository;
+    private final String jarDir;
 
-    public JobManagementController(JarUploadService jarUploadService) {
+    public JobManagementController(
+            JarUploadService jarUploadService,
+            JobDefinitionRepository jobDefinitionRepository,
+            JobParameterTemplateRepository jobParameterTemplateRepository,
+            @Value("${fr-batch-service.plugins.jar-dir}") String jarDir) {
         this.jarUploadService = jarUploadService;
+        this.jobDefinitionRepository = jobDefinitionRepository;
+        this.jobParameterTemplateRepository = jobParameterTemplateRepository;
+        this.jarDir = jarDir;
     }
 
     /**
@@ -79,5 +114,128 @@ public class JobManagementController {
                             LocalDateTime.now(),
                             request.getRequestURI()));
         }
+    }
+
+    // ─── CRUD: list definitions ────────────────────────────────────────────────
+
+    /**
+     * Lists all job definitions stored in the database.
+     *
+     * <p>Returns a (possibly empty) list of {@link JobDefinitionResponse} DTOs.
+     */
+    @GetMapping("/definitions")
+    public ResponseEntity<List<JobDefinitionResponse>> listDefinitions() {
+        List<JobDefinitionResponse> definitions = jobDefinitionRepository.findAll().stream()
+                .map(JobDefinitionResponse::fromEntity)
+                .toList();
+        log.debug("Returning {} job definitions", definitions.size());
+        return ResponseEntity.ok(definitions);
+    }
+
+    /**
+     * Returns a single job definition by ID, or {@code 404 Not Found}.
+     */
+    @GetMapping("/definitions/{id}")
+    public ResponseEntity<?> getDefinition(@PathVariable long id) {
+        return jobDefinitionRepository
+                .findById(id)
+                .map(entity -> ResponseEntity.ok(JobDefinitionResponse.fromEntity(entity)))
+                .orElseGet(() -> {
+                    log.warn("Job definition not found: id={}", id);
+                    return ResponseEntity.notFound().build();
+                });
+    }
+
+    // ─── CRUD: enable / disable ────────────────────────────────────────────────
+
+    /**
+     * Enables a job definition by flipping {@code enabled = true}.
+     *
+     * <p>Returns the updated definition on success, or {@code 404 Not Found}
+     * if no definition exists with the given ID.
+     */
+    @PutMapping("/definitions/{id}/enable")
+    public ResponseEntity<?> enableDefinition(@PathVariable long id) {
+        Optional<JobDefinitionEntity> opt = jobDefinitionRepository.findById(id);
+        if (opt.isEmpty()) {
+            log.warn("Cannot enable — job definition not found: id={}", id);
+            return ResponseEntity.notFound().build();
+        }
+
+        JobDefinitionEntity entity = opt.get();
+        entity.setEnabled(true);
+        JobDefinitionEntity saved = jobDefinitionRepository.save(entity);
+        log.info("Job definition enabled: id={}, jobName={}", saved.getId(), saved.getJobName());
+        return ResponseEntity.ok(JobDefinitionResponse.fromEntity(saved));
+    }
+
+    /**
+     * Disables a job definition by flipping {@code enabled = false}.
+     *
+     * <p>Returns the updated definition on success, or {@code 404 Not Found}
+     * if no definition exists with the given ID.
+     */
+    @PutMapping("/definitions/{id}/disable")
+    public ResponseEntity<?> disableDefinition(@PathVariable long id) {
+        Optional<JobDefinitionEntity> opt = jobDefinitionRepository.findById(id);
+        if (opt.isEmpty()) {
+            log.warn("Cannot disable — job definition not found: id={}", id);
+            return ResponseEntity.notFound().build();
+        }
+
+        JobDefinitionEntity entity = opt.get();
+        entity.setEnabled(false);
+        JobDefinitionEntity saved = jobDefinitionRepository.save(entity);
+        log.info("Job definition disabled: id={}, jobName={}", saved.getId(), saved.getJobName());
+        return ResponseEntity.ok(JobDefinitionResponse.fromEntity(saved));
+    }
+
+    // ─── CRUD: delete ──────────────────────────────────────────────────────────
+
+    /**
+     * Hard-deletes a job definition and its parameter template rows, and removes
+     * the associated JAR file from disk.
+     *
+     * <p>Returns {@code 204 No Content} on success, {@code 404 Not Found} if the
+     * definition does not exist, or {@code 500 Internal Server Error} if file
+     * deletion fails due to an I/O error.
+     */
+    @Transactional
+    @DeleteMapping("/definitions/{id}")
+    public ResponseEntity<?> deleteDefinition(@PathVariable long id) {
+        Optional<JobDefinitionEntity> opt = jobDefinitionRepository.findById(id);
+        if (opt.isEmpty()) {
+            log.warn("Cannot delete — job definition not found: id={}", id);
+            return ResponseEntity.notFound().build();
+        }
+
+        JobDefinitionEntity entity = opt.get();
+        String jarFilePath = entity.getJarFilePath();
+
+        // Delete the JAR file from disk (if it exists)
+        try {
+            Path jarPath = Path.of(jarFilePath);
+            boolean deleted = Files.deleteIfExists(jarPath);
+            if (deleted) {
+                log.info("JAR file deleted from disk: {}", jarPath);
+            } else {
+                log.warn("JAR file not found on disk (already removed?): {}", jarPath);
+            }
+        } catch (IOException e) {
+            log.error("Failed to delete JAR file from disk: {} — {}", jarFilePath, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse(
+                            500,
+                            "Internal Server Error",
+                            "Failed to delete JAR file",
+                            LocalDateTime.now(),
+                            "/jobs/definitions/" + id));
+        }
+
+        // Cascade-delete parameter templates, then delete the entity
+        jobParameterTemplateRepository.deleteByJobDefinitionId(id);
+        jobDefinitionRepository.delete(entity);
+        log.info("Job definition deleted: id={}, jobName={}", id, entity.getJobName());
+        return ResponseEntity.noContent().build();
     }
 }
