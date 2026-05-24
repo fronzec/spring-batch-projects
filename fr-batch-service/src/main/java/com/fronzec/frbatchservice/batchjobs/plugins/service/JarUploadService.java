@@ -1,0 +1,187 @@
+/* 2024-2025 */
+package com.fronzec.frbatchservice.batchjobs.plugins.service;
+
+import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
+import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
+import com.fronzec.frbatchservice.web.dto.JarUploadResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.HexFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+/**
+ * Receives a {@link MultipartFile}, validates it is a valid JAR (extension + ZIP/PK
+ * magic bytes), computes its SHA-256 checksum, stores it to disk, and persists
+ * metadata via {@link JobDefinitionRepository}.
+ *
+ * <p>Uploaded JARs default to {@code enabled=false} and {@code loadStatus=UNLOADED}.
+ * Dynamic registration from the stored JAR is handled in Phase 4.
+ */
+@Service
+public class JarUploadService {
+
+    private static final Logger log = LoggerFactory.getLogger(JarUploadService.class);
+
+    /** ZIP file header magic bytes: {@code PK\x03\x04}. */
+    private static final byte[] ZIP_MAGIC = {(byte) 0x50, (byte) 0x4B, (byte) 0x03, (byte) 0x04};
+
+    private final JobDefinitionRepository jobDefinitionRepository;
+    private final String jarDir;
+
+    public JarUploadService(
+            JobDefinitionRepository jobDefinitionRepository,
+            @Value("${fr-batch-service.plugins.jar-dir}") String jarDir) {
+        this.jobDefinitionRepository = jobDefinitionRepository;
+        this.jarDir = jarDir;
+    }
+
+    /**
+     * Validates, stores, and registers a new JAR plugin.
+     *
+     * @param file          the uploaded JAR file
+     * @param jobName       unique job name for the definition
+     * @param version       semantic version string
+     * @param mainClassName fully-qualified class name of the {@code BatchJobPlugin} impl
+     * @return response DTO with persisted metadata
+     * @throws InvalidJarException              if the file fails validation
+     * @throws DuplicateJobDefinitionException  if a definition with {@code jobName} already exists
+     */
+    public JarUploadResponse uploadJar(
+            MultipartFile file, String jobName, String version, String mainClassName) {
+
+        validateJar(file);
+
+        String checksum = computeSha256(file);
+
+        checkDuplicate(jobName);
+
+        Path storedPath = storeFile(file, jobName, version);
+
+        JobDefinitionEntity entity = persistMetadata(jobName, version, mainClassName, checksum, storedPath);
+
+        log.info(
+                "JAR uploaded: job={}, version={}, id={}, checksum={}",
+                jobName, version, entity.getId(), checksum);
+
+        return JarUploadResponse.fromEntity(entity);
+    }
+
+    // ─── validation ────────────────────────────────────────────────────────────
+
+    /** Rejects files without {@code .jar} extension or without ZIP magic bytes. */
+    private void validateJar(MultipartFile file) {
+        String filename = file.getOriginalFilename();
+        if (filename == null || !filename.toLowerCase().endsWith(".jar")) {
+            throw new InvalidJarException(
+                    "File must have .jar extension; received: " + (filename != null ? filename : "null"));
+        }
+
+        byte[] header = readHeader(file, 4);
+        if (!Arrays.equals(header, ZIP_MAGIC)) {
+            throw new InvalidJarException(
+                    "File is not a valid JAR — missing ZIP/PK magic bytes. "
+                            + "Expected 0x504B0304, got: "
+                            + HexFormat.of().formatHex(header));
+        }
+    }
+
+    /** Reads up to {@code n} bytes from the beginning of the file. */
+    private byte[] readHeader(MultipartFile file, int n) {
+        try (InputStream in = file.getInputStream()) {
+            byte[] buf = new byte[n];
+            int read = in.read(buf);
+            if (read < n) {
+                byte[] truncated = new byte[read];
+                System.arraycopy(buf, 0, truncated, 0, read);
+                return truncated;
+            }
+            return buf;
+        } catch (IOException e) {
+            throw new InvalidJarException("Failed to read file contents: " + e.getMessage());
+        }
+    }
+
+    // ─── checksum ──────────────────────────────────────────────────────────────
+
+    /** Computes SHA-256 digest of the entire file. */
+    private String computeSha256(MultipartFile file) {
+        try (InputStream in = file.getInputStream()) {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] buf = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = in.read(buf)) != -1) {
+                digest.update(buf, 0, bytesRead);
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read file for checksum calculation", e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not available", e);
+        }
+    }
+
+    // ─── duplicate check ───────────────────────────────────────────────────────
+
+    private void checkDuplicate(String jobName) {
+        if (jobDefinitionRepository.findByJobName(jobName).isPresent()) {
+            throw new DuplicateJobDefinitionException(
+                    "A job definition with name '" + jobName + "' already exists");
+        }
+    }
+
+    // ─── file storage ──────────────────────────────────────────────────────────
+
+    /** Stores the JAR to {@code {jarDir}/{jobName}-{version}.jar}. */
+    private Path storeFile(MultipartFile file, String jobName, String version) {
+        Path dir = Path.of(jarDir);
+        try {
+            Files.createDirectories(dir);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create JAR storage directory: " + jarDir, e);
+        }
+
+        String filename = jobName + "-" + version + ".jar";
+        Path target = dir.resolve(filename);
+
+        try {
+            file.transferTo(target.toFile());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store JAR at " + target, e);
+        }
+
+        log.debug("JAR stored at {}", target);
+        return target;
+    }
+
+    // ─── persistence ───────────────────────────────────────────────────────────
+
+    /**
+     * Creates a {@link JobDefinitionEntity} with default values:
+     * {@code enabled=false}, {@code loadStatus=UNLOADED}.
+     */
+    private JobDefinitionEntity persistMetadata(
+            String jobName, String version, String mainClassName, String checksum, Path storedPath) {
+
+        JobDefinitionEntity entity = new JobDefinitionEntity();
+        entity.setJobName(jobName);
+        entity.setDisplayName(jobName);
+        entity.setVersion(version);
+        entity.setMainClassName(mainClassName);
+        entity.setJarChecksum(checksum);
+        entity.setJarFilePath(storedPath.toString());
+        entity.setEnabled(false);
+        entity.setAutoStart(false);
+        entity.setLoadStatus("UNLOADED");
+
+        return jobDefinitionRepository.save(entity);
+    }
+}
