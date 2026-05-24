@@ -12,9 +12,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HexFormat;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,6 +35,9 @@ public class JarUploadService {
 
     /** ZIP file header magic bytes: {@code PK\x03\x04}. */
     private static final byte[] ZIP_MAGIC = {(byte) 0x50, (byte) 0x4B, (byte) 0x03, (byte) 0x04};
+
+    /** Allowed characters in job name and version used as path components. */
+    private static final Pattern SAFE_NAME = Pattern.compile("[a-zA-Z0-9._\\-]+");
 
     private final JobDefinitionRepository jobDefinitionRepository;
     private final String jarDir;
@@ -99,6 +104,9 @@ public class JarUploadService {
         try (InputStream in = file.getInputStream()) {
             byte[] buf = new byte[n];
             int read = in.read(buf);
+            if (read == -1) {
+                throw new InvalidJarException("File is empty — cannot read magic bytes");
+            }
             if (read < n) {
                 byte[] truncated = new byte[read];
                 System.arraycopy(buf, 0, truncated, 0, read);
@@ -129,8 +137,13 @@ public class JarUploadService {
         }
     }
 
-    // ─── duplicate check ───────────────────────────────────────────────────────
+    // ─── duplicate detection ──────────────────────────────────────────────────
 
+    /**
+     * Fast-fail hint only. The definitive duplicate guard is the database
+     * {@code UNIQUE KEY} on {@code job_name}, enforced atomically at persist
+     * time by catching {@link DataIntegrityViolationException}.
+     */
     private void checkDuplicate(String jobName) {
         if (jobDefinitionRepository.findByJobName(jobName).isPresent()) {
             throw new DuplicateJobDefinitionException(
@@ -142,6 +155,9 @@ public class JarUploadService {
 
     /** Stores the JAR to {@code {jarDir}/{jobName}-{version}.jar}. */
     private Path storeFile(MultipartFile file, String jobName, String version) {
+        String safeJobName = sanitizeNameComponent(jobName);
+        String safeVersion = sanitizeNameComponent(version);
+
         Path dir = Path.of(jarDir);
         try {
             Files.createDirectories(dir);
@@ -149,8 +165,15 @@ public class JarUploadService {
             throw new RuntimeException("Failed to create JAR storage directory: " + jarDir, e);
         }
 
-        String filename = jobName + "-" + version + ".jar";
+        String filename = safeJobName + "-" + safeVersion + ".jar";
         Path target = dir.resolve(filename);
+
+        // Defence-in-depth: verify the resolved path is still under jarDir
+        if (!target.normalize().startsWith(dir.normalize())) {
+            throw new InvalidJarException(
+                    "Job name or version would escape the storage directory: "
+                            + "jobName=" + jobName + ", version=" + version);
+        }
 
         try {
             file.transferTo(target.toFile());
@@ -162,11 +185,28 @@ public class JarUploadService {
         return target;
     }
 
+    /** Rejects names that contain path separators or unsafe characters. */
+    static String sanitizeNameComponent(String value) {
+        if (value == null || value.isBlank()) {
+            throw new InvalidJarException("Job name and version must not be blank");
+        }
+        if (!SAFE_NAME.matcher(value).matches()) {
+            throw new InvalidJarException(
+                    "Job name and version must contain only alphanumeric, dot, dash, or underscore: "
+                            + value);
+        }
+        return value;
+    }
+
     // ─── persistence ───────────────────────────────────────────────────────────
 
     /**
      * Creates a {@link JobDefinitionEntity} with default values:
      * {@code enabled=false}, {@code loadStatus=UNLOADED}.
+     * <p>
+     * The database {@code UNIQUE KEY uk_job_name} provides the atomic duplicate
+     * guard. If a concurrent upload slips past the fast-fail hint in
+     * {@link #checkDuplicate(String)}, the constraint will catch it here.
      */
     private JobDefinitionEntity persistMetadata(
             String jobName, String version, String mainClassName, String checksum, Path storedPath) {
@@ -182,6 +222,11 @@ public class JarUploadService {
         entity.setAutoStart(false);
         entity.setLoadStatus("UNLOADED");
 
-        return jobDefinitionRepository.save(entity);
+        try {
+            return jobDefinitionRepository.save(entity);
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateJobDefinitionException(
+                    "A job definition with name '" + jobName + "' already exists", e);
+        }
     }
 }

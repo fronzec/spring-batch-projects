@@ -2,14 +2,15 @@
 package com.fronzec.frbatchservice.web.dto;
 
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
+import java.nio.file.Path;
 
 /**
  * DTO returned by {@code POST /jobs/upload} on success.
  *
- * <p>Effective URL (with context-path): {@code POST /api/batch-service/jobs/upload}
+ * <p>Exposes only the safe JAR filename — never the server-side filesystem path.
  */
 public record JarUploadResponse(
-        long id, String jobName, String version, String jarChecksum, String jarFilePath) {
+        long id, String jobName, String version, String jarChecksum, String jarFileName) {
 
     /** Builds a {@link JarUploadResponse} from a persisted {@link JobDefinitionEntity}. */
     public static JarUploadResponse fromEntity(JobDefinitionEntity entity) {
@@ -18,6 +19,6 @@ public record JarUploadResponse(
                 entity.getJobName(),
                 entity.getVersion(),
                 entity.getJarChecksum(),
-                entity.getJarFilePath());
+                Path.of(entity.getJarFilePath()).getFileName().toString());
     }
 }

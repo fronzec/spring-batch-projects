@@ -3,7 +3,7 @@
 -- Matches existing test schema.sql DDL, adapted for MySQL
 -- =========================================================
 
-CREATE TABLE IF NOT EXISTS job_definitions (
+CREATE TABLE job_definitions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     job_name VARCHAR(255) NOT NULL,
     display_name VARCHAR(255),
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS job_definitions (
 CREATE INDEX idx_job_def_enabled ON job_definitions (enabled);
 CREATE INDEX idx_job_def_load_status ON job_definitions (load_status);
 
-CREATE TABLE IF NOT EXISTS job_parameters_template (
+CREATE TABLE job_parameters_template (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     job_definition_id BIGINT NOT NULL,
     param_key VARCHAR(100) NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS job_parameters_template (
     CONSTRAINT uk_job_param UNIQUE (job_definition_id, param_key)
 );
 
-CREATE TABLE IF NOT EXISTS job_executions_audit (
+CREATE TABLE job_executions_audit (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     job_definition_id BIGINT NOT NULL,
     job_execution_id BIGINT NOT NULL,

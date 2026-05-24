@@ -20,7 +20,7 @@ public class JobDefinitionEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column(name = "id", nullable = false)
-    private long id;
+    private Long id;
 
     @Basic
     @Column(name = "job_name", nullable = false, unique = true, length = 255)
@@ -78,11 +78,11 @@ public class JobDefinitionEntity {
     @Column(name = "created_by", length = 100)
     private String createdBy;
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -203,11 +203,11 @@ public class JobDefinitionEntity {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         JobDefinitionEntity that = (JobDefinitionEntity) o;
-        return id == that.id;
+        return id != null && id.equals(that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return id != null ? Objects.hash(id) : System.identityHashCode(this);
     }
 }

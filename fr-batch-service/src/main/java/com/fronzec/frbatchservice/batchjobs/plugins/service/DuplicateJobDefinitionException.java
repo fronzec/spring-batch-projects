@@ -10,4 +10,8 @@ public class DuplicateJobDefinitionException extends RuntimeException {
     public DuplicateJobDefinitionException(String message) {
         super(message);
     }
+
+    public DuplicateJobDefinitionException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

@@ -17,7 +17,7 @@ public class JobExecutionAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column(name = "id", nullable = false)
-    private long id;
+    private Long id;
 
     @Basic
     @Column(name = "job_definition_id", nullable = false)
@@ -35,11 +35,11 @@ public class JobExecutionAuditEntity {
     @Column(name = "execution_metadata", columnDefinition = "JSON")
     private String executionMetadata;
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -80,11 +80,11 @@ public class JobExecutionAuditEntity {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         JobExecutionAuditEntity that = (JobExecutionAuditEntity) o;
-        return id == that.id;
+        return id != null && id.equals(that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return id != null ? Objects.hash(id) : System.identityHashCode(this);
     }
 }
