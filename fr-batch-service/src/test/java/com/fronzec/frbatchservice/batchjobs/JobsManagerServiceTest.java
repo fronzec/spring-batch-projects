@@ -2,21 +2,27 @@
 package com.fronzec.frbatchservice.batchjobs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fronzec.api.BatchJobPlugin;
+import com.fronzec.frbatchservice.batchjobs.plugins.PluginRegistryService;
+import com.fronzec.frbatchservice.web.SingleJobDataRequest;
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.JobExecution;
 import org.springframework.batch.core.job.JobInstance;
@@ -24,7 +30,6 @@ import org.springframework.batch.core.job.parameters.JobParameters;
 import org.springframework.batch.core.job.parameters.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.launch.JobOperator;
-import org.springframework.beans.factory.BeanFactory;
 
 @ExtendWith(MockitoExtension.class)
 public class JobsManagerServiceTest {
@@ -32,29 +37,31 @@ public class JobsManagerServiceTest {
     private JobsManagerService jobsManagerService;
 
     @Mock private JobOperator jobOperator;
-
-    @Mock private BeanFactory beanFactory;
-
+    @Mock private JobRegistry jobRegistry;
+    @Mock private PluginRegistryService pluginRegistryService;
+    @Mock private BatchJobPlugin plugin;
     @Mock private Job job;
 
     @BeforeEach
     void setUp() {
-        List<Job> jobList = new ArrayList<>();
-        jobList.add(job);
         jobsManagerService =
-                new JobsManagerService(jobOperator, jobOperator, beanFactory, jobList, null);
+                new JobsManagerService(jobOperator, jobOperator, jobRegistry, pluginRegistryService, null);
     }
 
     @Test
-    void testLaunchAllJobsPreloaded() throws Exception {
+    void testLaunchAllPlugins() throws Exception {
         LocalDate date = LocalDate.now();
-        Integer runningNumber = 1;
+        int runningNumber = 1;
+
+        when(plugin.getJobName()).thenReturn("TestJob");
+        when(plugin.getDefaultParameters()).thenReturn(Map.of("paramname", "paramvalue"));
+        when(pluginRegistryService.getPlugins()).thenReturn((Collection) List.of(plugin));
+        when(jobRegistry.getJob("TestJob")).thenReturn(job);
 
         JobParametersBuilder jobParametersBuilder = new JobParametersBuilder();
         jobParametersBuilder.addString("DATE", date.toString());
-        jobParametersBuilder.addString("RUNNING_NUMBER", runningNumber.toString());
+        jobParametersBuilder.addString("ATTEMPT_NUMBER", String.valueOf(runningNumber));
 
-        when(job.getName()).thenReturn("TestJob");
         when(jobOperator.run(any(Job.class), any(JobParameters.class)))
                 .thenReturn(
                         new JobExecution(
@@ -63,32 +70,59 @@ public class JobsManagerServiceTest {
                                 jobParametersBuilder.toJobParameters()));
 
         HashMap<String, String> result =
-                jobsManagerService.launchAllJobsPreloaded(date, runningNumber);
+                jobsManagerService.launchAllNonAutoDetectedJobsAsync(date, runningNumber);
 
         verify(jobOperator).run(any(Job.class), any(JobParameters.class));
-
         assertEquals(1, result.size());
-        assertNotNull(result.get("TestJob"));
-        // The result contains the job.toString() value which is set by the mock
         assertTrue(result.containsKey("TestJob"));
+        assertNotNull(result.get("TestJob"));
     }
 
     @Test
-    void testLaunchAllJobsPreloadedWithException() throws Exception {
+    void testLaunchAllPluginsWithException() throws Exception {
         LocalDate date = LocalDate.now();
-        Integer runningNumber = 1;
+        int runningNumber = 1;
 
-        when(job.getName()).thenReturn("TestJob");
+        when(plugin.getJobName()).thenReturn("TestJob");
+        when(plugin.getDefaultParameters()).thenReturn(Map.of());
+        when(pluginRegistryService.getPlugins()).thenReturn((Collection) List.of(plugin));
+        when(jobRegistry.getJob("TestJob")).thenReturn(job);
         when(jobOperator.run(any(Job.class), any(JobParameters.class)))
                 .thenThrow(new JobExecutionAlreadyRunningException("Job is already running"));
 
         HashMap<String, String> result =
-                jobsManagerService.launchAllJobsPreloaded(date, runningNumber);
+                jobsManagerService.launchAllNonAutoDetectedJobsAsync(date, runningNumber);
 
         verify(jobOperator).run(any(Job.class), any(JobParameters.class));
-
         assertEquals(1, result.size());
-        // When an exception occurs, the error message is stored in the result map
         assertEquals("Job is already running", result.get("TestJob"));
+    }
+
+    @Test
+    void testSyncRunJobWithParams_jobNotFound_returnsErrorMap() {
+        when(jobRegistry.getJob("missingJob")).thenReturn(null);
+
+        SingleJobDataRequest request = new SingleJobDataRequest();
+        request.setJobBeanName("missingJob");
+
+        Map<String, String> result = jobsManagerService.syncRunJobWithParams(request);
+
+        assertTrue(result.containsKey("error"));
+        assertTrue(result.get("error").contains("missingJob"));
+        assertFalse(result.containsKey("result"));
+    }
+
+    @Test
+    void testAsyncRunJobWithParams_jobNotFound_returnsErrorMap() {
+        when(jobRegistry.getJob("unknownJob")).thenReturn(null);
+
+        SingleJobDataRequest request = new SingleJobDataRequest();
+        request.setJobBeanName("unknownJob");
+
+        Map<String, String> result = jobsManagerService.asyncRunJobWithParams(request);
+
+        assertTrue(result.containsKey("error"));
+        assertTrue(result.get("error").contains("unknownJob"));
+        assertFalse(result.containsKey("result"));
     }
 }
