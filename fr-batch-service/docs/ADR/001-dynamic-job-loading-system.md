@@ -1,9 +1,9 @@
 # ADR 001: Dynamic Job Loading System with Database-Driven Registry
 
 ## Status
-**Implemented (Phase 1-3)** — 2026-05-26. Original proposal: 2026-03-02.
+**Implemented (Phase 1-4)** — 2026-05-27. Original proposal: 2026-03-02.
 
-Phase 1 (Foundation), Phase 2 (Core Integration), and Phase 3 (Dynamic Loading API Layer) are complete. Phase 3 built the REST API, persistence, and JAR upload infrastructure for runtime job management — REST endpoints, Flyway migration, JPA entities, JAR validation, and global error handling. The `DynamicJobClassLoader` and classloader isolation remain deferred to Phase 4. Phases 4-7 remain as future work.
+Phase 1 (Foundation), Phase 2 (Core Integration), Phase 3 (Dynamic Loading API Layer), and Phase 4 (Dynamic Job Loading) are complete. Phase 3 built the REST API, persistence, and JAR upload infrastructure for runtime job management — REST endpoints, Flyway migration, JPA entities, JAR validation, and global error handling. Phase 4 delivers the `DynamicJobClassLoader`, `DynamicJobLoaderService`, and load/unload/reload lifecycle. Phases 5-7 remain as future work.
 
 See [Revised Approach](#revised-approach) below for the actual architecture.
 
@@ -1084,19 +1084,32 @@ public class JobsManagerService {
 - [x] `PluginManagementIntegrationTest` with 11 tests covering upload, CRUD, error handling, enable/disable, merged plugin listing, max-size validation
 - [x] All 42 tests passing (31 existing + 11 new), `mvn test` BUILD SUCCESS
 
-**Deferred from Phase 3:**
-- [ ] `DynamicJobClassLoader` — waiting for Phase 4
-- [ ] `POST /jobs/definitions/{id}/reload` — requires classloader (Phase 4)
-- [ ] JAR signature verification — Phase 5
+**Deferred from Phase 3 (resolved):**
+- [x] `DynamicJobClassLoader` — implemented in Phase 4 (PR #35)
+- [x] `POST /jobs/definitions/{id}/reload` — implemented in Phase 4 (PR #37)
+- [ ] JAR signature verification — still deferred to Phase 5
 
 **Deliverables:** REST API layer for runtime job management fully operational. JAR upload (SHA-256 checksum, validation), CRUD operations, enable/disable toggle, and consistent error handling all production-ready. The `PluginController.getPlugins()` endpoint now merges classpath plugins with DB-registered definitions (`MergedPluginInfoResponse`), providing visibility into both worlds. 4 PRs merged via stacked-to-main chain (PR #30 → #32 → #33 → #34), 35/35 tasks complete, 42/42 tests passing.
 
-### Phase 4: Full Integration (Future)
-- [ ] Add dynamic job loading to `PluginRegistryService` (swap backend, keep API)
-- [ ] Ensure backward compatibility with classpath-based plugins
-- [ ] Add health checks for loaded jobs
-- [ ] Implement metrics and monitoring
-- [ ] Performance testing
+### Phase 4: Dynamic Job Loading ✅ COMPLETE (May 2026)
+- [x] `DynamicJobClassLoader` — parent-last `URLClassLoader` with shared-package delegation (`org.springframework.*`, `jakarta.*`, `org.slf4j.*`, `com.fronzec.api.*`); `cleanup()` for resource release
+- [x] `DynamicJobLoaderService` — orchestrates load/unload/reload lifecycle; validates JAR checksum, creates classloader, loads `BatchJobPlugin` via `mainClassName`, registers via `PluginRegistryService.registerDynamicPlugin()`, tracks `loadStatus` transitions in DB
+- [x] `POST /jobs/definitions/{id}/load` — load plugin from uploaded JAR; returns 200/404/409/400
+- [x] `POST /jobs/definitions/{id}/unload` — unload and close classloader; `?force=true` stops running executions first; returns 200/404/409
+- [x] `POST /jobs/definitions/{id}/reload` — atomic unload+load cycle
+- [x] `POST /jobs/load-all` — bulk load all enabled/unloaded definitions
+- [x] `PluginAutoLoader` (ApplicationRunner) — auto-load `enabled=true` definitions at startup; failures logged, do not block startup
+- [x] 11 E2E integration tests (`DynamicJobLoadingIntegrationTest`) covering full lifecycle: upload→enable→load→unload→reload→execute→loadAll
+- [x] Backward compatibility verified — all 69 pre-Phase-4 tests pass unchanged; classpath `Job1Plugin` continues working
+
+**Deferred from Phase 4:**
+- [ ] Health checks for loaded jobs — Phase 6
+- [ ] Metrics and monitoring (Micrometer instrumentation) — Phase 6
+- [ ] Performance testing — Phase 7
+
+**Deliverables:** Dynamic job loading fully operational. Uploaded JARs can be loaded, executed, and unloaded without service restart. `DynamicJobClassLoader` provides classloader isolation with shared-package delegation. `DynamicJobLoaderService` owns the lifecycle with thread-safe `ConcurrentHashMap` tracking. `PluginAutoLoader` restores loaded plugins after restart. 4 PRs merged via stacked-to-main chain (PR #35 → #36 → #37 → #38), 26/26 tasks complete, 80/80 tests passing.
+
+**Bug discovered:** `JdbcJobExecutionDao.findRunningJobExecutions()` in Spring Batch 6.0.0 throws `EmptyResultDataAccessException` when `JOB_EXECUTION` records exist but none have running status — the method uses `queryForObject` with a single-row `ResultSetExtractor`, which throws on empty results. Fixed in `DynamicJobLoaderService.unloadJob()` with try-catch guard. See commit `6120f87`.
 
 ### Phase 5: Security and Hardening (Future)
 - [ ] Implement JAR signature verification
@@ -1198,8 +1211,8 @@ public class JobsManagerService {
 
 ---
 
-**Last Updated**: 2026-05-26 (Phase 3 complete; scope expanded)
-**Next Review**: Before starting Phase 4 (dynamic JAR loading)
+**Last Updated**: 2026-05-27 (Phase 4 complete; dynamic job loading operational)
+**Next Review**: Before starting Phase 5 (security and hardening)
 
 ### Related PRs
 - [#27](https://github.com/fronzec/spring-batch-projects/pull/27) — Phase 1: Foundation (batch-job-api, docs, schema)
@@ -1209,3 +1222,7 @@ public class JobsManagerService {
 - [#32](https://github.com/fronzec/spring-batch-projects/pull/32) — Phase 3 PR 3: CRUD Endpoints + Enable/Disable
 - [#33](https://github.com/fronzec/spring-batch-projects/pull/33) — Phase 3 PR 4: PluginRegistryService Extension + Merged API
 - [#34](https://github.com/fronzec/spring-batch-projects/pull/34) — Phase 3 PR 5: GlobalExceptionHandler + Integration Tests (Capstone)
+- [#35](https://github.com/fronzec/spring-batch-projects/pull/35) — Phase 4 PR 1: DynamicJobClassLoader + unit tests
+- [#36](https://github.com/fronzec/spring-batch-projects/pull/36) — Phase 4 PR 2: DynamicJobLoaderService + lifecycle
+- [#37](https://github.com/fronzec/spring-batch-projects/pull/37) — Phase 4 PR 3: Controller endpoints + PluginAutoLoader
+- [#38](https://github.com/fronzec/spring-batch-projects/pull/38) — Phase 4 PR 4: Integration tests + backward compatibility (Capstone)
