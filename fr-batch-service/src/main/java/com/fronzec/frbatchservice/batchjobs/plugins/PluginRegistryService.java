@@ -245,8 +245,10 @@ public class PluginRegistryService {
                         e.getMessage());
             }
 
+            classloaderRefs.remove(jobName);
+
             log.info(
-                    "Unregistered plugin '{}', classloader reference retained for Phase 4 cleanup",
+                    "Unregistered plugin '{}', classloader reference removed",
                     jobName);
         }
     }
