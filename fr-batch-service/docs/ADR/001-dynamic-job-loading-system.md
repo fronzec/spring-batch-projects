@@ -1,9 +1,9 @@
 # ADR 001: Dynamic Job Loading System with Database-Driven Registry
 
 ## Status
-**Implemented (Phase 1-2 Revised)** — 2026-05-23. Original proposal: 2026-03-02.
+**Implemented (Phase 1-3)** — 2026-05-26. Original proposal: 2026-03-02.
 
-Phase 1 (Foundation) and Phase 2 (Core Integration) are complete — but with a simplified approach. The dynamic JAR loading and classloader isolation described in the original proposal were deferred in favor of a classpath-based plugin registry that solves the immediate business problem (no more hardcoded job map) without the operational complexity of dynamic classloading. Phases 3-7 remain as future work.
+Phase 1 (Foundation), Phase 2 (Core Integration), and Phase 3 (Dynamic Loading API Layer) are complete. Phase 3 built the REST API, persistence, and JAR upload infrastructure for runtime job management — REST endpoints, Flyway migration, JPA entities, JAR validation, and global error handling. The `DynamicJobClassLoader` and classloader isolation remain deferred to Phase 4. Phases 4-7 remain as future work.
 
 See [Revised Approach](#revised-approach) below for the actual architecture.
 
@@ -1073,14 +1073,23 @@ public class JobsManagerService {
 
 **Deliverables:** Plugin registry functional with 5/5 integration tests passing. Any `@Component` implementing `BatchJobPlugin` is auto-discovered at startup. `Job1Plugin` runs 3-step ETL pipeline to `ExitStatus.COMPLETED` in integration tests. See PRs #27, #28, #29.
 
-### Phase 3: Dynamic Loading API Layer (Future — NOT STARTED)
-- [ ] Implement `JobManagementController` with JAR upload endpoint
-- [ ] Add file upload handling and checksum validation
-- [ ] Implement job CRUD operations backed by database
-- [ ] Add validation and error handling
-- [ ] Create integration tests
+### Phase 3: Dynamic Loading API Layer ✅ COMPLETE (May 2026)
+- [x] Flyway enabled + `V1__job_registry_tables.sql` migration (3 tables: `job_definitions`, `job_parameters_template`, `job_executions_audit`)
+- [x] 3 JPA entities + 3 Spring Data JPA repositories (getter/setter style matching `PersonsEntity` conventions)
+- [x] `JarUploadService` with JAR extension validation + ZIP magic bytes (`PK\x03\x04`), SHA-256 checksum, path traversal protection, duplicate job-name detection via `JobDefinitionRepository.findByJobName()`
+- [x] `JobManagementController` with 6 endpoints: `POST /jobs/upload`, `GET /jobs/definitions`, `GET /jobs/definitions/{id}`, `PUT /jobs/definitions/{id}/enable`, `PUT /jobs/definitions/{id}/disable`, `DELETE /jobs/definitions/{id}`
+- [x] `PluginRegistryService` extended with `registerDynamicPlugin()` / `unregisterDynamicPlugin()` — thread-safe via `synchronized(pluginsByJobName)` block, stores `classLoaderRef` for Phase 4
+- [x] `MergedPluginInfoResponse` with `PluginSource` (`CLASSPATH`|`UPLOADED`) and `PluginStatus` (`ACTIVE`|`LOADED`|`ENABLED`|`DISABLED`) enums — merged plugin listing from both classpath + DB sources
+- [x] `GlobalExceptionHandler` (`@ControllerAdvice`) with 6 handlers: `InvalidJarException`→400, `DuplicateJobDefinitionException`→409, `NoSuchElementException`→404, `MethodArgumentNotValidException`→400, `MaxUploadSizeExceededException`→413, `Exception`→500
+- [x] `PluginManagementIntegrationTest` with 11 tests covering upload, CRUD, error handling, enable/disable, merged plugin listing, max-size validation
+- [x] All 42 tests passing (31 existing + 11 new), `mvn test` BUILD SUCCESS
 
-**Note:** The current `PluginController` (`GET /jobs/plugins`) is a lightweight version of the registry API. The full `JobManagementController` with upload/register/enable/reload remains as future work.
+**Deferred from Phase 3:**
+- [ ] `DynamicJobClassLoader` — waiting for Phase 4
+- [ ] `POST /jobs/definitions/{id}/reload` — requires classloader (Phase 4)
+- [ ] JAR signature verification — Phase 5
+
+**Deliverables:** REST API layer for runtime job management fully operational. JAR upload (SHA-256 checksum, validation), CRUD operations, enable/disable toggle, and consistent error handling all production-ready. The `PluginController.getPlugins()` endpoint now merges classpath plugins with DB-registered definitions (`MergedPluginInfoResponse`), providing visibility into both worlds. 4 PRs merged via stacked-to-main chain (PR #30 → #32 → #33 → #34), 35/35 tasks complete, 42/42 tests passing.
 
 ### Phase 4: Full Integration (Future)
 - [ ] Add dynamic job loading to `PluginRegistryService` (swap backend, keep API)
@@ -1189,10 +1198,14 @@ public class JobsManagerService {
 
 ---
 
-**Last Updated**: 2026-05-23 (Phase 1-2 complete; scope revised)
-**Next Review**: Before starting Phase 3 (dynamic JAR loading)
+**Last Updated**: 2026-05-26 (Phase 3 complete; scope expanded)
+**Next Review**: Before starting Phase 4 (dynamic JAR loading)
 
 ### Related PRs
 - [#27](https://github.com/fronzec/spring-batch-projects/pull/27) — Phase 1: Foundation (batch-job-api, docs, schema)
 - [#28](https://github.com/fronzec/spring-batch-projects/pull/28) — Phase 2: Plugin registry + Job1Plugin migration
 - [#29](https://github.com/fronzec/spring-batch-projects/pull/29) — Phase 2: sc09-test-fixture (integration test strengthening + H2 fix)
+- [#30](https://github.com/fronzec/spring-batch-projects/pull/30) — Phase 3 PR 1: Flyway + Job Registry JPA Layer
+- [#32](https://github.com/fronzec/spring-batch-projects/pull/32) — Phase 3 PR 3: CRUD Endpoints + Enable/Disable
+- [#33](https://github.com/fronzec/spring-batch-projects/pull/33) — Phase 3 PR 4: PluginRegistryService Extension + Merged API
+- [#34](https://github.com/fronzec/spring-batch-projects/pull/34) — Phase 3 PR 5: GlobalExceptionHandler + Integration Tests (Capstone)
