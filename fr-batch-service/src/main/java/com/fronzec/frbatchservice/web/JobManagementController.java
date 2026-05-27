@@ -2,6 +2,8 @@
 package com.fronzec.frbatchservice.web;
 
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
+import com.fronzec.frbatchservice.batchjobs.plugins.loader.DynamicJobLoaderService;
+import com.fronzec.frbatchservice.batchjobs.plugins.loader.LoadResult;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobParameterTemplateRepository;
 import com.fronzec.frbatchservice.batchjobs.plugins.service.JarUploadService;
@@ -11,6 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +47,10 @@ import org.springframework.web.multipart.MultipartFile;
  *   <li>{@code PUT  /definitions/{id}/enable} — enable a definition</li>
  *   <li>{@code PUT  /definitions/{id}/disable} — disable a definition</li>
  *   <li>{@code DELETE /definitions/{id}} — remove DB row + JAR file from disk</li>
+ *   <li>{@code POST /definitions/{id}/load} — load plugin from JAR into registry</li>
+ *   <li>{@code POST /definitions/{id}/unload} — unregister plugin and close classloader</li>
+ *   <li>{@code POST /definitions/{id}/reload} — atomic unload + load</li>
+ *   <li>{@code POST /load-all} — load all enabled, not-yet-loaded definitions</li>
  * </ul>
  */
 @RestController
@@ -55,14 +62,17 @@ public class JobManagementController {
     private final JarUploadService jarUploadService;
     private final JobDefinitionRepository jobDefinitionRepository;
     private final JobParameterTemplateRepository jobParameterTemplateRepository;
+    private final DynamicJobLoaderService loaderService;
 
     public JobManagementController(
             JarUploadService jarUploadService,
             JobDefinitionRepository jobDefinitionRepository,
-            JobParameterTemplateRepository jobParameterTemplateRepository) {
+            JobParameterTemplateRepository jobParameterTemplateRepository,
+            DynamicJobLoaderService loaderService) {
         this.jarUploadService = jarUploadService;
         this.jobDefinitionRepository = jobDefinitionRepository;
         this.jobParameterTemplateRepository = jobParameterTemplateRepository;
+        this.loaderService = loaderService;
     }
 
     /**
@@ -199,5 +209,74 @@ public class JobManagementController {
         jobDefinitionRepository.delete(entity);
         log.info("Job definition deleted: id={}, jobName={}", id, entity.getJobName());
         return ResponseEntity.noContent().build();
+    }
+
+    // ─── Dynamic plugin loading / unloading ────────────────────────────────────
+
+    /**
+     * Loads a job definition from its JAR, instantiates the plugin, and registers it
+     * with the job registry.
+     *
+     * <p>Returns {@code 200 OK} with {@link LoadResult} on success.
+     * {@code 404 Not Found} if the definition does not exist (via
+     * {@link GlobalExceptionHandler#handleNotFound}).
+     * {@code 409 Conflict} if the definition is disabled or already loaded (via
+     * {@code IllegalStateException}).
+     * {@code 400 Bad Request} if the JAR is invalid or the plugin class is missing
+     * (via {@code JobLoadException}).
+     */
+    @PostMapping("/definitions/{id}/load")
+    public ResponseEntity<LoadResult> loadJob(@PathVariable long id) {
+        LoadResult result = loaderService.loadJob(id);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Unloads a previously loaded job: unregisters from the registry, closes the
+     * classloader, and marks the definition as {@code UNLOADED}.
+     *
+     * <p>Returns {@code 200 OK} with {@link LoadResult} on success.
+     * {@code 404 Not Found} if the definition does not exist.
+     * {@code 409 Conflict} if the job has running executions and {@code force} is
+     * {@code false} (via {@link
+     * com.fronzec.frbatchservice.batchjobs.plugins.loader.JobUnloadConflictException}).
+     */
+    @PostMapping("/definitions/{id}/unload")
+    public ResponseEntity<LoadResult> unloadJob(
+            @PathVariable long id,
+            @RequestParam(defaultValue = "false") boolean force) {
+        LoadResult result = loaderService.unloadJob(id, force);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Reloads a job by unloading (forced) then loading sequentially. The operation is
+     * sequential, so the status never appears partially ready.
+     *
+     * <p>Returns {@code 200 OK} with {@link LoadResult} on success.
+     * {@code 404 Not Found} if the definition does not exist.
+     * {@code 400 Bad Request} if the load step fails (via {@code JobLoadException}).
+     */
+    @PostMapping("/definitions/{id}/reload")
+    public ResponseEntity<LoadResult> reloadJob(@PathVariable long id) {
+        LoadResult result = loaderService.reloadJob(id);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Loads all enabled job definitions whose {@code loadStatus} is not already
+     * {@code LOADED}. Each definition is loaded independently; one failure does not
+     * block the rest.
+     *
+     * <p>Returns {@code 200 OK} with a map from job name to per-definition
+     * {@link LoadResult}.
+     */
+    @PostMapping("/load-all")
+    public ResponseEntity<Map<String, LoadResult>> loadAllEnabled() {
+        Map<String, LoadResult> results = loaderService.loadAllEnabled();
+        log.info(
+                "load-all complete: {} definitions processed",
+                results.size());
+        return ResponseEntity.ok(results);
     }
 }

@@ -1,6 +1,8 @@
 /* 2024-2025 */
 package com.fronzec.frbatchservice.web;
 
+import com.fronzec.frbatchservice.batchjobs.plugins.loader.JobLoadException;
+import com.fronzec.frbatchservice.batchjobs.plugins.loader.JobUnloadConflictException;
 import com.fronzec.frbatchservice.batchjobs.plugins.service.DuplicateJobDefinitionException;
 import com.fronzec.frbatchservice.batchjobs.plugins.service.InvalidJarException;
 import com.fronzec.frbatchservice.web.dto.ErrorResponse;
@@ -82,6 +84,43 @@ public class GlobalExceptionHandler {
                 "Payload Too Large",
                 "File size exceeds the maximum allowed upload size",
                 request));
+  }
+
+  /**
+   * Maps {@link JobLoadException} — a missing or invalid JAR, a class that does not
+   * implement the plugin contract, or a configuration failure — to {@code 400 Bad
+   * Request}.
+   */
+  @ExceptionHandler(JobLoadException.class)
+  public ResponseEntity<ErrorResponse> handleJobLoad(
+      JobLoadException ex, HttpServletRequest request) {
+    log.error("Job load failed: {}", ex.getMessage());
+    return ResponseEntity.badRequest()
+        .body(buildError(400, "Bad Request", ex.getMessage(), request));
+  }
+
+  /**
+   * Maps {@link JobUnloadConflictException} — a job with running executions where
+   * {@code force} was not requested — to {@code 409 Conflict}.
+   */
+  @ExceptionHandler(JobUnloadConflictException.class)
+  public ResponseEntity<ErrorResponse> handleUnloadConflict(
+      JobUnloadConflictException ex, HttpServletRequest request) {
+    log.warn("Job unload conflict: {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(buildError(409, "Conflict", ex.getMessage(), request));
+  }
+
+  /**
+   * Maps {@link IllegalStateException} — e.g. a definition that is disabled or
+   * already loaded — to {@code 409 Conflict}.
+   */
+  @ExceptionHandler(IllegalStateException.class)
+  public ResponseEntity<ErrorResponse> handleIllegalState(
+      IllegalStateException ex, HttpServletRequest request) {
+    log.warn("Illegal state: {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(buildError(409, "Conflict", ex.getMessage(), request));
   }
 
   /**
