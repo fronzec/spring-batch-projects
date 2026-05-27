@@ -7,6 +7,8 @@ import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import java.io.File;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.context.ApplicationContext;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -204,8 +207,20 @@ public class DynamicJobLoaderService {
     if (!force) {
       // TODO: integrate JobExplorer for precise running-execution check.
       // Currently uses JobRepository.findRunningJobExecutions() which may not be exhaustive.
-      var runningExecutions =
-          jobRepository.findRunningJobExecutions(entity.getJobName());
+      java.util.Set<?> runningExecutions;
+      try {
+        runningExecutions =
+            jobRepository.findRunningJobExecutions(entity.getJobName());
+      } catch (EmptyResultDataAccessException e) {
+        // Spring Batch 6.0.0 JdbcJobExecutionDao uses queryForObject which throws
+        // when there are non-running executions but zero running ones. Treat as
+        // "no running executions".
+        log.debug(
+            "findRunningJobExecutions returned empty for '{}': {}",
+            entity.getJobName(),
+            e.getMessage());
+        runningExecutions = Collections.emptySet();
+      }
       if (runningExecutions != null && !runningExecutions.isEmpty()) {
         throw new JobUnloadConflictException(
             "Job \""
