@@ -1,9 +1,9 @@
 # ADR 001: Dynamic Job Loading System with Database-Driven Registry
 
 ## Status
-**Implemented (Phase 1-5)** — 2026-05-31. Original proposal: 2026-03-02.
+**Implemented (Phase 1-6)** — 2026-05-31. Original proposal: 2026-03-02.
 
-Phase 1 (Foundation), Phase 2 (Core Integration), Phase 3 (Dynamic Loading API Layer), Phase 4 (Dynamic Job Loading), and Phase 5 (Security and Hardening) are complete. Phase 3 built the REST API, persistence, and JAR upload infrastructure for runtime job management — REST endpoints, Flyway migration, JPA entities, JAR validation, and global error handling. Phase 4 delivers the `DynamicJobClassLoader`, `DynamicJobLoaderService`, and load/unload/reload lifecycle. Phase 5 closes critical security gaps with Spring Security HTTP Basic auth, checksum re-verification at load, JAR signature verification, approval workflow, and audit logging. Phases 6-7 remain as future work.
+Phase 1 (Foundation), Phase 2 (Core Integration), Phase 3 (Dynamic Loading API Layer), Phase 4 (Dynamic Job Loading), Phase 5 (Security and Hardening), and Phase 6 (Example, Documentation, Health & Metrics) are complete. Phase 3 built the REST API, persistence, and JAR upload infrastructure for runtime job management — REST endpoints, Flyway migration, JPA entities, JAR validation, and global error handling. Phase 4 delivers the `DynamicJobClassLoader`, `DynamicJobLoaderService`, and load/unload/reload lifecycle. Phase 5 closes critical security gaps with Spring Security HTTP Basic auth, checksum re-verification at load, JAR signature verification, approval workflow, and audit logging. Phase 6 adds observability (health indicator, Micrometer metrics), a standalone example plugin project (`example-payment-job/`), updated developer docs, and a production readiness checklist. Phase 7 remains as future work.
 
 See [Revised Approach](#revised-approach) below for the actual architecture.
 
@@ -1103,8 +1103,8 @@ public class JobsManagerService {
 - [x] Backward compatibility verified — all 69 pre-Phase-4 tests pass unchanged; classpath `Job1Plugin` continues working
 
 **Deferred from Phase 4:**
-- [ ] Health checks for loaded jobs — Phase 6
-- [ ] Metrics and monitoring (Micrometer instrumentation) — Phase 6
+- [x] Health checks for loaded jobs — ✅ COMPLETE (Phase 6, PR #44)
+- [x] Metrics and monitoring (Micrometer instrumentation) — ✅ COMPLETE (Phase 6, PR #44)
 - [ ] Performance testing — Phase 7
 
 **Deliverables:** Dynamic job loading fully operational. Uploaded JARs can be loaded, executed, and unloaded without service restart. `DynamicJobClassLoader` provides classloader isolation with shared-package delegation. `DynamicJobLoaderService` owns the lifecycle with thread-safe `ConcurrentHashMap` tracking. `PluginAutoLoader` restores loaded plugins after restart. 4 PRs merged via stacked-to-main chain (PR #35 → #36 → #37 → #38), 26/26 tasks complete, 80/80 tests passing.
@@ -1122,11 +1122,18 @@ public class JobsManagerService {
 
 **Implementation details**: Layered defense-in-depth — transport auth (HTTP Basic) → integrity (checksum re-verify + JAR signature) → authorization (approval guard). Each layer fails closed. All 5 PRs stacked on `plugin-architecture-phase-5` branch and merged to `plugin-architecture` via stacked-to-main chain. This completes Phase 5. See PRs #39, #40, #41, #42, #43.
 
-### Phase 6: Example and Documentation (Future)
-- [ ] Create example external job plugin project (separate repo, independent build)
-- [ ] Write comprehensive documentation for dynamic plugin development
-- [ ] Set up CI/CD pipeline for example job
-- [ ] Production readiness checklist
+### Phase 6: Example, Documentation, Health & Metrics ✅ COMPLETE (May 2026)
+- [x] **PluginHealthIndicator** — `@Component` implementing `HealthIndicator`; queries `PluginRegistryService.getPlugins().size()`, `JobDefinitionRepository.countByLoadStatus("FAILED")`, `Path.of(jarDir).toFile().canRead()`; returns DOWN if failed > 0 or dir inaccessible; exposed at `/actuator/health/plugins` via `management.endpoint.health.group.plugins.include=pluginHealthIndicator`
+- [x] **PluginMetrics** — `@Component` with `@PostConstruct` registering Micrometer counters (`plugins_uploaded_total`, `plugins_loaded_total`, `plugins_unloaded_total`), gauge (`plugins_loaded`), timers (`plugins_load_duration_seconds`, `plugins_unload_duration_seconds`); tagged `plugins_executed_total` counter with `job_name` tag; injected into `JarUploadService`, `DynamicJobLoaderService`, `JobsManagerService`
+- [x] **Service instrumentation** — `JarUploadService.uploadJar()` calls `pluginMetrics.incrementUpload()` after DB persist; `DynamicJobLoaderService` calls `incrementLoad()` + `recordLoadDuration()` on load, `incrementUnload()` + `recordUnloadDuration()` on unload; `JobsManagerService.syncRunJobWithParams()` calls `pluginMetrics.incrementExecuted(request.getJobBeanName())`
+- [x] **Example plugin project** — `example-payment-job/` standalone Maven module at repo root; `PaymentJobPlugin` implementing `BatchJobPlugin` with CSV-reading tasklet (`data/sample-payments.csv`); SPI file `META-INF/services/com.fronzec.api.BatchJobPlugin`; `provided` scope for `batch-job-api:0.0.1-SNAPSHOT`, Spring Batch 6.0.0, Spring Framework 7.0.1, SLF4J 2.0.16; maven-shade-plugin 3.6.0 for platform dep shading; README with build/upload/load/execute/unload instructions
+- [x] **Developer guide rewrite** — `fr-batch-service/docs/job-plugins/developer-guide.md` now covers: lifecycle ASCII diagram (upload→approve→load→execute→unload→audit), REST API reference, JAR signing config, approval workflow, security roles matrix, health/metrics endpoints, 7-entry troubleshooting FAQ
+- [x] **Production checklist** — `fr-batch-service/docs/production-checklist.md` created; checkbox-based checklist covering security, storage, monitoring, scaling, approval workflow, disaster recovery, pre-deployment validation, operational runbooks, final sign-off
+- [x] **120/120 tests passing**, `mvn test` BUILD SUCCESS
+- [x] **Spring Boot 4.0 adaptation**: Health classes use `org.springframework.boot.health.contributor.*` (package migrated from `org.springframework.boot.actuate.health`); `TestRestTemplate` removed (use direct bean injection in integration tests)
+- [x] **Version corrections**: Developer guide updated to reflect Spring Batch 6.0.0 and Spring Framework 7.1.0 (transitive from Spring Boot 4.0.0 parent POM)
+
+**Implementation details**: Four independent deliverables — health indicator, metrics, example plugin, documentation — all additive with no API or schema changes. Health and metrics leverage existing Spring Boot Actuator infrastructure. Example plugin mirrors `DynamicTestPlugin` structure but as a standalone Maven module. 2 PRs stacked on `plugin-architecture-phase-6` branch and merged via stacked-to-main chain. See PRs #44, #45.
 
 ### Phase 7: Production Deployment (Future)
 - [ ] Deploy to staging environment
@@ -1215,8 +1222,8 @@ public class JobsManagerService {
 
 ---
 
-**Last Updated**: 2026-05-31 (Phase 5 complete; security and hardening operational)
-**Next Review**: Before starting Phase 6 (example and documentation)
+**Last Updated**: 2026-05-31 (Phase 6 complete; example, documentation, health & metrics operational)
+**Next Review**: Before starting Phase 7 (production deployment)
 
 ### Related PRs
 - [#27](https://github.com/fronzec/spring-batch-projects/pull/27) — Phase 1: Foundation (batch-job-api, docs, schema)
@@ -1235,3 +1242,5 @@ public class JobsManagerService {
 - [#41](https://github.com/fronzec/spring-batch-projects/pull/41) — Phase 5 PR 3: Approval workflow + V2 Flyway migration
 - [#42](https://github.com/fronzec/spring-batch-projects/pull/42) — Phase 5 PR 4: JAR signature verification (strict/permissive modes)
 - [#43](https://github.com/fronzec/spring-batch-projects/pull/43) — Phase 5 PR 5: Audit service + JobExecutionListener
+- [#44](https://github.com/fronzec/spring-batch-projects/pull/44) — Phase 6 PR 1: PluginHealthIndicator + PluginMetrics + service instrumentation
+- [#45](https://github.com/fronzec/spring-batch-projects/pull/45) — Phase 6 PR 2: Example plugin project (example-payment-job/) + developer guide rewrite + production checklist
