@@ -1,6 +1,9 @@
 /* 2024-2025 */
 package com.fronzec.frbatchservice.web;
 
+import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditEvent;
+import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditEventType;
+import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditService;
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
 import com.fronzec.frbatchservice.batchjobs.plugins.loader.DynamicJobLoaderService;
 import com.fronzec.frbatchservice.batchjobs.plugins.loader.LoadResult;
@@ -66,16 +69,19 @@ public class JobManagementController {
     private final JobDefinitionRepository jobDefinitionRepository;
     private final JobParameterTemplateRepository jobParameterTemplateRepository;
     private final DynamicJobLoaderService loaderService;
+    private final AuditService auditService;
 
     public JobManagementController(
             JarUploadService jarUploadService,
             JobDefinitionRepository jobDefinitionRepository,
             JobParameterTemplateRepository jobParameterTemplateRepository,
-            DynamicJobLoaderService loaderService) {
+            DynamicJobLoaderService loaderService,
+            AuditService auditService) {
         this.jarUploadService = jarUploadService;
         this.jobDefinitionRepository = jobDefinitionRepository;
         this.jobParameterTemplateRepository = jobParameterTemplateRepository;
         this.loaderService = loaderService;
+        this.auditService = auditService;
     }
 
     /**
@@ -147,6 +153,16 @@ public class JobManagementController {
         entity.setEnabled(true);
         JobDefinitionEntity saved = jobDefinitionRepository.save(entity);
         log.info("Job definition enabled: id={}, jobName={}", saved.getId(), saved.getJobName());
+
+        auditService.logEvent(
+            new AuditEvent(
+                AuditEventType.JOB_ENABLED,
+                saved.getJobName(),
+                AuditService.currentUserId(),
+                "Job enabled: id=" + saved.getId(),
+                AuditEvent.SUCCESS,
+                LocalDateTime.now()));
+
         return ResponseEntity.ok(JobDefinitionResponse.fromEntity(saved));
     }
 
@@ -168,6 +184,16 @@ public class JobManagementController {
         entity.setEnabled(false);
         JobDefinitionEntity saved = jobDefinitionRepository.save(entity);
         log.info("Job definition disabled: id={}, jobName={}", saved.getId(), saved.getJobName());
+
+        auditService.logEvent(
+            new AuditEvent(
+                AuditEventType.JOB_DISABLED,
+                saved.getJobName(),
+                AuditService.currentUserId(),
+                "Job disabled: id=" + saved.getId(),
+                AuditEvent.SUCCESS,
+                LocalDateTime.now()));
+
         return ResponseEntity.ok(JobDefinitionResponse.fromEntity(saved));
     }
 
@@ -209,6 +235,16 @@ public class JobManagementController {
                 saved.getId(),
                 saved.getJobName(),
                 request.approvedBy());
+
+        auditService.logEvent(
+            new AuditEvent(
+                AuditEventType.JOB_APPROVED,
+                saved.getJobName(),
+                AuditService.currentUserId(),
+                "Approved by " + request.approvedBy(),
+                AuditEvent.SUCCESS,
+                LocalDateTime.now()));
+
         return ResponseEntity.ok(JobDefinitionResponse.fromEntity(saved));
     }
 
@@ -239,6 +275,16 @@ public class JobManagementController {
                 saved.getId(),
                 saved.getJobName(),
                 request.approvedBy());
+
+        auditService.logEvent(
+            new AuditEvent(
+                AuditEventType.JOB_REJECTED,
+                saved.getJobName(),
+                AuditService.currentUserId(),
+                "Rejected by " + request.approvedBy(),
+                AuditEvent.SUCCESS,
+                LocalDateTime.now()));
+
         return ResponseEntity.ok(JobDefinitionResponse.fromEntity(saved));
     }
 
@@ -263,6 +309,17 @@ public class JobManagementController {
 
         JobDefinitionEntity entity = opt.get();
         String jarFilePath = entity.getJarFilePath();
+        String jobName = entity.getJobName();
+
+        // ── audit before deletion (entity is gone afterwards) ──────────────
+        auditService.logEvent(
+            new AuditEvent(
+                AuditEventType.JOB_DELETED,
+                jobName,
+                AuditService.currentUserId(),
+                "Job definition deleted: id=" + id,
+                AuditEvent.SUCCESS,
+                LocalDateTime.now()));
 
         // Delete the JAR file from disk (if it exists)
         try {

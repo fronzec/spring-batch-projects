@@ -3,12 +3,15 @@ package com.fronzec.frbatchservice.batchjobs.plugins.loader;
 
 import com.fronzec.api.BatchJobPlugin;
 import com.fronzec.frbatchservice.batchjobs.plugins.PluginRegistryService;
+import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditEvent;
+import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditEventType;
+import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditService;
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import com.fronzec.frbatchservice.batchjobs.plugins.util.ChecksumUtil;
 import java.io.File;
 import java.net.URL;
-import java.util.Collections;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,6 +43,7 @@ public class DynamicJobLoaderService {
   private final ApplicationContext applicationContext;
   private final JobRepository jobRepository;
   private final PlatformTransactionManager transactionManager;
+  private final AuditService auditService;
 
   /** Tracks active classloaders by definition ID for cleanup on unload. */
   private final Map<Long, DynamicJobClassLoader> classLoaders = new ConcurrentHashMap<>();
@@ -49,12 +53,14 @@ public class DynamicJobLoaderService {
       PluginRegistryService pluginRegistryService,
       ApplicationContext applicationContext,
       JobRepository jobRepository,
-      PlatformTransactionManager transactionManager) {
+      PlatformTransactionManager transactionManager,
+      AuditService auditService) {
     this.jobDefinitionRepository = jobDefinitionRepository;
     this.pluginRegistryService = pluginRegistryService;
     this.applicationContext = applicationContext;
     this.jobRepository = jobRepository;
     this.transactionManager = transactionManager;
+    this.auditService = auditService;
   }
 
   /**
@@ -177,6 +183,15 @@ public class DynamicJobLoaderService {
           definitionId,
           entity.getJarFilePath());
 
+      auditService.logEvent(
+          new AuditEvent(
+              AuditEventType.JOB_LOADED,
+              entity.getJobName(),
+              AuditService.currentUserId(),
+              "Job loaded from " + entity.getJarFilePath(),
+              AuditEvent.SUCCESS,
+              LocalDateTime.now()));
+
       return new LoadResult(
           entity.getJobName(), LoadResult.LOADED, "Successfully loaded");
 
@@ -185,6 +200,14 @@ public class DynamicJobLoaderService {
       // Reset status from LOADING back to previous
       entity.setLoadStatus(getPreviousLoadStatus(entity, definitionId));
       jobDefinitionRepository.save(entity);
+      auditService.logEvent(
+          new AuditEvent(
+              AuditEventType.JOB_LOADED,
+              entity.getJobName(),
+              AuditService.currentUserId(),
+              "Load rejected: " + e.getMessage(),
+              AuditEvent.FAILURE,
+              LocalDateTime.now()));
       throw e;
     } catch (Exception e) {
       // Mark FAILED and persist the error
@@ -203,6 +226,15 @@ public class DynamicJobLoaderService {
       classLoaders.remove(definitionId);
 
       log.error("Failed to load plugin for definition {}: {}", definitionId, e.getMessage(), e);
+
+      auditService.logEvent(
+          new AuditEvent(
+              AuditEventType.JOB_LOADED,
+              entity.getJobName(),
+              AuditService.currentUserId(),
+              "Load failed: " + e.getMessage(),
+              AuditEvent.FAILURE,
+              LocalDateTime.now()));
 
       if (e instanceof JobLoadException) {
         throw (JobLoadException) e;
@@ -280,6 +312,15 @@ public class DynamicJobLoaderService {
 
     log.info(
         "Unloaded plugin '{}' (id={})", entity.getJobName(), definitionId);
+
+    auditService.logEvent(
+        new AuditEvent(
+            AuditEventType.JOB_UNLOADED,
+            entity.getJobName(),
+            AuditService.currentUserId(),
+            "Job unloaded (force=" + force + ")",
+            AuditEvent.SUCCESS,
+            LocalDateTime.now()));
 
     return new LoadResult(
         entity.getJobName(), LoadResult.UNLOADED, "Successfully unloaded");
