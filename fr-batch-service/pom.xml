@@ -55,6 +55,24 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+        <!-- Override Spring Security 7.0.0 → 7.0.5 to fix Snyk CVEs:
+             CVE-2026-22732/22747 (web), CVE-2026-22754/22753 (config),
+             CVE-2026-22751/22746 (core) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>7.0.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+            <version>7.0.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <version>7.0.5</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
