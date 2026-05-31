@@ -99,7 +99,10 @@ CREATE TABLE IF NOT EXISTS job_definitions (
     load_error TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by VARCHAR(100)
+    created_by VARCHAR(100),
+    approval_status VARCHAR(20) DEFAULT 'PENDING' NOT NULL,
+    approved_by VARCHAR(100),
+    approved_at TIMESTAMP NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_job_name ON job_definitions (job_name);
