@@ -7,6 +7,7 @@ import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditEvent;
 import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditEventType;
 import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditService;
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
+import com.fronzec.frbatchservice.batchjobs.plugins.metrics.PluginMetrics;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import com.fronzec.frbatchservice.batchjobs.plugins.util.ChecksumUtil;
 import java.io.File;
@@ -44,6 +45,7 @@ public class DynamicJobLoaderService {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager transactionManager;
   private final AuditService auditService;
+  private final PluginMetrics pluginMetrics;
 
   /** Tracks active classloaders by definition ID for cleanup on unload. */
   private final Map<Long, DynamicJobClassLoader> classLoaders = new ConcurrentHashMap<>();
@@ -54,13 +56,15 @@ public class DynamicJobLoaderService {
       ApplicationContext applicationContext,
       JobRepository jobRepository,
       PlatformTransactionManager transactionManager,
-      AuditService auditService) {
+      AuditService auditService,
+      PluginMetrics pluginMetrics) {
     this.jobDefinitionRepository = jobDefinitionRepository;
     this.pluginRegistryService = pluginRegistryService;
     this.applicationContext = applicationContext;
     this.jobRepository = jobRepository;
     this.transactionManager = transactionManager;
     this.auditService = auditService;
+    this.pluginMetrics = pluginMetrics;
   }
 
   /**
@@ -111,6 +115,7 @@ public class DynamicJobLoaderService {
     entity.setLoadError(null);
     jobDefinitionRepository.save(entity);
 
+    long loadStartNanos = System.nanoTime();
     DynamicJobClassLoader classLoader = null;
     try {
       // Validate JAR file exists
@@ -192,6 +197,12 @@ public class DynamicJobLoaderService {
               AuditEvent.SUCCESS,
               LocalDateTime.now()));
 
+      long durationMs =
+          java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(
+              System.nanoTime() - loadStartNanos);
+      pluginMetrics.incrementLoad();
+      pluginMetrics.recordLoadDuration(durationMs);
+
       return new LoadResult(
           entity.getJobName(), LoadResult.LOADED, "Successfully loaded");
 
@@ -256,6 +267,8 @@ public class DynamicJobLoaderService {
    *     {@code false}
    */
   public LoadResult unloadJob(Long definitionId, boolean force) {
+    long unloadStartNanos = System.nanoTime();
+
     JobDefinitionEntity entity =
         jobDefinitionRepository
             .findById(definitionId)
@@ -321,6 +334,12 @@ public class DynamicJobLoaderService {
             "Job unloaded (force=" + force + ")",
             AuditEvent.SUCCESS,
             LocalDateTime.now()));
+
+    long durationMs =
+        java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(
+            System.nanoTime() - unloadStartNanos);
+    pluginMetrics.incrementUnload();
+    pluginMetrics.recordUnloadDuration(durationMs);
 
     return new LoadResult(
         entity.getJobName(), LoadResult.UNLOADED, "Successfully unloaded");

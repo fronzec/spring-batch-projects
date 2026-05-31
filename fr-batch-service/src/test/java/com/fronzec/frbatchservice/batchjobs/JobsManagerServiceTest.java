@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.fronzec.api.BatchJobPlugin;
 import com.fronzec.frbatchservice.batchjobs.plugins.PluginRegistryService;
+import com.fronzec.frbatchservice.batchjobs.plugins.metrics.PluginMetrics;
 import com.fronzec.frbatchservice.web.SingleJobDataRequest;
 import java.time.LocalDate;
 import java.util.Collection;
@@ -39,13 +40,15 @@ public class JobsManagerServiceTest {
     @Mock private JobOperator jobOperator;
     @Mock private JobRegistry jobRegistry;
     @Mock private PluginRegistryService pluginRegistryService;
+    @Mock private PluginMetrics pluginMetrics;
     @Mock private BatchJobPlugin plugin;
     @Mock private Job job;
 
     @BeforeEach
     void setUp() {
         jobsManagerService =
-                new JobsManagerService(jobOperator, jobOperator, jobRegistry, pluginRegistryService, null);
+                new JobsManagerService(
+                    jobOperator, jobOperator, jobRegistry, pluginRegistryService, null, pluginMetrics);
     }
 
     @Test

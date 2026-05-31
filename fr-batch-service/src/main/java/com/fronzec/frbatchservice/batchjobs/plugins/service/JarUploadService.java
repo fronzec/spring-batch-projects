@@ -5,6 +5,7 @@ import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditEvent;
 import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditEventType;
 import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditService;
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
+import com.fronzec.frbatchservice.batchjobs.plugins.metrics.PluginMetrics;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import com.fronzec.frbatchservice.batchjobs.plugins.util.ChecksumUtil;
 import com.fronzec.frbatchservice.config.AutoApproveConfig;
@@ -49,6 +50,7 @@ public class JarUploadService {
   private final Optional<AutoApproveConfig> autoApproveConfig;
   private final JarSignatureVerifier jarSignatureVerifier;
   private final AuditService auditService;
+  private final PluginMetrics pluginMetrics;
   private final boolean signatureStrict;
   private final String jarDir;
 
@@ -57,12 +59,14 @@ public class JarUploadService {
       Optional<AutoApproveConfig> autoApproveConfig,
       JarSignatureVerifier jarSignatureVerifier,
       AuditService auditService,
+      PluginMetrics pluginMetrics,
       @Value("${app.plugins.signature.mode:permissive}") String signatureMode,
       @Value("${fr-batch-service.plugins.jar-dir}") String jarDir) {
     this.jobDefinitionRepository = jobDefinitionRepository;
     this.autoApproveConfig = autoApproveConfig;
     this.jarSignatureVerifier = jarSignatureVerifier;
     this.auditService = auditService;
+    this.pluginMetrics = pluginMetrics;
     this.signatureStrict = "strict".equalsIgnoreCase(signatureMode);
     this.jarDir = jarDir;
   }
@@ -107,6 +111,8 @@ public class JarUploadService {
     }
 
     JobDefinitionEntity entity = persistMetadata(jobName, version, mainClassName, checksum, storedPath);
+
+        pluginMetrics.incrementUpload();
 
         // Auto-approve in dev profile (no-op when AutoApproveConfig is absent)
         autoApproveConfig.ifPresent(ac -> ac.approve(entity));
