@@ -78,6 +78,18 @@ public class JobDefinitionEntity {
     @Column(name = "created_by", length = 100)
     private String createdBy;
 
+    @Basic
+    @Column(name = "approval_status", length = 20)
+    private String approvalStatus = "PENDING";
+
+    @Basic
+    @Column(name = "approved_by", length = 100)
+    private String approvedBy;
+
+    @Basic
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
     public Long getId() {
         return id;
     }
@@ -196,6 +208,30 @@ public class JobDefinitionEntity {
 
     public void setCreatedBy(String createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public String getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(String approvalStatus) {
+        this.approvalStatus = approvalStatus;
+    }
+
+    public String getApprovedBy() {
+        return approvedBy;
+    }
+
+    public void setApprovedBy(String approvedBy) {
+        this.approvedBy = approvedBy;
+    }
+
+    public LocalDateTime getApprovedAt() {
+        return approvedAt;
+    }
+
+    public void setApprovedAt(LocalDateTime approvedAt) {
+        this.approvedAt = approvedAt;
     }
 
     @Override

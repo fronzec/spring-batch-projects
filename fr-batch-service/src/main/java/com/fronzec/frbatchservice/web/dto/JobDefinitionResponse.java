@@ -23,7 +23,10 @@ public record JobDefinitionResponse(
         String loadStatus,
         String jarFileName,
         String mainClassName,
-        LocalDateTime createdAt) {
+        LocalDateTime createdAt,
+        String approvalStatus,
+        String approvedBy,
+        LocalDateTime approvedAt) {
 
     /** Builds a {@link JobDefinitionResponse} from a persisted {@link JobDefinitionEntity}. */
     public static JobDefinitionResponse fromEntity(JobDefinitionEntity entity) {
@@ -36,6 +39,9 @@ public record JobDefinitionResponse(
                 entity.getLoadStatus(),
                 Path.of(entity.getJarFilePath()).getFileName().toString(),
                 entity.getMainClassName(),
-                entity.getCreatedAt());
+                entity.getCreatedAt(),
+                entity.getApprovalStatus(),
+                entity.getApprovedBy(),
+                entity.getApprovedAt());
     }
 }
