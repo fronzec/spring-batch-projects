@@ -11,6 +11,7 @@ import com.fronzec.frbatchservice.batchjobs.plugins.PluginRegistrationException;
 import com.fronzec.frbatchservice.batchjobs.plugins.PluginRegistryService;
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
+import com.fronzec.frbatchservice.batchjobs.plugins.util.ChecksumUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,6 +43,7 @@ class DynamicJobLoaderServiceTest {
 
   private Path tempDir;
   private String validJarPath;
+  private String validJarChecksum;
 
   // ── Setup / teardown ──────────────────────────────────────────────────────
 
@@ -52,6 +54,7 @@ class DynamicJobLoaderServiceTest {
     Path jarFile = tempDir.resolve("test-plugin.jar");
     Files.createFile(jarFile);
     validJarPath = jarFile.toString();
+    validJarChecksum = ChecksumUtil.computeSha256(jarFile);
   }
 
   @AfterEach
@@ -82,6 +85,7 @@ class DynamicJobLoaderServiceTest {
     entity.setId(id);
     entity.setJobName(jobName);
     entity.setJarFilePath(validJarPath);
+    entity.setJarChecksum(validJarChecksum);
     entity.setMainClassName("com.test.TestPlugin");
     entity.setEnabled(enabled);
     entity.setLoadStatus(loadStatus);
@@ -133,6 +137,27 @@ class DynamicJobLoaderServiceTest {
     assertTrue(ex.getMessage().contains("JAR file not found"));
     assertEquals(LoadResult.FAILED, entity.getLoadStatus());
     assertNotNull(entity.getLoadError());
+  }
+
+  @Test
+  void loadJob_checksumMismatch_setsFailed() {
+    JobDefinitionEntity entity = createEntity(18L, "tampered-job", true, null);
+    // Use a known-wrong checksum — the actual file on disk will have a different hash
+    entity.setJarChecksum(
+        "0000000000000000000000000000000000000000000000000000000000000000");
+
+    when(jobDefinitionRepository.findById(18L)).thenReturn(Optional.of(entity));
+
+    JobLoadException ex =
+        assertThrows(JobLoadException.class, () -> service.loadJob(18L));
+    assertTrue(
+        ex.getMessage().contains("Checksum mismatch"),
+        "Expected 'Checksum mismatch' but got: " + ex.getMessage());
+    assertEquals(LoadResult.FAILED, entity.getLoadStatus());
+    assertNotNull(entity.getLoadError());
+    assertTrue(
+        entity.getLoadError().contains("Checksum mismatch"),
+        "Expected loadError to contain 'Checksum mismatch' but got: " + entity.getLoadError());
   }
 
   @Test

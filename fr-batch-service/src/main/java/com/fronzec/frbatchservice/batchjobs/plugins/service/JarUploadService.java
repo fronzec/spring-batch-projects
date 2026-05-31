@@ -3,13 +3,12 @@ package com.fronzec.frbatchservice.batchjobs.plugins.service;
 
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
+import com.fronzec.frbatchservice.batchjobs.plugins.util.ChecksumUtil;
 import com.fronzec.frbatchservice.web.dto.JarUploadResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.regex.Pattern;
@@ -65,7 +64,7 @@ public class JarUploadService {
 
         validateJar(file);
 
-        String checksum = computeSha256(file);
+        String checksum = ChecksumUtil.computeSha256(file);
 
         checkDuplicate(jobName);
 
@@ -118,26 +117,7 @@ public class JarUploadService {
         }
     }
 
-    // ─── checksum ──────────────────────────────────────────────────────────────
-
-    /** Computes SHA-256 digest of the entire file. */
-    private String computeSha256(MultipartFile file) {
-        try (InputStream in = file.getInputStream()) {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] buf = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = in.read(buf)) != -1) {
-                digest.update(buf, 0, bytesRead);
-            }
-            return HexFormat.of().formatHex(digest.digest());
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read file for checksum calculation", e);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not available", e);
-        }
-    }
-
-    // ─── duplicate detection ──────────────────────────────────────────────────
+  // ─── duplicate detection ──────────────────────────────────────────────────
 
     /**
      * Fast-fail hint only. The definitive duplicate guard is the database

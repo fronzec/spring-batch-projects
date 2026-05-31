@@ -5,6 +5,7 @@ import com.fronzec.api.BatchJobPlugin;
 import com.fronzec.frbatchservice.batchjobs.plugins.PluginRegistryService;
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
+import com.fronzec.frbatchservice.batchjobs.plugins.util.ChecksumUtil;
 import java.io.File;
 import java.net.URL;
 import java.util.Collections;
@@ -100,6 +101,23 @@ public class DynamicJobLoaderService {
       if (!jarFile.exists()) {
         throw new JobLoadException(
             "JAR file not found: " + entity.getJarFilePath());
+      }
+
+      // Re-verify checksum: detect tampering that occurred after upload
+      String storedChecksum = entity.getJarChecksum();
+      String actualChecksum = ChecksumUtil.computeSha256(jarFile.toPath());
+      if (!actualChecksum.equals(storedChecksum)) {
+        entity.setLoadStatus(LoadResult.FAILED);
+        entity.setLoadError(
+            "Checksum mismatch: stored=" + storedChecksum + " actual=" + actualChecksum);
+        jobDefinitionRepository.save(entity);
+        throw new JobLoadException(
+            "Checksum mismatch for job \""
+                + entity.getJobName()
+                + "\": stored="
+                + storedChecksum
+                + " actual="
+                + actualChecksum);
       }
 
       // Create parent-last classloader
