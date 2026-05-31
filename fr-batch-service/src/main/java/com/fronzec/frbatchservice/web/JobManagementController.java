@@ -7,11 +7,13 @@ import com.fronzec.frbatchservice.batchjobs.plugins.loader.LoadResult;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobParameterTemplateRepository;
 import com.fronzec.frbatchservice.batchjobs.plugins.service.JarUploadService;
+import com.fronzec.frbatchservice.web.dto.ApprovalRequest;
 import com.fronzec.frbatchservice.web.dto.JarUploadResponse;
 import com.fronzec.frbatchservice.web.dto.JobDefinitionResponse;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -165,6 +168,77 @@ public class JobManagementController {
         entity.setEnabled(false);
         JobDefinitionEntity saved = jobDefinitionRepository.save(entity);
         log.info("Job definition disabled: id={}, jobName={}", saved.getId(), saved.getJobName());
+        return ResponseEntity.ok(JobDefinitionResponse.fromEntity(saved));
+    }
+
+    // ─── Approval workflow ────────────────────────────────────────────────────
+
+    /**
+     * Approves a job definition, setting its status to {@code APPROVED} and recording
+     * the approver and timestamp.
+     *
+     * <p>Returns {@code 200 OK} with the updated definition on success.
+     * {@code 404 Not Found} if the definition does not exist.
+     * {@code 409 Conflict} if the definition is already approved.
+     */
+    @PutMapping("/definitions/{id}/approve")
+    public ResponseEntity<?> approveDefinition(
+            @PathVariable long id,
+            @RequestBody ApprovalRequest request) {
+        Optional<JobDefinitionEntity> opt = jobDefinitionRepository.findById(id);
+        if (opt.isEmpty()) {
+            log.warn("Cannot approve — job definition not found: id={}", id);
+            return ResponseEntity.notFound().build();
+        }
+
+        JobDefinitionEntity entity = opt.get();
+
+        if ("APPROVED".equals(entity.getApprovalStatus())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of(
+                            "error", "Already approved",
+                            "message", "Job definition " + id + " is already approved"));
+        }
+
+        entity.setApprovalStatus("APPROVED");
+        entity.setApprovedBy(request.approvedBy());
+        entity.setApprovedAt(LocalDateTime.now());
+        JobDefinitionEntity saved = jobDefinitionRepository.save(entity);
+        log.info(
+                "Job definition approved: id={}, jobName={}, approvedBy={}",
+                saved.getId(),
+                saved.getJobName(),
+                request.approvedBy());
+        return ResponseEntity.ok(JobDefinitionResponse.fromEntity(saved));
+    }
+
+    /**
+     * Rejects a job definition, setting its status to {@code REJECTED} and recording
+     * the reviewer and timestamp.
+     *
+     * <p>Returns {@code 200 OK} with the updated definition on success.
+     * {@code 404 Not Found} if the definition does not exist.
+     */
+    @PutMapping("/definitions/{id}/reject")
+    public ResponseEntity<?> rejectDefinition(
+            @PathVariable long id,
+            @RequestBody ApprovalRequest request) {
+        Optional<JobDefinitionEntity> opt = jobDefinitionRepository.findById(id);
+        if (opt.isEmpty()) {
+            log.warn("Cannot reject — job definition not found: id={}", id);
+            return ResponseEntity.notFound().build();
+        }
+
+        JobDefinitionEntity entity = opt.get();
+        entity.setApprovalStatus("REJECTED");
+        entity.setApprovedBy(request.approvedBy());
+        entity.setApprovedAt(LocalDateTime.now());
+        JobDefinitionEntity saved = jobDefinitionRepository.save(entity);
+        log.info(
+                "Job definition rejected: id={}, jobName={}, rejectedBy={}",
+                saved.getId(),
+                saved.getJobName(),
+                request.approvedBy());
         return ResponseEntity.ok(JobDefinitionResponse.fromEntity(saved));
     }
 
