@@ -9,6 +9,7 @@ import com.fronzec.api.BatchJobPlugin;
 import com.fronzec.api.JobMetadata;
 import com.fronzec.frbatchservice.batchjobs.plugins.PluginRegistrationException;
 import com.fronzec.frbatchservice.batchjobs.plugins.PluginRegistryService;
+import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditService;
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import com.fronzec.frbatchservice.batchjobs.plugins.util.ChecksumUtil;
@@ -38,6 +39,7 @@ class DynamicJobLoaderServiceTest {
   @Mock private ApplicationContext applicationContext;
   @Mock private JobRepository jobRepository;
   @Mock private PlatformTransactionManager transactionManager;
+  @Mock private AuditService auditService;
 
   @InjectMocks private DynamicJobLoaderService service;
 

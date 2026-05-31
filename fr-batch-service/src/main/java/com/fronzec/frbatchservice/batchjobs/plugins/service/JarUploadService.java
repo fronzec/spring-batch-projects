@@ -1,6 +1,9 @@
 /* 2024-2025 */
 package com.fronzec.frbatchservice.batchjobs.plugins.service;
 
+import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditEvent;
+import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditEventType;
+import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditService;
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import com.fronzec.frbatchservice.batchjobs.plugins.util.ChecksumUtil;
@@ -10,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
@@ -44,6 +48,7 @@ public class JarUploadService {
   private final JobDefinitionRepository jobDefinitionRepository;
   private final Optional<AutoApproveConfig> autoApproveConfig;
   private final JarSignatureVerifier jarSignatureVerifier;
+  private final AuditService auditService;
   private final boolean signatureStrict;
   private final String jarDir;
 
@@ -51,11 +56,13 @@ public class JarUploadService {
       JobDefinitionRepository jobDefinitionRepository,
       Optional<AutoApproveConfig> autoApproveConfig,
       JarSignatureVerifier jarSignatureVerifier,
+      AuditService auditService,
       @Value("${app.plugins.signature.mode:permissive}") String signatureMode,
       @Value("${fr-batch-service.plugins.jar-dir}") String jarDir) {
     this.jobDefinitionRepository = jobDefinitionRepository;
     this.autoApproveConfig = autoApproveConfig;
     this.jarSignatureVerifier = jarSignatureVerifier;
+    this.auditService = auditService;
     this.signatureStrict = "strict".equalsIgnoreCase(signatureMode);
     this.jarDir = jarDir;
   }
@@ -73,6 +80,9 @@ public class JarUploadService {
      */
     public JarUploadResponse uploadJar(
             MultipartFile file, String jobName, String version, String mainClassName) {
+
+        String userId = AuditService.currentUserId();
+        try {
 
         validateJar(file);
 
@@ -105,7 +115,29 @@ public class JarUploadService {
                 "JAR uploaded: job={}, version={}, id={}, checksum={}",
                 jobName, version, entity.getId(), checksum);
 
+        // ── audit: success ─────────────────────────────────────────────────
+        auditService.logEvent(
+            new AuditEvent(
+                AuditEventType.JAR_UPLOADED,
+                jobName,
+                userId,
+                "uploaded version " + version + " (id=" + entity.getId() + ")",
+                AuditEvent.SUCCESS,
+                LocalDateTime.now()));
+
         return JarUploadResponse.fromEntity(entity);
+
+        } catch (Exception e) {
+          auditService.logEvent(
+              new AuditEvent(
+                  AuditEventType.JAR_UPLOADED,
+                  jobName,
+                  userId,
+                  "upload failed: " + e.getMessage(),
+                  AuditEvent.FAILURE,
+                  LocalDateTime.now()));
+          throw e;
+        }
     }
 
     // ─── validation ────────────────────────────────────────────────────────────
@@ -230,6 +262,7 @@ public class JarUploadService {
         entity.setEnabled(false);
         entity.setAutoStart(false);
         entity.setLoadStatus("UNLOADED");
+        entity.setCreatedBy(AuditService.currentUserId());
 
         try {
             return jobDefinitionRepository.save(entity);
