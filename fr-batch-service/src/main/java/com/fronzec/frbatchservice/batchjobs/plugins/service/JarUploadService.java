@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -40,18 +41,24 @@ public class JarUploadService {
     /** Allowed characters in job name and version used as path components. */
     private static final Pattern SAFE_NAME = Pattern.compile("[a-zA-Z0-9._\\-]+");
 
-    private final JobDefinitionRepository jobDefinitionRepository;
-    private final Optional<AutoApproveConfig> autoApproveConfig;
-    private final String jarDir;
+  private final JobDefinitionRepository jobDefinitionRepository;
+  private final Optional<AutoApproveConfig> autoApproveConfig;
+  private final JarSignatureVerifier jarSignatureVerifier;
+  private final boolean signatureStrict;
+  private final String jarDir;
 
-    public JarUploadService(
-            JobDefinitionRepository jobDefinitionRepository,
-            Optional<AutoApproveConfig> autoApproveConfig,
-            @Value("${fr-batch-service.plugins.jar-dir}") String jarDir) {
-        this.jobDefinitionRepository = jobDefinitionRepository;
-        this.autoApproveConfig = autoApproveConfig;
-        this.jarDir = jarDir;
-    }
+  public JarUploadService(
+      JobDefinitionRepository jobDefinitionRepository,
+      Optional<AutoApproveConfig> autoApproveConfig,
+      JarSignatureVerifier jarSignatureVerifier,
+      @Value("${app.plugins.signature.mode:permissive}") String signatureMode,
+      @Value("${fr-batch-service.plugins.jar-dir}") String jarDir) {
+    this.jobDefinitionRepository = jobDefinitionRepository;
+    this.autoApproveConfig = autoApproveConfig;
+    this.jarSignatureVerifier = jarSignatureVerifier;
+    this.signatureStrict = "strict".equalsIgnoreCase(signatureMode);
+    this.jarDir = jarDir;
+  }
 
     /**
      * Validates, stores, and registers a new JAR plugin.
@@ -73,9 +80,23 @@ public class JarUploadService {
 
         checkDuplicate(jobName);
 
-        Path storedPath = storeFile(file, jobName, version);
+    Path storedPath = storeFile(file, jobName, version);
 
-        JobDefinitionEntity entity = persistMetadata(jobName, version, mainClassName, checksum, storedPath);
+    // ── signature verification ───────────────────────────────────────────────
+    SignatureResult sigResult = jarSignatureVerifier.verify(storedPath);
+    if (!sigResult.valid()) {
+      List<String> warnings = sigResult.warnings();
+      if (signatureStrict) {
+        throw new InvalidJarException(
+            "JAR signature verification failed in strict mode: " + String.join("; ", warnings));
+      }
+      // Permissive: log and allow upload
+      log.warn(
+          "JAR signature verification issues (permissive mode — upload allowed): {}",
+          warnings);
+    }
+
+    JobDefinitionEntity entity = persistMetadata(jobName, version, mainClassName, checksum, storedPath);
 
         // Auto-approve in dev profile (no-op when AutoApproveConfig is absent)
         autoApproveConfig.ifPresent(ac -> ac.approve(entity));
