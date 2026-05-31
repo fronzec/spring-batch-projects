@@ -13,4 +13,6 @@ public interface JobDefinitionRepository extends JpaRepository<JobDefinitionEnti
     List<JobDefinitionEntity> findByEnabled(Boolean enabled);
 
     List<JobDefinitionEntity> findByApprovalStatus(String approvalStatus);
+
+    long countByLoadStatus(String loadStatus);
 }

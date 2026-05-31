@@ -3,6 +3,7 @@ package com.fronzec.frbatchservice.batchjobs;
 
 import com.fronzec.api.BatchJobPlugin;
 import com.fronzec.frbatchservice.batchjobs.plugins.PluginRegistryService;
+import com.fronzec.frbatchservice.batchjobs.plugins.metrics.PluginMetrics;
 import com.fronzec.frbatchservice.utils.JsonUtils;
 import com.fronzec.frbatchservice.web.SingleJobDataRequest;
 import java.time.LocalDate;
@@ -36,18 +37,21 @@ public class JobsManagerService {
     private final JobRegistry jobRegistry;
     private final PluginRegistryService pluginRegistryService;
     private final JobRepository jobRepository;
+    private final PluginMetrics pluginMetrics;
 
     public JobsManagerService(
             JobOperator asyncJobLauncher,
             JobOperator syncJobLauncher,
             JobRegistry jobRegistry,
             PluginRegistryService pluginRegistryService,
-            JobRepository jobRepository) {
+            JobRepository jobRepository,
+            PluginMetrics pluginMetrics) {
         this.asyncJobLauncher = asyncJobLauncher;
         this.syncJobLauncher = syncJobLauncher;
         this.jobRegistry = jobRegistry;
         this.pluginRegistryService = pluginRegistryService;
         this.jobRepository = jobRepository;
+        this.pluginMetrics = pluginMetrics;
     }
 
     public HashMap<String, String> launchAllNonAutoDetectedJobsAsync(
@@ -195,6 +199,7 @@ public class JobsManagerService {
 
         try {
             launchedJobMetadata.put("jobName", request.getJobBeanName());
+            pluginMetrics.incrementExecuted(request.getJobBeanName());
             var jobParametersBuilder = new JobParametersBuilder();
             LocalDate execDate = LocalDate.parse(request.getParams().get("date"));
             jobExecParams.put("DATE", execDate.toString());

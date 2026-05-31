@@ -11,6 +11,7 @@ import com.fronzec.frbatchservice.batchjobs.plugins.PluginRegistrationException;
 import com.fronzec.frbatchservice.batchjobs.plugins.PluginRegistryService;
 import com.fronzec.frbatchservice.batchjobs.plugins.audit.AuditService;
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
+import com.fronzec.frbatchservice.batchjobs.plugins.metrics.PluginMetrics;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import com.fronzec.frbatchservice.batchjobs.plugins.util.ChecksumUtil;
 import java.io.IOException;
@@ -40,6 +41,7 @@ class DynamicJobLoaderServiceTest {
   @Mock private JobRepository jobRepository;
   @Mock private PlatformTransactionManager transactionManager;
   @Mock private AuditService auditService;
+  @Mock private PluginMetrics pluginMetrics;
 
   @InjectMocks private DynamicJobLoaderService service;
 
