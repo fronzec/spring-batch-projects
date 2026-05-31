@@ -4,6 +4,7 @@ package com.fronzec.frbatchservice.batchjobs.plugins.service;
 import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import com.fronzec.frbatchservice.batchjobs.plugins.util.ChecksumUtil;
+import com.fronzec.frbatchservice.config.AutoApproveConfig;
 import com.fronzec.frbatchservice.web.dto.JarUploadResponse;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HexFormat;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +41,15 @@ public class JarUploadService {
     private static final Pattern SAFE_NAME = Pattern.compile("[a-zA-Z0-9._\\-]+");
 
     private final JobDefinitionRepository jobDefinitionRepository;
+    private final Optional<AutoApproveConfig> autoApproveConfig;
     private final String jarDir;
 
     public JarUploadService(
             JobDefinitionRepository jobDefinitionRepository,
+            Optional<AutoApproveConfig> autoApproveConfig,
             @Value("${fr-batch-service.plugins.jar-dir}") String jarDir) {
         this.jobDefinitionRepository = jobDefinitionRepository;
+        this.autoApproveConfig = autoApproveConfig;
         this.jarDir = jarDir;
     }
 
@@ -71,6 +76,9 @@ public class JarUploadService {
         Path storedPath = storeFile(file, jobName, version);
 
         JobDefinitionEntity entity = persistMetadata(jobName, version, mainClassName, checksum, storedPath);
+
+        // Auto-approve in dev profile (no-op when AutoApproveConfig is absent)
+        autoApproveConfig.ifPresent(ac -> ac.approve(entity));
 
         log.info(
                 "JAR uploaded: job={}, version={}, id={}, checksum={}",

@@ -89,6 +89,7 @@ class DynamicJobLoaderServiceTest {
     entity.setMainClassName("com.test.TestPlugin");
     entity.setEnabled(enabled);
     entity.setLoadStatus(loadStatus);
+    entity.setApprovalStatus("APPROVED");
     return entity;
   }
 

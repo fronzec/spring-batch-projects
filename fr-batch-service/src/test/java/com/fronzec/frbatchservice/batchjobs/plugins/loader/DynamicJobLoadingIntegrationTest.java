@@ -225,10 +225,26 @@ class DynamicJobLoadingIntegrationTest {
         .andExpect(jsonPath("$.enabled").value(true));
   }
 
-  /* ── 3. Load valid plugin → 200 LOADED ─────────────────────────────────── */
+  /* ── 3. Approve the definition ────────────────────────────────────────── */
 
   @Test
   @Order(3)
+  void approveDefinition_setsApproved() throws Exception {
+    mockMvc
+        .perform(
+            put(JOBS_BASE + "/definitions/" + definitionId + "/approve")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"approved_by\":\"test-user\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.approval_status").value("APPROVED"))
+        .andExpect(jsonPath("$.approved_by").value("test-user"))
+        .andExpect(jsonPath("$.approved_at").exists());
+  }
+
+  /* ── 4. Load valid plugin → 200 LOADED ─────────────────────────────────── */
+
+  @Test
+  @Order(4)
   void loadValidPlugin_returnsLoaded() throws Exception {
     mockMvc
         .perform(post(JOBS_BASE + "/definitions/" + definitionId + "/load"))
@@ -238,10 +254,10 @@ class DynamicJobLoadingIntegrationTest {
         .andExpect(jsonPath("$.message").value("Successfully loaded"));
   }
 
-  /* ── 4. Load non-existent definition → 404 ────────────────────────────── */
+  /* ── 5. Load non-existent definition → 404 ────────────────────────────── */
 
   @Test
-  @Order(4)
+  @Order(5)
   void loadNonExistentDefinition_returnsNotFound() throws Exception {
     mockMvc
         .perform(post(JOBS_BASE + "/definitions/99999/load"))
@@ -250,10 +266,10 @@ class DynamicJobLoadingIntegrationTest {
         .andExpect(jsonPath("$.error").value("Not Found"));
   }
 
-  /* ── 5. Load already-loaded → 409 ─────────────────────────────────────── */
+  /* ── 6. Load already-loaded → 409 ─────────────────────────────────────── */
 
   @Test
-  @Order(5)
+  @Order(6)
   void loadAlreadyLoaded_returnsConflict() throws Exception {
     mockMvc
         .perform(post(JOBS_BASE + "/definitions/" + definitionId + "/load"))
@@ -263,10 +279,10 @@ class DynamicJobLoadingIntegrationTest {
         .andExpect(jsonPath("$.message").value(containsString("already loaded")));
   }
 
-  /* ── 6. Unload loaded plugin → 200 UNLOADED ───────────────────────────── */
+  /* ── 7. Unload loaded plugin → 200 UNLOADED ───────────────────────────── */
 
   @Test
-  @Order(6)
+  @Order(7)
   void unloadLoadedPlugin_returnsUnloaded() throws Exception {
     mockMvc
         .perform(post(JOBS_BASE + "/definitions/" + definitionId + "/unload"))
@@ -276,10 +292,10 @@ class DynamicJobLoadingIntegrationTest {
         .andExpect(jsonPath("$.message").value("Successfully unloaded"));
   }
 
-  /* ── 7. Unload non-loaded plugin → 200 (idempotent) ──────────────────── */
+  /* ── 8. Unload non-loaded plugin → 200 (idempotent) ──────────────────── */
 
   @Test
-  @Order(7)
+  @Order(8)
   void unloadNonLoadedPlugin_returnsUnloaded() throws Exception {
     // The definition was already unloaded in test 6; a second unload succeeds
     // because the service handles the "not in registry" case gracefully and just
@@ -290,10 +306,10 @@ class DynamicJobLoadingIntegrationTest {
         .andExpect(jsonPath("$.status").value("UNLOADED"));
   }
 
-  /* ── 8. Reload → 200 LOADED (atomic unload+load) ──────────────────────── */
+  /* ── 9. Reload → 200 LOADED (atomic unload+load) ──────────────────────── */
 
   @Test
-  @Order(8)
+  @Order(9)
   void reloadPlugin_returnsLoaded() throws Exception {
     mockMvc
         .perform(post(JOBS_BASE + "/definitions/" + definitionId + "/reload"))
@@ -302,10 +318,10 @@ class DynamicJobLoadingIntegrationTest {
         .andExpect(jsonPath("$.status").value("LOADED"));
   }
 
-  /* ── 9. GET /jobs/plugins → merged response includes dynamic plugin ───── */
+  /* ── 10. GET /jobs/plugins → merged response includes dynamic plugin ───── */
 
   @Test
-  @Order(9)
+  @Order(10)
   void getPlugins_includesDynamicPlugin_andClasspathPlugins() throws Exception {
     mockMvc
         .perform(get(JOBS_BASE + "/plugins"))
@@ -323,10 +339,10 @@ class DynamicJobLoadingIntegrationTest {
         .andExpect(jsonPath("$[2].display_name").value("Dynamic Test Plugin"));
   }
 
-  /* ── 10. Execute dynamic plugin via JobsManagerService ─────────────────── */
+  /* ── 11. Execute dynamic plugin via JobsManagerService ─────────────────── */
 
   @Test
-  @Order(10)
+  @Order(11)
   void dynamicPlugin_isExecutable_viaJobsManagerService() {
     // Mock ApiClient in case the job execution infrastructure accesses it
     DataCalculatedResponse salaryResponse = new DataCalculatedResponse();
@@ -346,10 +362,10 @@ class DynamicJobLoadingIntegrationTest {
         "Dynamic plugin job should complete successfully");
   }
 
-  /* ── 11. Load-all → loads unloaded definitions ─────────────────────────── */
+  /* ── 12. Load-all → loads unloaded definitions ─────────────────────────── */
 
   @Test
-  @Order(11)
+  @Order(12)
   void loadAll_loadsUnloadedDefinitions() throws Exception {
     // First, reload to ensure the definition is LOADED, then unload it so
     // load-all has something to pick up.

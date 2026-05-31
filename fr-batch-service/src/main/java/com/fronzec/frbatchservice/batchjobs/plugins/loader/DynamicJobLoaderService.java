@@ -83,6 +83,17 @@ public class DynamicJobLoaderService {
           "Job definition \"" + entity.getJobName() + "\" (id=" + definitionId + ") is disabled");
     }
 
+    // Approval guard: only APPROVED definitions can be loaded
+    if (!"APPROVED".equals(entity.getApprovalStatus())) {
+      throw new IllegalStateException(
+          "Job definition \""
+              + entity.getJobName()
+              + "\" (id="
+              + definitionId
+              + ") must be approved before loading. Current status: "
+              + entity.getApprovalStatus());
+    }
+
     // Optimistic guard: already loaded or currently loading
     if (LoadResult.LOADED.equals(entity.getLoadStatus())) {
       throw new IllegalStateException(
