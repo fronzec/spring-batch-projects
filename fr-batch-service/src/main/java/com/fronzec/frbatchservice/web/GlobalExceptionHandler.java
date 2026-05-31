@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -121,6 +123,30 @@ public class GlobalExceptionHandler {
     log.warn("Illegal state: {}", ex.getMessage());
     return ResponseEntity.status(HttpStatus.CONFLICT)
         .body(buildError(409, "Conflict", ex.getMessage(), request));
+  }
+
+  /**
+   * Maps Spring Security {@link AccessDeniedException} — the caller is
+   * authenticated but lacks the required role — to {@code 403 Forbidden}.
+   */
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ErrorResponse> handleAccessDenied(
+      AccessDeniedException ex, HttpServletRequest request) {
+    log.warn("Access denied on {}: {}", request.getRequestURI(), ex.getMessage());
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .body(buildError(403, "Forbidden", "Access denied", request));
+  }
+
+  /**
+   * Maps Spring Security {@link AuthenticationException} — no or invalid
+   * credentials — to {@code 401 Unauthorized}.
+   */
+  @ExceptionHandler(AuthenticationException.class)
+  public ResponseEntity<ErrorResponse> handleAuthentication(
+      AuthenticationException ex, HttpServletRequest request) {
+    log.warn("Authentication failed on {}: {}", request.getRequestURI(), ex.getMessage());
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        .body(buildError(401, "Unauthorized", "Authentication required", request));
   }
 
   /**
