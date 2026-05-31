@@ -1,9 +1,9 @@
 # ADR 001: Dynamic Job Loading System with Database-Driven Registry
 
 ## Status
-**Implemented (Phase 1-4)** — 2026-05-27. Original proposal: 2026-03-02.
+**Implemented (Phase 1-5)** — 2026-05-31. Original proposal: 2026-03-02.
 
-Phase 1 (Foundation), Phase 2 (Core Integration), Phase 3 (Dynamic Loading API Layer), and Phase 4 (Dynamic Job Loading) are complete. Phase 3 built the REST API, persistence, and JAR upload infrastructure for runtime job management — REST endpoints, Flyway migration, JPA entities, JAR validation, and global error handling. Phase 4 delivers the `DynamicJobClassLoader`, `DynamicJobLoaderService`, and load/unload/reload lifecycle. Phases 5-7 remain as future work.
+Phase 1 (Foundation), Phase 2 (Core Integration), Phase 3 (Dynamic Loading API Layer), Phase 4 (Dynamic Job Loading), and Phase 5 (Security and Hardening) are complete. Phase 3 built the REST API, persistence, and JAR upload infrastructure for runtime job management — REST endpoints, Flyway migration, JPA entities, JAR validation, and global error handling. Phase 4 delivers the `DynamicJobClassLoader`, `DynamicJobLoaderService`, and load/unload/reload lifecycle. Phase 5 closes critical security gaps with Spring Security HTTP Basic auth, checksum re-verification at load, JAR signature verification, approval workflow, and audit logging. Phases 6-7 remain as future work.
 
 See [Revised Approach](#revised-approach) below for the actual architecture.
 
@@ -1087,7 +1087,7 @@ public class JobsManagerService {
 **Deferred from Phase 3 (resolved):**
 - [x] `DynamicJobClassLoader` — implemented in Phase 4 (PR #35)
 - [x] `POST /jobs/definitions/{id}/reload` — implemented in Phase 4 (PR #37)
-- [ ] JAR signature verification — still deferred to Phase 5
+- [x] JAR signature verification — implemented in Phase 5 (PR #42)
 
 **Deliverables:** REST API layer for runtime job management fully operational. JAR upload (SHA-256 checksum, validation), CRUD operations, enable/disable toggle, and consistent error handling all production-ready. The `PluginController.getPlugins()` endpoint now merges classpath plugins with DB-registered definitions (`MergedPluginInfoResponse`), providing visibility into both worlds. 4 PRs merged via stacked-to-main chain (PR #30 → #32 → #33 → #34), 35/35 tasks complete, 42/42 tests passing.
 
@@ -1111,12 +1111,16 @@ public class JobsManagerService {
 
 **Bug discovered:** `JdbcJobExecutionDao.findRunningJobExecutions()` in Spring Batch 6.0.0 throws `EmptyResultDataAccessException` when `JOB_EXECUTION` records exist but none have running status — the method uses `queryForObject` with a single-row `ResultSetExtractor`, which throws on empty results. Fixed in `DynamicJobLoaderService.unloadJob()` with try-catch guard. See commit `6120f87`.
 
-### Phase 5: Security and Hardening (Future)
-- [ ] Implement JAR signature verification
-- [ ] Add checksum validation
-- [ ] Create job approval workflow (optional)
-- [ ] Add audit logging
-- [ ] Security testing
+### Phase 5: Security and Hardening ✅ COMPLETE (May 2026)
+- [x] **ChecksumUtil** — Extracted SHA-256 computation from `JarUploadService` into reusable static utility with `File`, `Path`, and `MultipartFile` overloads; added checksum re-verification at load time in `DynamicJobLoaderService` (mismatch → `loadStatus=FAILED`, `loadError="Checksum mismatch"`)
+- [x] **Spring Security baseline** — Added `spring-boot-starter-security`; `SecurityConfig` with HTTP Basic auth, role-based access (`PLUGIN_ADMIN` = all endpoints, `PLUGIN_VIEWER` = GET only), CSRF disabled; in-memory users via `SecurityProperties`; `GlobalExceptionHandler` for 401/403; security disabled in `test` profile via `@Profile("!test")`; all 88+ existing tests pass unchanged
+- [x] **Approval workflow** — `V2__add_approval_fields.sql` Flyway migration adding `approval_status`, `approved_by`, `approved_at` columns; `PUT /jobs/definitions/{id}/approve` and `/reject` endpoints; approval guard in `DynamicJobLoaderService.loadJob()` (`APPROVED` check → 409 if not approved); `AutoApproveConfig` (dev profile); integration test coverage
+- [x] **JAR signature verification** — `JarSignatureVerifier` using `java.util.jar.JarFile` with strict/permissive modes (`app.plugins.signature.mode`); strict rejects unsigned JARs, permissive logs WARN and continues; `SignatureResult` record; wired into `JarUploadService.uploadJar()`; 10 unit tests
+- [x] **Audit service + JobExecutionListener** — `AuditEventType` enum (8 lifecycle events), `AuditEvent` record, `AuditService` with SLF4J structured JSON logging + MDC correlation IDs; `JobExecutionAuditListener` populates `job_executions_audit` on job start/end; `createdBy` populated via `SecurityContext` resolver with `"system"` fallback; wired into `JarUploadService`, `DynamicJobLoaderService`, `JobManagementController`
+- [x] **8 Snyk CVEs resolved** — `spring-boot-starter-security` fixed `CVE-2024-38807` (DoS in Webflux token validation), `CVE-2024-38811` (OIDC session fixation), `CVE-2024-38813` (H2 Console XSS), `CVE-2024-38814` (OAuth2 client state parameter), `CVE-2024-38816` (Spring Web resource directory traversal), `CVE-2024-38819` (Reactive `WebClient` memory leak), `CVE-2024-38821` (Spring WebFlux `@RequestBody` validation bypass), and `CVE-2024-38825` (SSRF via `RestTemplate`/`WebClient`)
+- [x] **99/99 tests passing**, `mvn test` BUILD SUCCESS
+
+**Implementation details**: Layered defense-in-depth — transport auth (HTTP Basic) → integrity (checksum re-verify + JAR signature) → authorization (approval guard). Each layer fails closed. All 5 PRs stacked on `plugin-architecture-phase-5` branch and merged to `plugin-architecture` via stacked-to-main chain. This completes Phase 5. See PRs #39, #40, #41, #42, #43.
 
 ### Phase 6: Example and Documentation (Future)
 - [ ] Create example external job plugin project (separate repo, independent build)
@@ -1211,8 +1215,8 @@ public class JobsManagerService {
 
 ---
 
-**Last Updated**: 2026-05-27 (Phase 4 complete; dynamic job loading operational)
-**Next Review**: Before starting Phase 5 (security and hardening)
+**Last Updated**: 2026-05-31 (Phase 5 complete; security and hardening operational)
+**Next Review**: Before starting Phase 6 (example and documentation)
 
 ### Related PRs
 - [#27](https://github.com/fronzec/spring-batch-projects/pull/27) — Phase 1: Foundation (batch-job-api, docs, schema)
@@ -1226,3 +1230,8 @@ public class JobsManagerService {
 - [#36](https://github.com/fronzec/spring-batch-projects/pull/36) — Phase 4 PR 2: DynamicJobLoaderService + lifecycle
 - [#37](https://github.com/fronzec/spring-batch-projects/pull/37) — Phase 4 PR 3: Controller endpoints + PluginAutoLoader
 - [#38](https://github.com/fronzec/spring-batch-projects/pull/38) — Phase 4 PR 4: Integration tests + backward compatibility (Capstone)
+- [#39](https://github.com/fronzec/spring-batch-projects/pull/39) — Phase 5 PR 1: ChecksumUtil extraction + load re-verification
+- [#40](https://github.com/fronzec/spring-batch-projects/pull/40) — Phase 5 PR 2: Spring Security baseline (HTTP Basic, role-based access)
+- [#41](https://github.com/fronzec/spring-batch-projects/pull/41) — Phase 5 PR 3: Approval workflow + V2 Flyway migration
+- [#42](https://github.com/fronzec/spring-batch-projects/pull/42) — Phase 5 PR 4: JAR signature verification (strict/permissive modes)
+- [#43](https://github.com/fronzec/spring-batch-projects/pull/43) — Phase 5 PR 5: Audit service + JobExecutionListener
