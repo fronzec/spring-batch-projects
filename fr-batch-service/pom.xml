@@ -110,6 +110,10 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
         <!-- Override transitive jackson-core (brought by flyway-core)
              with 2.21.3 to fix Snyk: resource exhaustion CVE -->
         <dependency>

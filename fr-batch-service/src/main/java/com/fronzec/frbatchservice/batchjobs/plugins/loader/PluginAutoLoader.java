@@ -33,28 +33,32 @@ class PluginAutoLoader implements ApplicationRunner {
   @Override
   public void run(ApplicationArguments args) {
     log.info("Starting auto-load of enabled plugins...");
-    Map<String, LoadResult> results = loaderService.loadAllEnabled();
+    try {
+      Map<String, LoadResult> results = loaderService.loadAllEnabled();
 
-    long loadedCount =
-        results.values().stream().filter(r -> LoadResult.LOADED.equals(r.status())).count();
-    long alreadyLoadedCount =
+      long loadedCount =
+          results.values().stream().filter(r -> LoadResult.LOADED.equals(r.status())).count();
+      long alreadyLoadedCount =
+          results.values().stream()
+              .filter(r -> LoadResult.LOADED.equals(r.status()) && "Already loaded".equals(r.message()))
+              .count();
+      long failedCount =
+          results.values().stream().filter(r -> LoadResult.FAILED.equals(r.status())).count();
+
+      log.info(
+          "Auto-load complete: {} newly loaded, {} already loaded, {} failed ({} total)",
+          loadedCount - alreadyLoadedCount,
+          alreadyLoadedCount,
+          failedCount,
+          results.size());
+
+      if (failedCount > 0) {
         results.values().stream()
-            .filter(r -> LoadResult.LOADED.equals(r.status()) && "Already loaded".equals(r.message()))
-            .count();
-    long failedCount =
-        results.values().stream().filter(r -> LoadResult.FAILED.equals(r.status())).count();
-
-    log.info(
-        "Auto-load complete: {} newly loaded, {} already loaded, {} failed ({} total)",
-        loadedCount - alreadyLoadedCount,
-        alreadyLoadedCount,
-        failedCount,
-        results.size());
-
-    if (failedCount > 0) {
-      results.values().stream()
-          .filter(r -> LoadResult.FAILED.equals(r.status()))
-          .forEach(r -> log.warn("  Failed to auto-load '{}': {}", r.jobName(), r.message()));
+            .filter(r -> LoadResult.FAILED.equals(r.status()))
+            .forEach(r -> log.warn("  Failed to auto-load '{}': {}", r.jobName(), r.message()));
+      }
+    } catch (Exception e) {
+      log.warn("Auto-load skipped — database may not be ready: {}", e.getMessage());
     }
   }
 }
