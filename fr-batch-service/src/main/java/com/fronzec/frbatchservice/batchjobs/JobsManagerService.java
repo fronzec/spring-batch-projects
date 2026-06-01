@@ -130,7 +130,7 @@ public class JobsManagerService {
      * Launches a registered plugin job asynchronously using parameters from the request.
      *
      * @param request container holding the target job bean name and a map of string parameters;
-     *                must include "date" and "execution_attempt_number"
+     *                must include "DATE" (ISO-8601 date); "ATTEMPT_NUMBER" defaults to "1" if absent
      * @return a map containing outcome details with keys "jobName", "result", or "error"
      */
     public Map<String, String> asyncRunJobWithParams(SingleJobDataRequest request) {
@@ -147,9 +147,16 @@ public class JobsManagerService {
         try {
             launchedJobMetadata.put("jobName", request.getJobBeanName());
             var jobParametersBuilder = new JobParametersBuilder();
-            LocalDate execDate = LocalDate.parse(request.getParams().get("date"));
+
+            String dateStr = request.getParams().get("DATE");
+            if (dateStr == null || dateStr.isBlank()) {
+                launchedJobMetadata.put("error", "Missing required parameter: DATE");
+                return launchedJobMetadata;
+            }
+            LocalDate execDate = LocalDate.parse(dateStr);
             jobExecParams.put("DATE", execDate.toString());
-            jobExecParams.put("ATTEMPT_NUMBER", request.getParams().get("execution_attempt_number"));
+            String attemptStr = request.getParams().get("ATTEMPT_NUMBER");
+            jobExecParams.put("ATTEMPT_NUMBER", attemptStr != null ? attemptStr : "1");
 
             jobExecParams.forEach(jobParametersBuilder::addString);
             jobParametersBuilder.addString(
@@ -181,8 +188,8 @@ public class JobsManagerService {
      * Runs the specified registered plugin job synchronously using parameters supplied in the request.
      *
      * @param request a SingleJobDataRequest whose params map must contain:
-     *                - "date": ISO-8601 date string used as the job's {@code DATE} parameter
-     *                - "execution_attempt_number": a string used as the job's {@code ATTEMPT_NUMBER} parameter
+     *                - "DATE": ISO-8601 date string used as the job's {@code DATE} parameter
+     *                - "ATTEMPT_NUMBER": an integer string used as the job's {@code ATTEMPT_NUMBER} parameter (defaults to "1" if absent)
      *                - "description": a non-identifying description added as {@code DESCRIPTION}
      * @return a map of result keys: "jobName", "parameters", "result" on success; "error" on failure or not-found
      */
@@ -201,9 +208,16 @@ public class JobsManagerService {
             launchedJobMetadata.put("jobName", request.getJobBeanName());
             pluginMetrics.incrementExecuted(request.getJobBeanName());
             var jobParametersBuilder = new JobParametersBuilder();
-            LocalDate execDate = LocalDate.parse(request.getParams().get("date"));
+
+            String dateStr = request.getParams().get("DATE");
+            if (dateStr == null || dateStr.isBlank()) {
+                launchedJobMetadata.put("error", "Missing required parameter: DATE");
+                return launchedJobMetadata;
+            }
+            LocalDate execDate = LocalDate.parse(dateStr);
             jobExecParams.put("DATE", execDate.toString());
-            jobExecParams.put("ATTEMPT_NUMBER", request.getParams().get("execution_attempt_number"));
+            String attemptStr = request.getParams().get("ATTEMPT_NUMBER");
+            jobExecParams.put("ATTEMPT_NUMBER", attemptStr != null ? attemptStr : "1");
 
             jobExecParams.forEach(jobParametersBuilder::addString);
             jobParametersBuilder.addString(

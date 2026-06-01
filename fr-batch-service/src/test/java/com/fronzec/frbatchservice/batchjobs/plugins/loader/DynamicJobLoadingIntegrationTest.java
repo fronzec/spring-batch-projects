@@ -352,8 +352,8 @@ class DynamicJobLoadingIntegrationTest {
 
     SingleJobDataRequest request = new SingleJobDataRequest();
     request.setJobBeanName(JOB_NAME);
-    request.setParam("date", LocalDate.now().toString());
-    request.setParam("execution_attempt_number", "1");
+    request.setParam("DATE", LocalDate.now().toString());
+    request.setParam("ATTEMPT_NUMBER", "1");
     request.setParam("description", "dynamic-loading-integration-test");
 
     Map<String, String> result = jobsManagerService.syncRunJobWithParams(request);

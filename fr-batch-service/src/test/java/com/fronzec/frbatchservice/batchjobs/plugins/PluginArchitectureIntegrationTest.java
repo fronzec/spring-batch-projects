@@ -145,8 +145,8 @@ class PluginArchitectureIntegrationTest {
   void syncRunJobWithParams_job1_completesWithExitStatusCompleted() {
     SingleJobDataRequest request = new SingleJobDataRequest();
     request.setJobBeanName("job1");
-    request.setParam("date", LocalDate.now().toString());
-    request.setParam("execution_attempt_number", "1");
+    request.setParam("DATE", LocalDate.now().toString());
+    request.setParam("ATTEMPT_NUMBER", "1");
     request.setParam("description", "integration-test");
 
     DataCalculatedResponse salaryResponse = new DataCalculatedResponse();
@@ -199,8 +199,8 @@ class PluginArchitectureIntegrationTest {
 
     SingleJobDataRequest request = new SingleJobDataRequest();
     request.setJobBeanName("job2");
-    request.setParam("date", LocalDate.now().toString());
-    request.setParam("execution_attempt_number", "1");
+    request.setParam("DATE", LocalDate.now().toString());
+    request.setParam("ATTEMPT_NUMBER", "1");
     request.setParam("description", "recovery-integration-test");
 
     Map<String, String> result = jobsManagerService.syncRunJobWithParams(request);
@@ -240,8 +240,8 @@ class PluginArchitectureIntegrationTest {
 
     SingleJobDataRequest request = new SingleJobDataRequest();
     request.setJobBeanName("job2");
-    request.setParam("date", LocalDate.now().toString());
-    request.setParam("execution_attempt_number", "2");
+    request.setParam("DATE", LocalDate.now().toString());
+    request.setParam("ATTEMPT_NUMBER", "2");
     request.setParam("description", "failure-integration-test");
 
     Map<String, String> result = jobsManagerService.syncRunJobWithParams(request);
