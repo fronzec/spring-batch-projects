@@ -160,7 +160,7 @@ public class JobsManagerService {
 
             jobExecParams.forEach(jobParametersBuilder::addString);
             jobParametersBuilder.addString(
-                    "DESCRIPTION", request.getParams().get("description"), false);
+                    "DESCRIPTION", request.getParams().getOrDefault("DESCRIPTION", ""), false);
             logger.info(
                     "Attempt to run job -> {} with params -> {}",
                     theJob,
@@ -221,7 +221,7 @@ public class JobsManagerService {
 
             jobExecParams.forEach(jobParametersBuilder::addString);
             jobParametersBuilder.addString(
-                    "DESCRIPTION", request.getParams().get("description"), false);
+                    "DESCRIPTION", request.getParams().getOrDefault("DESCRIPTION", ""), false);
             logger.info(
                     "Attempt to run job -> {} with identifying params -> {}",
                     theJob,
