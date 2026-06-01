@@ -13,6 +13,7 @@ import com.fronzec.frbatchservice.web.dto.JarUploadResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -223,7 +224,7 @@ public class JarUploadService {
         }
 
         try {
-            file.transferTo(target.toFile());
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new RuntimeException("Failed to store JAR at " + target, e);
         }
