@@ -38,3 +38,7 @@ tasks:
   runapp:
     cmds:
       - infisical run --env=dev -- ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=dev"
+
+  autoskills:
+    cmds:
+      - npx autoskills
