@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
  * atomically at persist time.
  */
 @Component
-@Profile("dev")
+@Profile("!production")
 public class AutoApproveConfig {
 
   private static final Logger log = LoggerFactory.getLogger(AutoApproveConfig.class);
