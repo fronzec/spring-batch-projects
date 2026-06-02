@@ -48,7 +48,8 @@ public class JobsManagerServiceTest {
     void setUp() {
         jobsManagerService =
                 new JobsManagerService(
-                    jobOperator, jobOperator, jobRegistry, pluginRegistryService, null, pluginMetrics);
+                    jobOperator, jobOperator, jobRegistry, pluginRegistryService, null,
+                    pluginMetrics, null, null);
     }
 
     @Test

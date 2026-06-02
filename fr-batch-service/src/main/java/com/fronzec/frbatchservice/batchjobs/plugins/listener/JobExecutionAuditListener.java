@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.job.JobExecution;
 import org.springframework.batch.core.listener.JobExecutionListener;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
