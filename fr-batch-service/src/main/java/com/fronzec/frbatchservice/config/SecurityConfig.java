@@ -13,6 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
@@ -98,5 +99,25 @@ public class SecurityConfig {
   @Bean
   public PasswordEncoder passwordEncoder() {
     return NoOpPasswordEncoder.getInstance();
+  }
+
+  /**
+   * Production-grade password encoder using Spring Security's
+   * {@link org.springframework.security.crypto.factory.PasswordEncoderFactories
+   * DelegatingPasswordEncoder}.
+   *
+   * <p>Active only when the {@code production} profile is active. Reads the
+   * password prefix ({@code {bcrypt}}, {@code {noop}}, {@code {pbkdf2}}, etc.)
+   * from the stored value and delegates to the appropriate encoder. This allows
+   * gradual migration from {@code {noop}} plain-text to {@code {bcrypt}} hashes
+   * without code changes — only the property values and active profile differ.
+   *
+   * <p>When the {@code production} profile is NOT active, the
+   * {@link #passwordEncoder()} bean (NoOp) is used instead.
+   */
+  @Bean
+  @Profile("production")
+  public PasswordEncoder productionPasswordEncoder() {
+    return PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 }
