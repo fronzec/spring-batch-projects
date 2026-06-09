@@ -1,0 +1,8 @@
+target/
+.git/
+_devenvironment/
+node_modules/
+*.log
+.idea/
+*.iml
+.vscode/
