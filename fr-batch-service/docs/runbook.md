@@ -2,7 +2,7 @@
 
 ## 1. System Overview
 
-```
+```text
                    ┌─────────────┐
                    │   Grafana   │  :3000 (dashboards)
                    └──────┬──────┘
@@ -208,8 +208,8 @@ curl -s http://localhost:8080/api/batch-service/actuator/health
 # Check which component is down
 curl -s http://localhost:8080/api/batch-service/actuator/health | jq .
 
-# Check MySQL connectivity
-docker compose exec app wget -qO- http://mysql:3306 || echo "MySQL unreachable"
+# Check MySQL connectivity (TCP/MySQL protocol — not HTTP)
+docker compose exec mysql mysqladmin ping -h localhost -u root -p"${DB_PASSWORD}" || echo "MySQL unreachable"
 
 # Check disk space
 docker compose exec app df -h /data/plugins/jars
@@ -230,8 +230,8 @@ docker compose exec app df -h /data/plugins/jars
 # Check app logs for classloader errors
 docker compose logs app | grep -i "classloader\|LoadFailure"
 
-# Verify JAR integrity
-sha256sum /data/plugins/jars/{jobDefinitionId}.jar
+# Verify JAR integrity (path lives inside the app container)
+docker compose exec app sha256sum /data/plugins/jars/{jobDefinitionId}.jar
 # Compare with checksum in DB:
 docker compose exec mysql mysql -u root -p"${DB_PASSWORD}" -e \
   "SELECT checksum_sha256 FROM job_definitions WHERE id = {jobDefinitionId}" frbatch
@@ -274,7 +274,7 @@ docker compose exec app du -sh /data/plugins/jars/*
 
 **Resolution**:
 1. Identify stale/orphaned JARs (not referenced in `job_definitions` table)
-2. Remove orphaned JARs: `rm /data/plugins/jars/{orphanId}.jar`
+2. Remove orphaned JARs inside the container (never on the host): `docker compose exec app sh -c 'test -f /data/plugins/jars/{orphanId}.jar && rm /data/plugins/jars/{orphanId}.jar'`
 3. Unload and delete unused job definitions: `DELETE /jobs/definitions/{id}`
 4. Expand Docker volume: `docker volume create --opt size=10G plugin-jars` (requires volume recreation)
 
