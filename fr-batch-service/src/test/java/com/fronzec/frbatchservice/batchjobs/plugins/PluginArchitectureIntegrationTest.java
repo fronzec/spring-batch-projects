@@ -13,6 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fronzec.api.BatchJobPlugin;
 import com.fronzec.frbatchservice.batchjobs.JobsManagerService;
+import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
+import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobExecutionAuditRepository;
 import com.fronzec.frbatchservice.batchjobs.dispatchedgroups.DispatchStatus;
 import com.fronzec.frbatchservice.batchjobs.dispatchedgroups.DispatchedGroupEntity;
 import com.fronzec.frbatchservice.batchjobs.dispatchedgroups.DispatchedGroupEntityRepository;
@@ -60,6 +62,8 @@ class PluginArchitectureIntegrationTest {
   @Autowired private JobsManagerService jobsManagerService;
   @Autowired private DispatchedGroupEntityRepository dispatchedGroupEntityRepository;
   @Autowired private PersonV2Repository personV2Repository;
+  @Autowired private JobDefinitionRepository jobDefinitionRepository;
+  @Autowired private JobExecutionAuditRepository jobExecutionAuditRepository;
 
   @MockitoBean private ApiClient apiClient;
 
@@ -68,6 +72,15 @@ class PluginArchitectureIntegrationTest {
   @BeforeEach
   void setUp() {
     mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+
+    // The test datasource is a single in-memory H2 (jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1)
+    // shared across every test class in the Surefire fork. Other integration tests upload
+    // and leave enabled JobDefinitions behind, which would leak into the /jobs/plugins
+    // assertions here. Clear that DB-side state so this test runs against a known baseline:
+    // only the two classpath plugins (job1, job2). Delete audit rows first — their FK to
+    // job_definitions has no ON DELETE CASCADE; parameter templates cascade on definition delete.
+    jobExecutionAuditRepository.deleteAll();
+    jobDefinitionRepository.deleteAll();
   }
 
   /** SC-01, SC-02: Both plugins are discovered. */

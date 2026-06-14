@@ -13,6 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
@@ -88,15 +89,41 @@ public class SecurityConfig {
   }
 
   /**
-   * Plain-text password encoder for development.
+   * Plain-text password encoder for non-production profiles (dev, docker, default).
    *
-   * <p>Replace with {@code BCryptPasswordEncoder} and {@code {bcrypt}} hashes in
-   * production. The {@code {noop}} prefix in property files is a convention hint
-   * for the migration path, but the raw value is stored because this encoder
-   * does not interpret prefixes.
+   * <p>Scoped to {@code @Profile("!production")} so that exactly one {@link
+   * PasswordEncoder} bean is active per profile — in production the {@link
+   * #productionPasswordEncoder()} delegating encoder is used instead. Without
+   * this scoping both beans would coexist under the {@code production} profile,
+   * making the {@code PasswordEncoder} dependency ambiguous.
+   *
+   * <p>The {@code {noop}} prefix in property files is a convention hint for the
+   * migration path, but the raw value is stored because this encoder does not
+   * interpret prefixes.
    */
   @Bean
+  @Profile("!production")
   public PasswordEncoder passwordEncoder() {
     return NoOpPasswordEncoder.getInstance();
+  }
+
+  /**
+   * Production-grade password encoder using Spring Security's
+   * {@link org.springframework.security.crypto.factory.PasswordEncoderFactories
+   * DelegatingPasswordEncoder}.
+   *
+   * <p>Active only when the {@code production} profile is active. Reads the
+   * password prefix ({@code {bcrypt}}, {@code {noop}}, {@code {pbkdf2}}, etc.)
+   * from the stored value and delegates to the appropriate encoder. This allows
+   * gradual migration from {@code {noop}} plain-text to {@code {bcrypt}} hashes
+   * without code changes — only the property values and active profile differ.
+   *
+   * <p>When the {@code production} profile is NOT active, the
+   * {@link #passwordEncoder()} bean (NoOp) is used instead.
+   */
+  @Bean
+  @Profile("production")
+  public PasswordEncoder productionPasswordEncoder() {
+    return PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 }
