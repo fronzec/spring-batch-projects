@@ -89,14 +89,20 @@ public class SecurityConfig {
   }
 
   /**
-   * Plain-text password encoder for development.
+   * Plain-text password encoder for non-production profiles (dev, docker, default).
    *
-   * <p>Replace with {@code BCryptPasswordEncoder} and {@code {bcrypt}} hashes in
-   * production. The {@code {noop}} prefix in property files is a convention hint
-   * for the migration path, but the raw value is stored because this encoder
-   * does not interpret prefixes.
+   * <p>Scoped to {@code @Profile("!production")} so that exactly one {@link
+   * PasswordEncoder} bean is active per profile — in production the {@link
+   * #productionPasswordEncoder()} delegating encoder is used instead. Without
+   * this scoping both beans would coexist under the {@code production} profile,
+   * making the {@code PasswordEncoder} dependency ambiguous.
+   *
+   * <p>The {@code {noop}} prefix in property files is a convention hint for the
+   * migration path, but the raw value is stored because this encoder does not
+   * interpret prefixes.
    */
   @Bean
+  @Profile("!production")
   public PasswordEncoder passwordEncoder() {
     return NoOpPasswordEncoder.getInstance();
   }
