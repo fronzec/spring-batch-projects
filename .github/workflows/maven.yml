@@ -76,11 +76,18 @@ jobs:
             ghcr.io/${{ github.repository }}/fr-batch-service:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            GITHUB_ACTOR=${{ github.actor }}
+          secrets: |
+            gh_token=${{ secrets.GITHUB_TOKEN }}
 
   docker-dry-run:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      packages: read
 
     steps:
       - uses: actions/checkout@v4
@@ -96,3 +103,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}/fr-batch-service:pr-${{ github.event.pull_request.number }}
           cache-from: type=gha
+          build-args: |
+            GITHUB_ACTOR=${{ github.actor }}
+          secrets: |
+            gh_token=${{ secrets.GITHUB_TOKEN }}
