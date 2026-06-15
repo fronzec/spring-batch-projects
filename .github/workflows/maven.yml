@@ -44,6 +44,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build with Maven (Fr-Batch-Service)
         run: cd fr-batch-service && mvn -B package --file pom.xml
+      - name: Build and test ticket-pdf-job plugin
+        run: mvn -B package -f ticket-pdf-job/pom.xml
 
   docker:
     needs: build
