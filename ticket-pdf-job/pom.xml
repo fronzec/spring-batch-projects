@@ -96,6 +96,33 @@
       <version>3.27.6</version>
       <scope>test</scope>
     </dependency>
+
+    <!-- Integration test: in-module H2 + Spring Batch bootstrap -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>2.3.232</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <version>7.0.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Note: spring-jdbc, spring-tx, and spring-batch-core are already declared as
+         "provided" above. "Provided" deps ARE on both compile and test classpaths
+         in Maven — no duplicate declarations needed here. -->
+
+    <!-- SLF4J simple backend for test logging -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>2.0.16</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
