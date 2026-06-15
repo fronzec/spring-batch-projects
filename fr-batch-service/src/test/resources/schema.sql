@@ -169,3 +169,36 @@ CREATE TABLE IF NOT EXISTS dispatched_group (
     created_at       TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- =========================================================
+-- V5: Ticket PDF tables (mirror of V5__ticket_pdf_tables.sql)
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS event_tickets (
+    id             BIGINT        PRIMARY KEY AUTO_INCREMENT,
+    event_id       BIGINT        NOT NULL,
+    ticket_code    VARCHAR(64)   NOT NULL,
+    holder_name    VARCHAR(255)  NOT NULL,
+    event_name     VARCHAR(255)  NOT NULL,
+    event_location VARCHAR(255)  NULL,
+    seat           VARCHAR(64)   NULL,
+    event_datetime TIMESTAMP     NOT NULL,
+    processed      BOOLEAN       NOT NULL DEFAULT FALSE,
+    created_at     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_event_tickets_ticket_code UNIQUE (ticket_code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_tickets_processed ON event_tickets (processed);
+
+CREATE TABLE IF NOT EXISTS generated_files (
+    id              BIGINT        PRIMARY KEY AUTO_INCREMENT,
+    ticket_id       BIGINT        NOT NULL,
+    storage_type    VARCHAR(16)   NOT NULL DEFAULT 'LOCAL',
+    storage_path    VARCHAR(1024) NOT NULL,
+    checksum_sha256 CHAR(64)      NOT NULL,
+    file_size_bytes BIGINT        NOT NULL,
+    generated_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_generated_files_ticket
+        FOREIGN KEY (ticket_id) REFERENCES event_tickets (id),
+    CONSTRAINT uk_generated_files_ticket UNIQUE (ticket_id)
+);
