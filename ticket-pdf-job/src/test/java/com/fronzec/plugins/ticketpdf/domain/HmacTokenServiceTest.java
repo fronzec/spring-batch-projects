@@ -1,6 +1,7 @@
 package com.fronzec.plugins.ticketpdf.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -12,7 +13,8 @@ class HmacTokenServiceTest {
 
     private static final long TICKET_ID = 7L;
     private static final String TICKET_CODE = "ABC123";
-    private static final String SECRET = "test-secret";
+    // >= 32 bytes: HmacTokenService enforces a minimum key strength.
+    private static final String SECRET = "unit-test-secret-please-use-32+bytes!";
 
     /** Recompute HMAC-SHA256 independently for assertion. */
     private String computeHmac(String secret, String payload) throws Exception {
@@ -57,7 +59,8 @@ class HmacTokenServiceTest {
     @Test
     void sign_differentSecret_producesDifferentSignature() {
         String token1 = HmacTokenService.sign(TICKET_ID, TICKET_CODE, SECRET);
-        String token2 = HmacTokenService.sign(TICKET_ID, TICKET_CODE, "wrong-secret");
+        String token2 =
+            HmacTokenService.sign(TICKET_ID, TICKET_CODE, "a-different-wrong-secret-32+bytes-xx!");
 
         // Left part is identical (same ticketId + ticketCode), but signature differs
         int dot1 = token1.lastIndexOf('.');
@@ -72,6 +75,18 @@ class HmacTokenServiceTest {
         String token2 = HmacTokenService.sign(TICKET_ID + 1, TICKET_CODE, SECRET);
 
         assertThat(token1).isNotEqualTo(token2);
+    }
+
+    @Test
+    void sign_rejectsBlankSecret() {
+        assertThatThrownBy(() -> HmacTokenService.sign(TICKET_ID, TICKET_CODE, "   "))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void sign_rejectsSecretShorterThan32Bytes() {
+        assertThatThrownBy(() -> HmacTokenService.sign(TICKET_ID, TICKET_CODE, "too-short"))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.fronzec.plugins.ticketpdf.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -98,5 +99,22 @@ class LocalFileStorageTest {
         LocalFileStorage storage = new LocalFileStorage(tempDir);
 
         assertThatCode(() -> storage.delete("ghost.pdf")).doesNotThrowAnyException();
+    }
+
+    @Test
+    void write_rejectsPathTraversalKey() {
+        LocalFileStorage storage = new LocalFileStorage(tempDir);
+
+        assertThatThrownBy(
+                () -> storage.write("../escape.pdf", "x".getBytes(StandardCharsets.UTF_8)))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void delete_rejectsPathTraversalKey() {
+        LocalFileStorage storage = new LocalFileStorage(tempDir);
+
+        assertThatThrownBy(() -> storage.delete("../../etc/passwd"))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 }

@@ -33,6 +33,13 @@ public final class HmacTokenService {
      * @return signed token suitable for embedding in a QR code
      */
     public static String sign(long ticketId, String ticketCode, String secret) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalArgumentException("TOKEN_SECRET must not be blank");
+        }
+        if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalArgumentException(
+                    "TOKEN_SECRET must be at least 32 bytes for HMAC-SHA256 strength");
+        }
         String payload = ticketId + "|" + ticketCode;
         String signature = hmacBase64Url(secret, payload);
         return payload + "." + signature;

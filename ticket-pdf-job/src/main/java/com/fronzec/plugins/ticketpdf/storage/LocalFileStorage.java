@@ -26,12 +26,14 @@ public class LocalFileStorage implements FileStorage {
 
     @Override
     public StoredFile write(String key, byte[] content) {
+        Path target = resolveSafePath(key);
         try {
-            Files.createDirectories(baseDir);
-            Path target = baseDir.resolve(key);
+            if (target.getParent() != null) {
+                Files.createDirectories(target.getParent());
+            }
             Files.write(target, content);
             String checksum = sha256Hex(content);
-            return new StoredFile("LOCAL", target.toAbsolutePath().toString(), checksum, content.length);
+            return new StoredFile("LOCAL", target.toString(), checksum, content.length);
         } catch (IOException e) {
             throw new RuntimeException("Failed to write file with key: " + key, e);
         }
@@ -40,10 +42,23 @@ public class LocalFileStorage implements FileStorage {
     @Override
     public void delete(String key) {
         try {
-            Files.deleteIfExists(baseDir.resolve(key));
+            Files.deleteIfExists(resolveSafePath(key));
         } catch (IOException e) {
             log.warn("Failed to delete file with key '{}': {}", key, e.getMessage());
         }
+    }
+
+    /**
+     * Resolve {@code key} against the base directory, rejecting any key that would escape it
+     * (e.g. {@code ../} or an absolute path). Prevents path-traversal writes/deletes.
+     */
+    private Path resolveSafePath(String key) {
+        Path base = baseDir.toAbsolutePath().normalize();
+        Path target = base.resolve(key).normalize();
+        if (!target.startsWith(base)) {
+            throw new IllegalArgumentException("Illegal storage key (path traversal): " + key);
+        }
+        return target;
     }
 
     private static String sha256Hex(byte[] bytes) {
