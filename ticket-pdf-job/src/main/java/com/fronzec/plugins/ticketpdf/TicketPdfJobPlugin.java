@@ -4,6 +4,7 @@ import com.fronzec.api.BatchJobPlugin;
 import com.fronzec.api.JobMetadata;
 import com.fronzec.plugins.ticketpdf.batch.JobParamsHolder;
 import com.fronzec.plugins.ticketpdf.batch.TicketDocumentProcessor;
+import com.fronzec.plugins.ticketpdf.batch.TicketJobParametersValidator;
 import com.fronzec.plugins.ticketpdf.batch.TicketFileItemWriter;
 import com.fronzec.plugins.ticketpdf.batch.TicketRowMapper;
 import com.fronzec.plugins.ticketpdf.batch.TicketStepListener;
@@ -62,8 +63,8 @@ public class TicketPdfJobPlugin implements BatchJobPlugin {
             PlatformTransactionManager transactionManager,
             ApplicationContext parentContext) {
 
-        // Validate required parameters at configuration time via defaults —
-        // actual parameter values are validated in TicketStepListener.beforeStep.
+        // Required parameter values (OUTPUT_DIR, TOKEN_SECRET) are validated fail-fast at job
+        // launch by TicketJobParametersValidator — before any step runs.
         log.info("Configuring ticket-pdf-job plugin v{}", VERSION);
 
         DataSource dataSource = parentContext.getBean(DataSource.class);
@@ -95,6 +96,7 @@ public class TicketPdfJobPlugin implements BatchJobPlugin {
                 .build();
 
         return new JobBuilder(JOB_NAME, jobRepository)
+                .validator(new TicketJobParametersValidator())
                 .start(step)
                 .build();
     }
