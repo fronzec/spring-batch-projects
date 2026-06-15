@@ -60,7 +60,7 @@ Then build:
 mvn -B package -f ticket-pdf-job/pom.xml
 ```
 
-The shaded JAR is produced at `ticket-pdf-job/target/ticket-pdf-job-1.0.0.jar` (~2 MB).
+The shaded JAR is produced at `ticket-pdf-job/target/ticket-pdf-job-1.0.0.jar` (~5 MB).
 OpenPDF and ZXing are bundled; Spring, spring-batch, slf4j, and spring-jdbc are excluded
 (provided by the host at runtime).
 

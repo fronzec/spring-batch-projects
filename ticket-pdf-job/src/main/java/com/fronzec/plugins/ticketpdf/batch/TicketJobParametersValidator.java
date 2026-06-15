@@ -45,5 +45,15 @@ public class TicketJobParametersValidator implements JobParametersValidator {
         if (!Files.isWritable(dir)) {
             throw new InvalidJobParametersException("OUTPUT_DIR is not writable: " + outputDir);
         }
+
+        // EVENT_ID is optional, but when present it must be numeric (it feeds the reader filter).
+        String eventId = parameters.getString("EVENT_ID");
+        if (eventId != null && !eventId.isBlank()) {
+            try {
+                Long.parseLong(eventId.trim());
+            } catch (NumberFormatException e) {
+                throw new InvalidJobParametersException("EVENT_ID must be a number: " + eventId);
+            }
+        }
     }
 }

@@ -103,10 +103,12 @@ public class TicketPdfJobPlugin implements BatchJobPlugin {
 
     @Override
     public Map<String, String> getDefaultParameters() {
+        // TOKEN_SECRET is intentionally empty: callers MUST supply a >=32-byte secret.
+        // A blank value fails TicketJobParametersValidator fast (no shipped default secret).
         return Map.of(
                 "DATE", "2024-01-01",
                 "OUTPUT_DIR", "./target/tickets",
-                "TOKEN_SECRET", "change-me-this-secret-must-be-32-bytes",
+                "TOKEN_SECRET", "",
                 "EVENT_ID", "");
     }
 

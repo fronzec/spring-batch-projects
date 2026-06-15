@@ -158,9 +158,10 @@ class TicketPdfJobIntegrationTest {
         assertThat(status).isEqualTo(BatchStatus.COMPLETED);
 
         // 3 PDF files exist
-        List<Path> pdfs = Files.walk(jobOutputDir)
-                .filter(p -> p.toString().endsWith(".pdf"))
-                .toList();
+        List<Path> pdfs;
+        try (var paths = Files.walk(jobOutputDir)) {
+            pdfs = paths.filter(p -> p.toString().endsWith(".pdf")).toList();
+        }
         assertThat(pdfs).hasSize(3);
 
         // All PDF files start with %PDF
@@ -205,9 +206,10 @@ class TicketPdfJobIntegrationTest {
         assertThat(status).isEqualTo(BatchStatus.COMPLETED);
 
         // Only 1 file for the matching event
-        List<Path> pdfs = Files.walk(jobOutputDir)
-                .filter(p -> p.toString().endsWith(".pdf"))
-                .toList();
+        List<Path> pdfs;
+        try (var paths = Files.walk(jobOutputDir)) {
+            pdfs = paths.filter(p -> p.toString().endsWith(".pdf")).toList();
+        }
         assertThat(pdfs).hasSize(1);
         assertThat(pdfs.get(0).getFileName().toString()).isEqualTo(id4 + ".pdf");
 
@@ -231,11 +233,12 @@ class TicketPdfJobIntegrationTest {
         assertThat(status).isEqualTo(BatchStatus.COMPLETED);
 
         // No PDF files written
-        long pdfCount = Files.exists(jobOutputDir)
-                ? Files.walk(jobOutputDir)
-                        .filter(p -> p.toString().endsWith(".pdf"))
-                        .count()
-                : 0L;
+        long pdfCount = 0L;
+        if (Files.exists(jobOutputDir)) {
+            try (var paths = Files.walk(jobOutputDir)) {
+                pdfCount = paths.filter(p -> p.toString().endsWith(".pdf")).count();
+            }
+        }
         assertThat(pdfCount).isEqualTo(0L);
     }
 

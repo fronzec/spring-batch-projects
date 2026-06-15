@@ -56,15 +56,25 @@ public class TicketFileItemWriter implements ItemWriter<TicketDocument> {
                 sf = fs.write(key, doc.pdfBytes());
 
                 // 2. Insert generated_files row (within chunk tx)
-                jdbc.update(INSERT_GENERATED_FILE,
+                int inserted = jdbc.update(INSERT_GENERATED_FILE,
                         doc.ticketId(),
                         sf.storageType(),
                         sf.path(),
                         sf.checksum(),
                         sf.sizeBytes());
+                if (inserted != 1) {
+                    throw new IllegalStateException(
+                            "Expected 1 generated_files insert for ticket id=" + doc.ticketId()
+                                    + " but affected " + inserted);
+                }
 
                 // 3. Mark ticket as processed (within chunk tx)
-                jdbc.update(UPDATE_PROCESSED, doc.ticketId());
+                int updated = jdbc.update(UPDATE_PROCESSED, doc.ticketId());
+                if (updated != 1) {
+                    throw new IllegalStateException(
+                            "Expected to mark 1 ticket processed for id=" + doc.ticketId()
+                                    + " but affected " + updated);
+                }
 
                 log.debug("Written ticket id={} -> {}", doc.ticketId(), sf.path());
             } catch (Exception e) {
