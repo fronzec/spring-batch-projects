@@ -219,3 +219,30 @@ CREATE TABLE IF NOT EXISTS generated_bundles (
     created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_generated_bundles_event UNIQUE (event_id)
 );
+
+-- =========================================================
+-- V7: Fault-tolerant harvester tables (mirror of V7__fault_tolerant_harvester_tables.sql)
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS harvest_source (
+    id                           BIGINT        PRIMARY KEY AUTO_INCREMENT,
+    payload                      VARCHAR(2048) NOT NULL,
+    poison_flag                  BOOLEAN       NOT NULL DEFAULT FALSE,
+    transient_fail_until_attempt INT           NOT NULL DEFAULT 0,
+    abort_flag                   BOOLEAN       NOT NULL DEFAULT FALSE,
+    processed                    BOOLEAN       NOT NULL DEFAULT FALSE,
+    created_at                   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS harvest_dead_letter (
+    id               BIGINT        PRIMARY KEY AUTO_INCREMENT,
+    source_id        BIGINT        NULL,
+    raw_payload      VARCHAR(2048) NULL,
+    failure_phase    VARCHAR(16)   NOT NULL,
+    failure_type     VARCHAR(16)   NOT NULL,
+    exception_class  VARCHAR(512)  NOT NULL,
+    exception_msg    VARCHAR(2048) NULL,
+    attempt_count    INT           NOT NULL DEFAULT 1,
+    job_execution_id BIGINT        NOT NULL,
+    recorded_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
