@@ -366,11 +366,23 @@ class FaultTolerantHarvesterJobIntegrationTest {
 
     // ── Dead-letter REQUIRES_NEW independence ─────────────────────────────────────────────────
 
+    /**
+     * Verifies that the dead-letter record persists after job completion for a poison row.
+     *
+     * <p><b>Note on naming (W-01 / S-02 fix):</b> this test was originally named
+     * {@code deadLetterSurvivesChunkRollback}, but SB6 fault-tolerant scan mode processes
+     * items individually after a skip — it does NOT roll back the whole chunk for a single
+     * skipped item. What this test actually proves is that the dead-letter record committed
+     * independently via REQUIRES_NEW and is visible after job completion.
+     *
+     * <p>The authoritative proof that the REQUIRES_NEW transaction survives a FORCED outer
+     * rollback is in {@link HarvestSkipListenerTest#onSkipInProcess_deadLetterSurvivesOuterRollback}.
+     */
     @Test
-    void deadLetterSurvivesChunkRollback() throws Exception {
-        // Chunk 1 (ids 80-84): id 82 is poison — will be skipped and dead-lettered.
-        // The remaining rows in the chunk succeed, so the chunk commits.
-        // What we're verifying here is simply that the dead-letter record exists after job completion.
+    void deadLetterPersistsAfterJobCompletion() throws Exception {
+        // Chunk 1 (ids 80-84): id 82 is poison — will be skipped and dead-lettered via REQUIRES_NEW.
+        // SB6 scan mode processes this chunk item-by-item; the chunk itself does NOT roll back.
+        // This test verifies the dead-letter record is present after job completion.
         insertNormalRow(80L);
         insertNormalRow(81L);
         insertPoisonRow(82L);
@@ -381,7 +393,7 @@ class FaultTolerantHarvesterJobIntegrationTest {
 
         assertThat(status).isEqualTo(BatchStatus.COMPLETED);
 
-        // Dead-letter row persisted (REQUIRES_NEW committed independently)
+        // Dead-letter row committed independently under REQUIRES_NEW and visible after completion
         assertThat(deadLetterCount()).isEqualTo(1);
         List<Map<String, Object>> dlRows = jdbc.queryForList(
                 "SELECT * FROM harvest_dead_letter WHERE source_id = 82");
