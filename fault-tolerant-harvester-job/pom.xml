@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.fronzec.plugins</groupId>
+  <artifactId>fault-tolerant-harvester-job</artifactId>
+  <version>1.0.0</version>
+  <name>fault-tolerant-harvester-job</name>
+  <description>Spring Batch plugin — fault-tolerant chunk step with skip, retry, dead-letter, and restart</description>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <!-- Platform-provided API (not shaded) -->
+    <dependency>
+      <groupId>com.fronzec</groupId>
+      <artifactId>batch-job-api</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Platform-provided Spring Batch (not shaded).
+         spring-retry is a transitive dep of spring-batch-core 6.0.0, so it is
+         available at compile + runtime via the host without any explicit declaration. -->
+    <dependency>
+      <groupId>org.springframework.batch</groupId>
+      <artifactId>spring-batch-core</artifactId>
+      <version>6.0.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>7.0.1</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-tx</artifactId>
+      <version>7.0.1</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Platform-provided spring-jdbc (JdbcTemplate, JdbcCursorItemReader, RowMapper) -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-jdbc</artifactId>
+      <version>7.0.1</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Platform-provided logging facade (not shaded) -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>2.0.16</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- No bundled runtime deps: spring-retry is provided transitively via spring-batch-core. -->
+
+    <!-- Test dependencies (not shaded) -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.11.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>3.27.7</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Integration test: in-module H2 + Spring Batch bootstrap -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>2.3.232</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <version>7.0.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Note: spring-jdbc, spring-tx, and spring-batch-core are already declared as
+         "provided" above. "Provided" deps ARE on both compile and test classpaths
+         in Maven — no duplicate declarations needed here. -->
+
+    <!-- SLF4J simple backend for test logging -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>2.0.16</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <release>${maven.compiler.release}</release>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.0</version>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <artifactSet>
+                <excludes>
+                  <!-- Exclude platform-provided libraries -->
+                  <exclude>com.fronzec:batch-job-api</exclude>
+                  <exclude>org.springframework.batch:spring-batch-core</exclude>
+                  <exclude>org.springframework:spring-context</exclude>
+                  <exclude>org.springframework:spring-tx</exclude>
+                  <exclude>org.springframework:spring-jdbc</exclude>
+                  <exclude>org.slf4j:slf4j-api</exclude>
+                </excludes>
+              </artifactSet>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <repositories>
+    <repository>
+      <id>github</id>
+      <url>https://maven.pkg.github.com/fronzec/spring-batch-projects</url>
+    </repository>
+  </repositories>
+</project>
