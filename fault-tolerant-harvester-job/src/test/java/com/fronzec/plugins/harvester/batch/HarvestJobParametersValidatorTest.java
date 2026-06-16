@@ -28,6 +28,14 @@ class HarvestJobParametersValidatorTest {
         return b.toJobParameters();
     }
 
+    // ── FTH-01-NULL: null JobParameters ──────────────────────────────────────
+
+    @Test
+    void validate_nullParameters_throws() {
+        assertThatThrownBy(() -> validator.validate(null))
+                .isInstanceOf(InvalidJobParametersException.class);
+    }
+
     // ── FTH-01-A: missing DATE ────────────────────────────────────────────────
 
     @Test

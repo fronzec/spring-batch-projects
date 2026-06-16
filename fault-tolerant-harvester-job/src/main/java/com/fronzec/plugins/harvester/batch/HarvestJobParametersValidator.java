@@ -27,6 +27,9 @@ public class HarvestJobParametersValidator implements JobParametersValidator {
 
     @Override
     public void validate(JobParameters parameters) throws InvalidJobParametersException {
+        if (parameters == null) {
+            throw new InvalidJobParametersException("Job parameters are required");
+        }
         String date = parameters.getString("DATE");
 
         if (date == null || date.isBlank()) {
