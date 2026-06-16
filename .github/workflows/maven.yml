@@ -17,6 +17,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
 
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +49,8 @@ jobs:
         run: cd fr-batch-service && mvn -B package --file pom.xml
       - name: Build and test ticket-pdf-job plugin
         run: mvn -B package -f ticket-pdf-job/pom.xml
+      - name: Build and test ticket-bundle-job plugin
+        run: mvn -B package -f ticket-bundle-job/pom.xml
 
   docker:
     needs: build

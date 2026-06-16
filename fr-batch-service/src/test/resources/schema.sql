@@ -202,3 +202,20 @@ CREATE TABLE IF NOT EXISTS generated_files (
         FOREIGN KEY (ticket_id) REFERENCES event_tickets (id),
     CONSTRAINT uk_generated_files_ticket UNIQUE (ticket_id)
 );
+
+-- =========================================================
+-- V6: Ticket bundle tables (mirror of V6__ticket_bundle_tables.sql)
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS generated_bundles (
+    id              BIGINT        PRIMARY KEY AUTO_INCREMENT,
+    event_id        BIGINT        NOT NULL,
+    storage_type    VARCHAR(16)   NOT NULL DEFAULT 'LOCAL',
+    storage_path    VARCHAR(1024) NOT NULL,
+    checksum_sha256 CHAR(64)      NOT NULL,
+    file_size_bytes BIGINT        NOT NULL,
+    ticket_count    INT           NOT NULL,
+    status          VARCHAR(20)   NOT NULL DEFAULT 'COMPLETED',
+    created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_generated_bundles_event UNIQUE (event_id)
+);
