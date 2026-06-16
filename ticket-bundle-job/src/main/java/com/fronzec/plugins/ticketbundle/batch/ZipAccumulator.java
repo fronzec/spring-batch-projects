@@ -78,6 +78,26 @@ public class ZipAccumulator {
     }
 
     /**
+     * Resets all state so this instance can be reused for a new job execution.
+     *
+     * <p>Must be called at the start of {@link BundleStepListener#beforeStep} because the
+     * host's {@code JobRegistry} caches the {@link org.springframework.batch.core.job.Job}
+     * returned by {@code configureJob()} and reuses it — along with this accumulator — for
+     * every execution. Without a reset, {@code lazyOpen()} would see {@code opened == true},
+     * skip opening a fresh stream, and {@code ticketCount} would carry over from the previous
+     * run, corrupting subsequent bundles.
+     *
+     * <p>Do NOT call {@link #close()} here; the close lifecycle is managed exclusively by
+     * {@link BundleStepListener#afterStep}.
+     */
+    public void reset() {
+        zipPath = null;
+        zos = null;
+        ticketCount = 0;
+        opened = false;
+    }
+
+    /**
      * Returns the path to the temporary ZIP file, or {@code null} if the accumulator has
      * not been opened yet (i.e. zero items were processed).
      *

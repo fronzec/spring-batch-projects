@@ -69,6 +69,10 @@ public class BundleStepListener implements StepExecutionListener {
 
     @Override
     public void beforeStep(StepExecution stepExecution) {
+        // Reset the accumulator first: the host JobRegistry caches the Job (and this listener's
+        // accumulator instance) across executions, so we must clear state before each new run.
+        accumulator.reset();
+
         var params = stepExecution.getJobParameters();
 
         String eventId = params.getString("EVENT_ID");
@@ -92,20 +96,39 @@ public class BundleStepListener implements StepExecutionListener {
     public ExitStatus afterStep(StepExecution stepExecution) {
         // Close the ZipOutputStream in try/finally so the stream is always released,
         // even when the chunk step fails mid-way (prevents corrupt/locked temp files).
+        Exception closeException = null;
         try {
             accumulator.close();
         } catch (Exception e) {
-            log.error("Failed to close ZIP accumulator after step", e);
+            closeException = e;
+            log.error("Failed to close ZIP accumulator after step — ZIP may be corrupt", e);
         } finally {
-            // Write handoff keys to the JOB ExecutionContext so step 2 can read them.
             var jobCtx = stepExecution.getJobExecution().getExecutionContext();
-            jobCtx.putInt(CTX_TICKET_COUNT, accumulator.ticketCount());
-            if (accumulator.isOpened() && accumulator.zipPath() != null) {
-                jobCtx.putString(CTX_TEMP_PATH, accumulator.zipPath().toString());
+            if (closeException == null) {
+                // Success path: write both handoff keys so step 2 can proceed.
+                jobCtx.putInt(CTX_TICKET_COUNT, accumulator.ticketCount());
+                if (accumulator.isOpened() && accumulator.zipPath() != null) {
+                    jobCtx.putString(CTX_TEMP_PATH, accumulator.zipPath().toString());
+                }
+                log.info("Step finished: ticket_count={}, temp_zip={}",
+                        accumulator.ticketCount(),
+                        accumulator.isOpened() ? accumulator.zipPath() : "<none>");
+            } else {
+                // Failure path: do NOT write CTX_TEMP_PATH so step 2 cannot pick up a corrupt
+                // bundle. Best-effort delete the orphaned temp file.
+                jobCtx.putInt(CTX_TICKET_COUNT, accumulator.ticketCount());
+                if (accumulator.zipPath() != null) {
+                    try {
+                        java.nio.file.Files.deleteIfExists(accumulator.zipPath());
+                    } catch (Exception ignored) {
+                        log.warn("Could not delete orphaned temp ZIP {}", accumulator.zipPath());
+                    }
+                }
             }
-            log.info("Step finished: ticket_count={}, temp_zip={}",
-                    accumulator.ticketCount(),
-                    accumulator.isOpened() ? accumulator.zipPath() : "<none>");
+        }
+
+        if (closeException != null) {
+            return new ExitStatus("FAILED", "ZIP finalization failure: " + closeException.getMessage());
         }
         return stepExecution.getExitStatus();
     }

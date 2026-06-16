@@ -77,9 +77,17 @@ public class BundlePersistTasklet implements Tasklet {
         long eventId = Long.parseLong(holder.getEventId().trim());
 
         // EMPTY-EVENT NO-OP: step 1 found no rows; skip upload and insert.
-        if (ticketCount == 0 || tempPath == null || tempPath.isBlank()) {
+        if (ticketCount == 0) {
             log.warn("no generated files for event {}; nothing to bundle", eventId);
             return RepeatStatus.FINISHED;
+        }
+
+        // HANDOFF GUARD: a non-zero ticket count without a temp path is a handoff failure —
+        // step 1 wrote tickets but the ZIP path was never propagated to the job context.
+        if (tempPath == null || tempPath.isBlank()) {
+            throw new IllegalStateException(
+                    "Missing job context key '" + BundleStepListener.CTX_TEMP_PATH
+                            + "' for non-empty bundle (ticket_count=" + ticketCount + ")");
         }
 
         Path tempZip = Path.of(tempPath);

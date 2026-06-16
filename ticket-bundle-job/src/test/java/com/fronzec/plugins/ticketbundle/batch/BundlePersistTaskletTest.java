@@ -1,6 +1,7 @@
 package com.fronzec.plugins.ticketbundle.batch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -179,6 +180,25 @@ class BundlePersistTaskletTest {
 
         // Temp file MUST be deleted even on failure (finally block)
         assertThat(tempZip).doesNotExist();
+    }
+
+    @Test
+    void execute_nonZeroCountWithNoTempPath_throwsIllegalStateException() throws Exception {
+        // ticketCount > 0 but CTX_TEMP_PATH was never written to the job context (FIX #2):
+        // this is a handoff failure and must be surfaced, not silently no-op'd.
+        BundleParamsHolder holder = new BundleParamsHolder();
+        holder.setEventId("55");
+        holder.setOutputDir(tempDir.toString());
+
+        BundlePersistTasklet tasklet = new BundlePersistTasklet(holder, jdbc);
+
+        // Build a context with ticketCount=2 but no CTX_TEMP_PATH entry
+        ChunkContext ctx = buildChunkContext(55L, tempDir.toString(), null, 2);
+
+        assertThatThrownBy(() -> tasklet.execute(null, ctx))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining(BundleStepListener.CTX_TEMP_PATH)
+                .hasMessageContaining("ticket_count=2");
     }
 
     @Test
