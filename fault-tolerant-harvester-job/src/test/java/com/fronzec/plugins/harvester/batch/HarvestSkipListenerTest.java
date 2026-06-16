@@ -130,6 +130,44 @@ class HarvestSkipListenerTest {
         assertThat(count).isEqualTo(1);
     }
 
+    // ── exception_msg truncation guard (S-01) ─────────────────────────────────────────────────
+
+    @Test
+    void truncateMsg_longMessage_isTruncatedTo2048Chars() {
+        // Build a string longer than 2048 chars
+        String overLong = "x".repeat(3000);
+        String result = HarvestSkipListener.truncateMsg(overLong);
+        assertThat(result).hasSize(2048);
+    }
+
+    @Test
+    void truncateMsg_shortMessage_isReturnedUnchanged() {
+        String msg = "short message";
+        assertThat(HarvestSkipListener.truncateMsg(msg)).isSameAs(msg);
+    }
+
+    @Test
+    void truncateMsg_null_isReturnedAsNull() {
+        assertThat(HarvestSkipListener.truncateMsg(null)).isNull();
+    }
+
+    @Test
+    void onSkipInProcess_longExceptionMessage_storedTruncated() {
+        // S-01: verify that a verbose exception message is truncated in the DB row
+        String overLong = "E".repeat(3000);
+        HarvestRow row = new HarvestRow(5L, "payload-5", true, 0, false);
+        // Craft a PoisonItemException that reports the over-long message
+        PoisonItemException ex = new PoisonItemException(overLong); // use String-message ctor
+
+        skipListener.onSkipInProcess(row, ex);
+
+        List<Map<String, Object>> rows = jdbc.queryForList(
+                "SELECT exception_msg FROM harvest_dead_letter WHERE source_id = 5");
+        assertThat(rows).hasSize(1);
+        String storedMsg = (String) rows.get(0).get("exception_msg");
+        assertThat(storedMsg).hasSize(2048);
+    }
+
     // ── Unwrapping: wrapped exception still resolves correct failure_type ─────────────────────
 
     @Test

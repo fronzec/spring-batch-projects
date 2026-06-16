@@ -33,8 +33,18 @@ import org.springframework.transaction.support.TransactionTemplate;
  * </ul>
  *
  * <h3>attempt_count</h3>
- * <p>For {@code RETRY_EXHAUSTED} the attempt count is set to {@code retryLimit + 1}
- * (representing the total calls: initial + retries). For skips without retry the count is 1.
+ * <p>For {@code RETRY_EXHAUSTED} the stored {@code attempt_count} is {@code RETRY_LIMIT + 1 = 4},
+ * representing the TOTAL number of processing calls: 1 initial attempt + 3 retries = 4 total.
+ * This is intentional — total calls is more useful for diagnostics than the raw retry-limit constant.
+ * For {@code SKIP} items (no retry) the count is always 1.
+ * See also the README "attempt_count semantics" note.
+ *
+ * <h3>exception_msg truncation</h3>
+ * <p>The {@code exception_msg} value is truncated to 2048 characters before insertion to guard
+ * against column overflow on MySQL (VARCHAR(2048)) when non-domain exceptions (e.g. JDBC errors
+ * with verbose messages) reach the skip listener via {@code onSkipInRead}. Domain exceptions
+ * ({@link PoisonItemException}, {@link TransientProcessingException}) have bounded messages and
+ * will never approach the limit, but defensive truncation is applied uniformly.
  *
  * <h3>job_execution_id</h3>
  * <p>Captured via {@link #setJobExecutionId(long)} called from
@@ -47,9 +57,17 @@ public class HarvestSkipListener implements SkipListener<HarvestRow, HarvestRow>
 
     /**
      * Number of retries configured on the step (retryLimit=3). Used to compute attempt_count
-     * for RETRY_EXHAUSTED entries (total calls = retryLimit + 1).
+     * for RETRY_EXHAUSTED entries (total calls = retryLimit + 1 = 4).
      */
     private static final int RETRY_LIMIT = 3;
+
+    /**
+     * Maximum length of {@code exception_msg} stored in harvest_dead_letter.
+     * Matches the MySQL column definition (VARCHAR(2048)). Messages longer than this are
+     * truncated to avoid column-overflow exceptions on verbose non-domain exceptions
+     * (e.g. JDBC errors in onSkipInRead).
+     */
+    private static final int MAX_MSG_LENGTH = 2048;
 
     private static final String INSERT_SQL =
             "INSERT INTO harvest_dead_letter"
@@ -145,7 +163,7 @@ public class HarvestSkipListener implements SkipListener<HarvestRow, HarvestRow>
                     "READ",
                     failureType,
                     cause.getClass().getName(),
-                    cause.getMessage(),
+                    truncateMsg(cause.getMessage()),         // guard: VARCHAR(2048)
                     attemptCount,
                     jobExecutionId,
                     Timestamp.from(Instant.now()));
@@ -195,7 +213,7 @@ public class HarvestSkipListener implements SkipListener<HarvestRow, HarvestRow>
                     failurePhase,
                     failureType,
                     cause.getClass().getName(),
-                    cause.getMessage(),
+                    truncateMsg(cause.getMessage()),         // guard: VARCHAR(2048)
                     attemptCount,
                     jobExecutionId,
                     Timestamp.from(Instant.now()));
@@ -219,5 +237,20 @@ public class HarvestSkipListener implements SkipListener<HarvestRow, HarvestRow>
         }
         Throwable cause = throwable.getCause();
         return (cause != null) ? cause : throwable;
+    }
+
+    /**
+     * Truncates a string to {@link #MAX_MSG_LENGTH} to prevent column-overflow on MySQL
+     * VARCHAR(2048) when verbose non-domain exception messages reach the dead-letter insert.
+     *
+     * @param msg the raw message string; may be null
+     * @return the original string if its length is within the limit, a truncated substring
+     *         otherwise; null is returned unchanged
+     */
+    static String truncateMsg(String msg) {
+        if (msg == null || msg.length() <= MAX_MSG_LENGTH) {
+            return msg;
+        }
+        return msg.substring(0, MAX_MSG_LENGTH);
     }
 }

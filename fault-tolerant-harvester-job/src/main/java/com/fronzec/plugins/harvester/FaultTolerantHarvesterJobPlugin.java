@@ -75,15 +75,24 @@ public class FaultTolerantHarvesterJobPlugin implements BatchJobPlugin {
     static final int RETRY_LIMIT = 3;
 
     /**
-     * Reader SQL: selects unprocessed rows in id order.
-     * The {@code WHERE processed = FALSE} filter is belt-and-suspenders idempotency;
-     * restart resumption is driven by the saved {@code currentItemCount} in
-     * {@code BATCH_STEP_EXECUTION_CONTEXT} (enabled by {@code setSaveState(true)}).
+     * Reader SQL: selects ALL rows in id order (no {@code processed = FALSE} filter).
+     *
+     * <p><b>Why no processed filter:</b> {@code JdbcCursorItemReader} with
+     * {@code setSaveState(true)} persists {@code currentItemCount} to
+     * {@code BATCH_STEP_EXECUTION_CONTEXT} on every chunk commit. On restart, the reader
+     * re-opens the cursor and fast-forwards by skipping the first {@code currentItemCount}
+     * rows. If the SQL filtered by {@code processed = FALSE}, the result set on restart
+     * would be smaller (already-committed rows disappeared), and the cursor skip-ahead would
+     * land on the wrong row — effectively skipping unprocessed rows. Reading ALL rows means
+     * the result set is stable across both launches and the count-based skip-ahead works
+     * correctly.
+     *
+     * <p>Idempotency for already-processed rows on restart is handled entirely by the writer's
+     * {@code UPDATE … WHERE processed = FALSE} guard — a no-op for rows already committed.
      */
     private static final String READER_SQL =
             "SELECT id, payload, poison_flag, transient_fail_until_attempt, abort_flag"
                     + " FROM harvest_source"
-                    + " WHERE processed = FALSE"
                     + " ORDER BY id";
 
     @Override
