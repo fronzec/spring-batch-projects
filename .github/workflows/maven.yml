@@ -51,6 +51,8 @@ jobs:
         run: mvn -B package -f ticket-pdf-job/pom.xml
       - name: Build and test ticket-bundle-job plugin
         run: mvn -B package -f ticket-bundle-job/pom.xml
+      - name: Build and test fault-tolerant-harvester-job plugin
+        run: mvn -B package -f fault-tolerant-harvester-job/pom.xml
 
   docker:
     needs: build
