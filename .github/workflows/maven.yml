@@ -53,6 +53,8 @@ jobs:
         run: mvn -B package -f ticket-bundle-job/pom.xml
       - name: Build and test fault-tolerant-harvester-job plugin
         run: mvn -B package -f fault-tolerant-harvester-job/pom.xml
+      - name: Build and test partitioned-harvester-job plugin
+        run: mvn -B package -f partitioned-harvester-job/pom.xml
 
   docker:
     needs: build
