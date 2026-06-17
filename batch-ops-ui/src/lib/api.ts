@@ -4,12 +4,14 @@ import { authHeader } from './auth';
 const BASE = '/api/batch-service';
 
 // Discriminated union covering every response scenario.
-// NOTE: 'empty' is NOT returned here — it is derived by views from zero-length
-// data arrays or empty objects. api.ts returns { kind: 'data', value: [] } for
-// empty lists; view components map that to { kind: 'empty' } if they need it.
+// NOTE: 'empty' is NOT returned by api.ts — it is derived by view components from
+// zero-length data arrays or empty objects. api.ts returns { kind: 'data', value: [] }
+// for empty lists; view components map that to { kind: 'empty' } before passing to
+// AsyncState. The type includes 'empty' so AsyncState can render it.
 export type ApiResult<T> =
   | { kind: 'data'; value: T }
-  | { kind: 'auth-failed' }                     // 401 or 403
+  | { kind: 'empty' }                            // derived by views, never returned by api.ts
+  | { kind: 'auth-failed' }                      // 401 or 403
   | { kind: 'not-found' }                        // 404
   | { kind: 'server-error'; status: number }     // 5xx
   | { kind: 'unreachable' };                     // fetch threw (network / proxy down)
