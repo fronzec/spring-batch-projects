@@ -5,6 +5,14 @@
   import type { RunningJobs } from '../lib/dto';
   import AsyncState from '../components/AsyncState.svelte';
 
+  // Slot values arrive untyped from AsyncState; these typed accessors satisfy
+  // svelte-check without a TS `as` cast inside the {#each} expression
+  // (Svelte 4's template parser rejects casts in each-expressions).
+  const jobEntries = (jobs: unknown): [string, Record<string, string>][] =>
+    Object.entries(jobs as RunningJobs);
+  const execEntries = (execs: unknown): [string, string][] =>
+    Object.entries(execs as Record<string, string>);
+
   let loading = true;
   let result: ApiResult<RunningJobs> | null = null;
   $: viewResult =
@@ -31,7 +39,7 @@
 
   <AsyncState result={viewResult} {loading}>
     <div slot="data" let:value={jobs}>
-      {#each Object.entries(jobs) as [jobName, executions]}
+      {#each jobEntries(jobs) as [jobName, executions]}
         <div class="job-section">
           <h3 class="job-name">{jobName}</h3>
           <div class="table-wrapper">
@@ -43,7 +51,7 @@
                 </tr>
               </thead>
               <tbody>
-                {#each Object.entries(executions) as [execId, params]}
+                {#each execEntries(executions) as [execId, params]}
                   <tr>
                     <td>{execId}</td>
                     <td>{params}</td>
