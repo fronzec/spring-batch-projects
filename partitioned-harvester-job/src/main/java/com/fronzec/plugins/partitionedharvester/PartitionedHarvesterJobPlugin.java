@@ -42,9 +42,10 @@ import org.springframework.transaction.PlatformTransactionManager;
  * <h3>gridSize build-time constraint</h3>
  * <p>{@code configureJob} receives no {@code JobParameters}, so the number of partitions
  * and the thread-pool size are baked in at build time using {@code GRID_SIZE_DEFAULT = 4}.
- * The {@code GRID_SIZE} and {@code CHUNK_SIZE} parameters are validated by
- * {@link PartitionedHarvesterJobParametersValidator} but do NOT dynamically resize the
- * partition grid in this single-JVM pedagogical implementation.
+ * Because a launch-time {@code GRID_SIZE} or {@code CHUNK_SIZE} override cannot take effect,
+ * {@link PartitionedHarvesterJobParametersValidator} REJECTS any value that differs from the
+ * build-time constant rather than silently ignoring it — the constraint is made explicit
+ * instead of becoming a footgun.
  * Full runtime-dynamic gridSize resolution is deferred to a future enhancement requiring
  * a {@code JobExecutionListener.beforeJob} → holder → partitioner wiring.
  *
@@ -183,7 +184,8 @@ public class PartitionedHarvesterJobPlugin implements BatchJobPlugin {
 
         // ── Job ───────────────────────────────────────────────────────────────
         return new JobBuilder(JOB_NAME, jobRepository)
-                .validator(new PartitionedHarvesterJobParametersValidator())
+                .validator(new PartitionedHarvesterJobParametersValidator(
+                        GRID_SIZE_DEFAULT, CHUNK_SIZE_DEFAULT))
                 .start(managerStep)
                 .build();
     }

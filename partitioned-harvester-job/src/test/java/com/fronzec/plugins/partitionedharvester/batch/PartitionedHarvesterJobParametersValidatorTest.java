@@ -12,14 +12,15 @@ import org.springframework.batch.core.job.parameters.JobParametersBuilder;
  * Unit tests for {@link PartitionedHarvesterJobParametersValidator}.
  *
  * <p>Mirrors the pattern from {@code HarvestJobParametersValidatorTest}.
- * Covers: null parameters, zero/negative GRID_SIZE, zero/negative CHUNK_SIZE,
- * missing parameters (treated as valid — defaults applied at runtime),
- * and valid parameter combinations per REQ-08 and SC-08.x.
+ * Covers: null parameters, GRID_SIZE/CHUNK_SIZE that differ from the build-time constants
+ * (rejected — overrides cannot take effect in this single-JVM plugin), missing parameters
+ * (valid — defaults applied at runtime), and the build-time defaults themselves (valid),
+ * per REQ-08 and SC-08.x.
  */
 class PartitionedHarvesterJobParametersValidatorTest {
 
     private final PartitionedHarvesterJobParametersValidator validator =
-            new PartitionedHarvesterJobParametersValidator();
+            new PartitionedHarvesterJobParametersValidator(4L, 100L);
 
     private JobParameters params(Long gridSize, Long chunkSize) {
         JobParametersBuilder b = new JobParametersBuilder();
@@ -72,27 +73,29 @@ class PartitionedHarvesterJobParametersValidatorTest {
                 .hasMessageContaining("CHUNK_SIZE");
     }
 
-    // ── SC-08.3 — Valid params accepted ──────────────────────────────────────
+    // ── SC-08.3 — Only the build-time defaults are accepted ──────────────────
 
     @Test
     void validate_defaultValues_noException() {
-        // Defaults: GRID_SIZE=4, CHUNK_SIZE=100
+        // Build-time constants: GRID_SIZE=4, CHUNK_SIZE=100
         assertThatCode(() -> validator.validate(params(4L, 100L)))
                 .doesNotThrowAnyException();
     }
 
     @Test
-    void validate_customValidValues_noException() {
-        // Non-default but positive values: SC-08.3
-        assertThatCode(() -> validator.validate(params(8L, 50L)))
-                .doesNotThrowAnyException();
+    void validate_nonDefaultGridSize_throws() {
+        // A GRID_SIZE override cannot take effect (build-time constraint) → rejected loudly
+        assertThatThrownBy(() -> validator.validate(params(8L, 100L)))
+                .isInstanceOf(InvalidJobParametersException.class)
+                .hasMessageContaining("GRID_SIZE");
     }
 
     @Test
-    void validate_smallValidValues_noException() {
-        // Minimum valid case
-        assertThatCode(() -> validator.validate(params(1L, 1L)))
-                .doesNotThrowAnyException();
+    void validate_nonDefaultChunkSize_throws() {
+        // A CHUNK_SIZE override cannot take effect (build-time constraint) → rejected loudly
+        assertThatThrownBy(() -> validator.validate(params(4L, 50L)))
+                .isInstanceOf(InvalidJobParametersException.class)
+                .hasMessageContaining("CHUNK_SIZE");
     }
 
     // ── Missing parameters — treated as valid (defaults applied at launch) ────
