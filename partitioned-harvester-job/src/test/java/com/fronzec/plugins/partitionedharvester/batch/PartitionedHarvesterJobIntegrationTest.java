@@ -48,7 +48,7 @@ import org.springframework.transaction.PlatformTransactionManager;
  *
  * <h3>Scenarios covered</h3>
  * <ol>
- *   <li>Correctness and sum: COUNT=24, SUM(cost)=1440 after a full run.</li>
+ *   <li>Correctness and sum: COUNT=24, SUM(cost)=1290 after a full run.</li>
  *   <li>Parallelism: exactly 4 worker BATCH_STEP_EXECUTION rows with status COMPLETED.</li>
  *   <li>1:1 idempotency: no duplicate source_id; re-run does not change count or sum.</li>
  *   <li>Bounded memory: 1000-row run with CHUNK_SIZE=100 (default) completes correctly;
@@ -155,11 +155,11 @@ class PartitionedHarvesterJobIntegrationTest {
      *
      * <p>Partition membership (MIN=1, MAX=24, gridSize=4, rangeSize=5):
      * <pre>
-     *   partition0: ids  1-5  subscriber=100 units=10 rate=5  cost=50  Σ=300
-     *   partition1: ids  6-10 subscriber=101 units=20 rate=3  cost=60  Σ=360
-     *   partition2: ids 11-15 subscriber=102 units=5  rate=8  cost=40  Σ=240
-     *   partition3: ids 16-24 subscriber=103 units=15 rate=4  cost=60  Σ=540
-     *   Total Σcost = 1440
+     *   partition0: ids  1-5  subscriber=100 units=10 rate=5  cost=50  (5 rows) Σ=250
+     *   partition1: ids  6-10 subscriber=101 units=20 rate=3  cost=60  (5 rows) Σ=300
+     *   partition2: ids 11-15 subscriber=102 units=5  rate=8  cost=40  (5 rows) Σ=200
+     *   partition3: ids 16-24 subscriber=103 units=15 rate=4  cost=60  (9 rows) Σ=540
+     *   Total Σcost = 1290
      * </pre>
      */
     private void insertSeedData() {
@@ -229,7 +229,7 @@ class PartitionedHarvesterJobIntegrationTest {
     // ── Scenario 1: Correctness and sum ──────────────────────────────────────────
 
     /**
-     * Full run correctness: COUNT(billing_charge)==24 and SUM(cost)==1440 after COMPLETED job.
+     * Full run correctness: COUNT(billing_charge)==24 and SUM(cost)==1290 after COMPLETED job.
      * Verifies REQ-03 (SC-03.2 sum) and REQ-04 (SC-04.1 count).
      */
     @Test
