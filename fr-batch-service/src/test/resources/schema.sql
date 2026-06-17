@@ -246,3 +246,28 @@ CREATE TABLE IF NOT EXISTS harvest_dead_letter (
     job_execution_id BIGINT        NOT NULL,
     recorded_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- =========================================================
+-- V8: Partitioned harvester tables (mirror of V8__partitioned_harvester_tables.sql)
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS usage_record (
+    id            BIGINT    PRIMARY KEY AUTO_INCREMENT,
+    subscriber_id BIGINT    NOT NULL,
+    units         BIGINT    NOT NULL,
+    rate          BIGINT    NOT NULL,
+    recorded_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS billing_charge (
+    id               BIGINT    PRIMARY KEY AUTO_INCREMENT,
+    source_id        BIGINT    NOT NULL,
+    subscriber_id    BIGINT    NOT NULL,
+    units            BIGINT    NOT NULL,
+    rate             BIGINT    NOT NULL,
+    cost             BIGINT    NOT NULL,
+    job_execution_id BIGINT    NULL,
+    recorded_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_billing_charge_source UNIQUE (source_id)
+);
