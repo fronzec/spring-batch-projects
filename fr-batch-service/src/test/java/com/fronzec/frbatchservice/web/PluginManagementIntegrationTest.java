@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import com.fronzec.frbatchservice.web.dto.ErrorResponse;
 import java.io.ByteArrayOutputStream;
@@ -282,5 +283,44 @@ class PluginManagementIntegrationTest {
     assertThat(body.status()).isEqualTo(413);
     assertThat(body.error()).isEqualTo("Payload Too Large");
     assertThat(body.path()).isEqualTo(JOBS_BASE + "/upload");
+  }
+
+  // ─── auto-approval persistence ──────────────────────────────────────────────
+
+  @Test
+  @Order(12)
+  void uploadUnderNonProductionProfile_persistsAutoApproval() throws Exception {
+    // Under any non-production profile, AutoApproveConfig (@Profile("!production"))
+    // auto-approves uploads. The approval must be PERSISTED, so a fresh read from
+    // the database reflects APPROVED — not the default PENDING.
+    String jobName = "auto-approve-persist-job";
+    MockMultipartFile jarFile =
+        new MockMultipartFile(
+            "file",
+            "auto-approve.jar",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            createMinimalJarBytes("META-INF/MANIFEST.MF"));
+
+    String responseBody =
+        mockMvc
+            .perform(
+                multipart(JOBS_BASE + "/upload")
+                    .file(jarFile)
+                    .param("jobName", jobName)
+                    .param("version", TEST_VERSION)
+                    .param("mainClassName", TEST_MAIN_CLASS))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    int idStart = responseBody.indexOf("\"id\":") + 5;
+    int idEnd = responseBody.indexOf(",", idStart);
+    long id = Long.parseLong(responseBody.substring(idStart, idEnd).trim());
+
+    JobDefinitionEntity persisted = jobDefinitionRepository.findById(id).orElseThrow();
+    assertThat(persisted.getApprovalStatus()).isEqualTo("APPROVED");
+    assertThat(persisted.getApprovedBy()).isEqualTo("system");
+    assertThat(persisted.getApprovedAt()).isNotNull();
   }
 }

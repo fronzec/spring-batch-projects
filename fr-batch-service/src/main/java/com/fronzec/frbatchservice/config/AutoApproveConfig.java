@@ -9,15 +9,16 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 /**
- * Dev-profile component that auto-approves newly uploaded job definitions.
+ * Non-production component that auto-approves newly uploaded job definitions.
  *
- * <p>In the {@code dev} profile, every upload is implicitly trusted and set to
- * {@code APPROVED} — no manual approve step needed. This component is NOT loaded
- * in production where the approval guard in {@code DynamicJobLoaderService} is
- * active and requires explicit approval via the REST API.
+ * <p>In every non-production profile ({@code @Profile("!production")}), each
+ * upload is implicitly trusted and set to {@code APPROVED} — no manual approve
+ * step needed. This component is NOT loaded in production, where the approval
+ * guard in {@code DynamicJobLoaderService} is active and requires explicit
+ * approval via the REST API.
  *
- * <p>Injected into {@code JarUploadService} so the auto-approval happens
- * atomically at persist time.
+ * <p>Injected into {@code JarUploadService}, which calls {@link #approve} and
+ * then re-saves the entity to persist the approval.
  */
 @Component
 @Profile("!production")
