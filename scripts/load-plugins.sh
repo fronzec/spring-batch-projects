@@ -17,8 +17,9 @@
 #   - jq OR python3 must be in PATH (used to parse the upload response)
 #   - The backend must be running on BASE_URL before this script is called.
 #   - The plugin JAR directory must exist (see RUNNING_LOCALLY.md Step 4).
-#   - If --build is passed, mvn must be in PATH and batch-job-api must be
-#     installed locally (mvn -f batch-job-api/pom.xml clean install).
+#   - If --build is passed, Maven is resolved wrapper-first (fr-batch-service/mvnw,
+#     falling back to a system mvn), and batch-job-api must be installed locally
+#     (fr-batch-service/mvnw -f batch-job-api/pom.xml clean install).
 
 set -Eeuo pipefail
 
@@ -89,10 +90,24 @@ extract_id() {
     fi
 }
 
-if [[ "$BUILD" == "true" ]] && ! command -v mvn &>/dev/null; then
-    printf '[ERROR] --build was requested but mvn is not in PATH.\n' >&2
+# Resolve Maven wrapper-first so --build needs no system Maven install.
+MVNW="$REPO_ROOT/fr-batch-service/mvnw"
+if [[ "$BUILD" == "true" && ! -x "$MVNW" ]] && ! command -v mvn &>/dev/null; then
+    printf '[ERROR] --build requested but no Maven found (no fr-batch-service/mvnw, no mvn in PATH).\n' >&2
     exit 1
 fi
+
+# Build one module by absolute pom path. The wrapper bootstraps from its own
+# .mvn dir, so it must run with fr-batch-service as the working directory; a
+# system mvn (fallback) works from anywhere.
+build_module() {
+    local pom="$1"
+    if [[ -x "$MVNW" ]]; then
+        ( cd "$REPO_ROOT/fr-batch-service" && ./mvnw -B package -f "$pom" -DskipTests -q )
+    else
+        mvn -B package -f "$pom" -DskipTests -q
+    fi
+}
 
 # ─── Plugin definitions ───────────────────────────────────────────────────────
 # Format: "jobName|relative/jar/path|mainClassName"
@@ -114,22 +129,24 @@ if [[ "$BUILD" == "true" ]]; then
     )
     for module in "${MODULE_DIRS[@]}"; do
         printf '[INFO]   Building %s ...\n' "$module"
-        mvn -B package -f "$REPO_ROOT/$module/pom.xml" -DskipTests -q
+        build_module "$REPO_ROOT/$module/pom.xml"
         printf '[OK]     %s built.\n' "$module"
     done
     printf '[INFO] All JARs built.\n\n'
 fi
 
 # ─── Backend connectivity check ───────────────────────────────────────────────
+# Probe the public /jobs/plugins endpoint, NOT /actuator/health: aggregate health
+# reports DOWN (503) until plugins are loaded, which is exactly the bootstrap state
+# this script runs in. /jobs/plugins returns 200 whenever the API is serving.
 printf '[INFO] Checking backend at %s ...\n' "$BASE_URL"
 HEALTH_STATUS=$(curl -s -o /dev/null -w '%{http_code}' \
-    "${BASE_URL}/actuator/health" || true)
+    "${BASE_URL}/jobs/plugins" || true)
 
 if [[ "$HEALTH_STATUS" != "200" ]]; then
-    printf '[ERROR] Backend health check returned HTTP %s (expected 200).\n' \
-        "$HEALTH_STATUS" >&2
+    printf '[ERROR] Backend is not reachable at %s (HTTP %s).\n' "$BASE_URL" "$HEALTH_STATUS" >&2
     printf '        Is the backend running? Start it with:\n' >&2
-    printf '          cd fr-batch-service && mvn spring-boot:run -Dspring-boot.run.profiles=local\n' >&2
+    printf '          cd fr-batch-service && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local\n' >&2
     exit 1
 fi
 printf '[INFO] Backend is up.\n\n'
@@ -149,7 +166,7 @@ for entry in "${PLUGINS[@]}"; do
     # Validate JAR exists
     if [[ ! -f "$JAR_ABS" ]]; then
         printf '[ERROR] JAR not found: %s\n' "$JAR_ABS" >&2
-        printf '        Build it first: mvn -B package -f %s/pom.xml -DskipTests\n' \
+        printf '        Build it first: ./fr-batch-service/mvnw -B package -f %s/pom.xml -DskipTests\n' \
             "$(dirname "$JAR_REL")" >&2
         FAILED=$((FAILED + 1))
         continue

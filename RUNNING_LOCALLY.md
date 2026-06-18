@@ -2,18 +2,43 @@
 
 Everything you need to go from a fresh clone to a fully operational local environment: MySQL running, backend migrated, seeds applied, all four plugins loaded, and the UI showing live data.
 
+## Quick Start (Task)
+
+If you have [Task](https://taskfile.dev) installed, the root `Taskfile.yml` wraps every step below.
+Each task just delegates to the same scripts and the Maven wrapper, so this is optional sugar — the
+manual steps work without Task.
+
+```bash
+task doctor     # check required tools
+task deps       # one-time: install batch-job-api into the local Maven cache
+task up         # start MySQL (Podman); the DB auto-creates on backend boot
+task backend    # run the backend (foreground — leave it running)
+# then, in another terminal:
+task seed       # load seed data
+task plugins    # build + upload + approve + enable + load all plugins
+task ui         # start the UI
+```
+
+Run `task --list` to see every target. The rest of this guide explains each step in full and is the
+source of truth if you are not using Task.
+
 ## Prerequisites
 
 | Tool | Version | Check |
 |------|---------|-------|
 | Java (JDK) | 21 | `java -version` |
 | JAVA_HOME | points to JDK 21 | `echo $JAVA_HOME` |
-| Maven | 3.9+ | `mvn -version` |
 | Podman | 4.0+ | `podman --version` |
 | podman-compose | 1.0+ | `podman-compose --version` |
 | Node.js | 20 LTS | `node -version` |
 | npm | bundled with Node 20 | `npm -version` |
-| jq or python3 | either | `jq --version` / `python3 --version` |
+| Task (optional) | 3.x | `task --version` |
+
+> **No Maven install needed** — every build uses the bundled wrapper `./fr-batch-service/mvnw`.
+> **No `mysql` client needed** — the seed script execs into the running DB container.
+> `python3` (built into macOS) covers the JSON parsing the scripts do; `jq` is used if present.
+>
+> Run `task doctor` to check these tools at any time.
 
 ---
 
@@ -26,8 +51,10 @@ Everything you need to go from a fresh clone to a fully operational local enviro
 Build and install `batch-job-api` into your local Maven cache. No GitHub PAT needed.
 
 ```bash
-mvn -f batch-job-api/pom.xml clean install
+./fr-batch-service/mvnw -f batch-job-api/pom.xml clean install
 ```
+
+> Or run `task deps`, which does exactly this.
 
 ### Option B — GitHub PAT in settings.xml
 
@@ -81,23 +108,13 @@ don't start with an alphanumeric, and the `_devenvironment` directory name would
 underscore into it.
 
 That `.env` configures `MYSQL_DATABASE=frbatchservicedb2` and a non-root user. The app's **local profile**
-connects to a different database (`fr_batch_local`) as `root` with an empty password — so you must create
-that database manually:
+connects to a different database (`fr_batch_local`) as `root` with an empty password. You do **not** need to
+create it by hand — the local JDBC URL carries `createDatabaseIfNotExist=true`, so the backend creates
+`fr_batch_local` on its first connection (Step 2). The container's server default charset is `utf8mb4`.
 
-```bash
-# Wait a few seconds for MySQL to be ready, then:
-podman-compose exec db \
-  mysql -u root -e "CREATE DATABASE IF NOT EXISTS fr_batch_local CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-```
-
-Or connect with any MySQL client and run:
-
-```sql
-CREATE DATABASE IF NOT EXISTS fr_batch_local
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-> **Why the mismatch?** `fr-batch-service/.env` is git-tracked and sets `DB_NAME=frbatchservicedb2`. The local Spring profile (`application-local.properties`) is hard-coded to `fr_batch_local`. They serve different purposes: the `.env` file pre-dates the local profile. The simplest fix is to create `fr_batch_local` as shown above; do not rename the `.env` value.
+> **Why the `.env` mismatch?** `fr-batch-service/.env` is git-tracked and sets `DB_NAME=frbatchservicedb2`,
+> while the local Spring profile (`application-local.properties`) targets `fr_batch_local`. They serve
+> different purposes and the `.env` value pre-dates the local profile — leave it as is.
 
 Verify MySQL is up:
 
@@ -111,8 +128,10 @@ podman-compose exec db mysqladmin ping -u root
 
 ```bash
 cd fr-batch-service
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
+
+> Uses the bundled Maven wrapper — no system Maven needed. The first run downloads the pinned Maven version.
 
 **The `local` profile flag is required.** Without it, the app tries to read `${DB_HOST}`, `${DB_PORT}`, `${DB_NAME}`, `${DB_USERNAME}`, and `${DB_PASSWORD}` from the environment and fails at startup.
 
@@ -120,7 +139,7 @@ What happens on first run with the `local` profile:
 
 - `FlywayMigrationRunner` (active only in the `local` profile) runs migrations V1–V8, creating all tables.
 - `spring.flyway.enabled=false` in `application-local.properties` keeps Spring's built-in Flyway autoconfigure out of the way.
-- Uploaded plugins must be **approved** before they can load (see Step 6). A dev-only `AutoApproveConfig` exists but does not currently persist the approval under the `local` profile, so the helper script approves each definition explicitly.
+- Uploaded plugins must be **approved** before they can load (see Step 6). Under the `local` profile `AutoApproveConfig` auto-approves each upload (toggle with `app.plugins.approval.auto-approve`); the helper script also approves explicitly, so it works either way.
 - NoOp password encoder is active (plain-text credentials work).
 
 Wait until you see a line similar to:
@@ -128,13 +147,17 @@ Wait until you see a line similar to:
 Started FrBatchServiceApplication in X.XXX seconds
 ```
 
-Health check:
+Readiness check — the public plugin endpoint responds as soon as the API is serving:
 
 ```bash
-curl -s http://localhost:8080/api/batch-service/actuator/health | python3 -m json.tool
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8080/api/batch-service/jobs/plugins
 ```
 
-Expected: `{"status":"UP"}`.
+Expected: `200`.
+
+> **Note on `/actuator/health`:** it reports `DOWN` (HTTP 503) until at least one uploaded plugin is loaded
+> — the `plugins` health group is unhealthy with zero loaded plugins. That is expected on a fresh start; it
+> flips to `UP` after Step 6. Use `/jobs/plugins` (above) as the "is the backend serving?" signal.
 
 ---
 
@@ -172,40 +195,29 @@ Seed files applied in order:
 
 ---
 
-## Step 4 — Create the Plugin JAR Directory
+## Step 4 — Plugin Storage (automatic — no action needed)
 
-The local profile stores uploaded JARs at an absolute path:
+The backend stores uploaded JARs under `${user.dir}/target/local-plugins/jars/` — i.e.
+`fr-batch-service/target/local-plugins/jars/` when started via the wrapper — and **creates that directory
+on first upload**. There is no manual `mkdir` step and no machine-specific path baked into config.
 
-```
-/Users/lalo/__home/projects/spring-batch-projects/target/local-plugins/jars/
-```
-
-This path is hard-coded in `fr-batch-service/src/main/resources/application-local.properties` (`fr-batch-service.plugins.jar-dir`). Create it before uploading plugins:
-
-```bash
-mkdir -p /Users/lalo/__home/projects/spring-batch-projects/target/local-plugins/jars/
-```
-
-> **Non-owner machines:** If your repo is checked out to a different path, override the property before starting the backend:
-> ```bash
-> mvn spring-boot:run \
->   -Dspring-boot.run.profiles=local \
->   -Dspring-boot.run.arguments="--fr-batch-service.plugins.jar-dir=/your/path/to/jars/"
-> ```
-> Or set it directly in `application-local.properties` — that file is not a secret, just local config.
+> Want a different location? Override `fr-batch-service.plugins.jar-dir` in `application-local.properties`,
+> or pass `-Dspring-boot.run.arguments="--fr-batch-service.plugins.jar-dir=/your/path/"` to the backend.
 
 ---
 
 ## Step 5 — Build the Plugin JARs
 
-Each plugin is a separate Maven module. Build all four fat JARs:
+Each plugin is a separate Maven module. Build all four fat JARs with the wrapper (no system Maven needed):
 
 ```bash
-mvn -B package -f ticket-pdf-job/pom.xml -DskipTests
-mvn -B package -f ticket-bundle-job/pom.xml -DskipTests
-mvn -B package -f fault-tolerant-harvester-job/pom.xml -DskipTests
-mvn -B package -f partitioned-harvester-job/pom.xml -DskipTests
+./fr-batch-service/mvnw -B package -f ticket-pdf-job/pom.xml -DskipTests
+./fr-batch-service/mvnw -B package -f ticket-bundle-job/pom.xml -DskipTests
+./fr-batch-service/mvnw -B package -f fault-tolerant-harvester-job/pom.xml -DskipTests
+./fr-batch-service/mvnw -B package -f partitioned-harvester-job/pom.xml -DskipTests
 ```
+
+> Or just run `task plugins`, which builds and loads everything via the helper script.
 
 Expected output jars:
 
@@ -216,7 +228,7 @@ Expected output jars:
 | fault-tolerant-harvester-job | `fault-tolerant-harvester-job/target/fault-tolerant-harvester-job-1.0.0.jar` |
 | partitioned-harvester-job | `partitioned-harvester-job/target/partitioned-harvester-job-1.0.0.jar` |
 
-> If you skipped Option A for GitHub Packages auth, Maven will 401 here. Go back and run `mvn -f batch-job-api/pom.xml clean install` first.
+> If you skipped Option A for GitHub Packages auth, Maven will 401 here. Go back and run `./fr-batch-service/mvnw -f batch-job-api/pom.xml clean install` (or `task deps`) first.
 
 ---
 
@@ -229,9 +241,10 @@ Plugin loading is **dynamic upload, not classpath**. At startup, zero plugins ar
 3. **Enable** — PUT to mark the definition active
 4. **Load** — POST to instantiate the plugin and register it as a Spring Batch job
 
-> The `approve` step is required under every non-production profile. A dev-only auto-approve exists but
-> does not currently persist, so the definition stays `PENDING` until approved explicitly — the helper
-> script does this for you.
+> Non-production profiles auto-approve uploads (`app.plugins.approval.auto-approve`, on by default), so a
+> definition is usually already `APPROVED`. The helper script still calls approve explicitly — a second
+> approve just returns `409 Already approved`, which it treats as success — so it works whether auto-approve
+> is on or off.
 
 Use the helper script (it handles all four plugins and all four steps):
 
@@ -320,9 +333,8 @@ Open the dashboard at http://localhost:5173 — you should see all four jobs lis
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `Could not resolve placeholder 'DB_HOST'` at startup | Missing `local` profile flag | Add `-Dspring-boot.run.profiles=local` |
-| `Unknown database 'fr_batch_local'` | DB not created | Run `CREATE DATABASE IF NOT EXISTS fr_batch_local;` in MySQL |
-| `mvn package` exits with HTTP 401 | GitHub Packages not authenticated | Run `mvn -f batch-job-api/pom.xml clean install` (Option A) |
-| Upload returns 500 / `No such file or directory` | JAR directory does not exist | `mkdir -p /Users/lalo/__home/projects/spring-batch-projects/target/local-plugins/jars/` |
+| `Unknown database 'fr_batch_local'` | JDBC URL lost `createDatabaseIfNotExist=true` | Restore the param in `application-local.properties`, or create the DB once: `podman-compose exec db mysql -u root -e "CREATE DATABASE IF NOT EXISTS fr_batch_local;"` |
+| `mvn package` exits with HTTP 401 | GitHub Packages not authenticated | Run `./fr-batch-service/mvnw -f batch-job-api/pom.xml clean install` (Option A / `task deps`) |
 | UI shows "Backend unreachable" | Backend not running on :8080 | Start backend first: Step 2 |
 | `POST /jobs/upload` returns 401 | Wrong credentials | Use `admin:admin123` for write operations |
 | Flyway fails with `Table already exists` | `00_create_schema.sql` was run manually | Drop all tables and let Flyway recreate, or restore a clean volume |
