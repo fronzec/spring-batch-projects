@@ -26,23 +26,23 @@ This diversity is by design - it provides an easy reference for how to implement
 
 ## How to run locally
 
-### Requeriments
+### Requirements
 
-- Your favorite IDE: I prefer IntelliJ or VsCode
 - Java 21 SDK
-- Maven 3, also you can use Maven Wrapper
-- Mysql 8.0.23
-- Some HTTP Rest Client: e.g. Postman
-- Some mocking service alternative: e.g. Mockoon or Mockintosh
+- Maven 3.9+
+- MySQL 8.2 (via Docker/Podman — see below)
+- Docker or Podman
 
+### Run locally
 
-### Run with IntelliJ
+```bash
+cd fr-batch-service
+mvn spring-boot:run -Dspring-boot.run.profiles=local
+```
 
-Pending ...
+The `local` profile is required. It wires a local MySQL connection (`fr_batch_local` database, root user, empty password) and runs Flyway migrations automatically at startup.
 
-### Run with VS Code
-
-Pending ...
+For the full setup — starting MySQL, seeding data, building and loading plugins, and running the UI — see the root [RUNNING_LOCALLY.md](../RUNNING_LOCALLY.md).
 
 ## How to develop
 

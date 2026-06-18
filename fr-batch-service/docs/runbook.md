@@ -103,7 +103,9 @@ All commands assume basic auth (`admin:admin123`). Replace credentials for produ
 curl -X POST -u admin:admin123 \
   -F "file=@/path/to/plugin.jar" \
   -F "jobName=my-custom-job" \
-  http://localhost:8080/api/batch-service/jobs/definitions/upload
+  -F "version=1.0.0" \
+  -F "mainClassName=com.example.MyJobPlugin" \
+  http://localhost:8080/api/batch-service/jobs/upload
 ```
 
 **Expected**: HTTP 201 Created. Response includes `jobDefinitionId` and `checksumSha256`.
@@ -238,7 +240,7 @@ docker compose exec mysql mysql -u root -p"${DB_PASSWORD}" -e \
 ```
 
 **Resolution**:
-1. Corrupted JAR → re-upload: `POST /jobs/definitions/upload`
+1. Corrupted JAR → re-upload: `POST /jobs/upload`
 2. Missing dependency in JAR → check `MANIFEST.MF` classpath
 3. Signature mismatch → re-sign JAR or temporarily set `app.plugins.signature.mode=permissive` during investigation
 
