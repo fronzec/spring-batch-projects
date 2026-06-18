@@ -104,8 +104,10 @@ public class DynamicJobLoaderService {
               + entity.getApprovalStatus());
     }
 
-    // Optimistic guard: already loaded or currently loading
-    if (LoadResult.LOADED.equals(entity.getLoadStatus())) {
+    // Optimistic guard: already loaded in THIS JVM's registry. The persisted
+    // loadStatus can be a stale LOADED after a restart (the registry is
+    // in-memory and resets), so consult the live registry, not the DB column.
+    if (pluginRegistryService.getRegisteredJobNames().contains(entity.getJobName())) {
       throw new IllegalStateException(
           "Job \"" + entity.getJobName() + "\" (id=" + definitionId + ") is already loaded");
     }
@@ -371,8 +373,11 @@ public class DynamicJobLoaderService {
     Map<String, LoadResult> results = new LinkedHashMap<>();
 
     for (JobDefinitionEntity def : enabledDefs) {
-      // Skip already-loaded definitions
-      if (LoadResult.LOADED.equals(def.getLoadStatus())) {
+      // Skip definitions already loaded in THIS JVM's registry. After a restart
+      // the persisted loadStatus may still say LOADED while the in-memory registry
+      // is empty, so check the live registry — not the DB column — to avoid
+      // skipping definitions that need re-instantiating.
+      if (pluginRegistryService.getRegisteredJobNames().contains(def.getJobName())) {
         log.debug(
             "Skipping already-loaded definition '{}' (id={})",
             def.getJobName(),
