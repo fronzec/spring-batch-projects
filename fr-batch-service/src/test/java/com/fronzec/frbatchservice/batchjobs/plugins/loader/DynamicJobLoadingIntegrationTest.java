@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fronzec.frbatchservice.batchjobs.JobsManagerService;
 import com.fronzec.frbatchservice.batchjobs.plugins.PluginRegistryService;
+import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import com.fronzec.frbatchservice.restclients.ApiClient;
 import com.fronzec.frbatchservice.restclients.DataCalculatedResponse;
@@ -80,6 +81,7 @@ class DynamicJobLoadingIntegrationTest {
   @Autowired private JobDefinitionRepository jobDefinitionRepository;
   @Autowired private JobsManagerService jobsManagerService;
   @Autowired private PluginRegistryService pluginRegistryService;
+  @Autowired private DynamicJobLoaderService loaderService;
 
   @MockitoBean private ApiClient apiClient;
 
@@ -389,5 +391,43 @@ class DynamicJobLoadingIntegrationTest {
     assertThat(body).contains("\"job_name\":\"" + JOB_NAME + "\"");
     assertThat(body).contains("\"status\":\"" + LoadResult.LOADED + "\"");
     assertThat(body).contains("\"message\":\"Successfully loaded\"");
+  }
+
+  /* ── 13. Auto-load re-instantiates definitions with stale LOADED status ── */
+
+  @Test
+  @Order(13)
+  void loadAllEnabled_reloadsDefinitionWithStaleLoadedStatus() {
+    // Simulate a backend restart: the database still says LOADED from a previous
+    // JVM, but the in-memory registry is empty. Auto-load must actually load the
+    // plugin (re-instantiate it), not skip it as "Already loaded" off the stale
+    // persisted status.
+
+    // Ensure the registry does not hold it (unload if a prior test left it loaded).
+    if (pluginRegistryService.getRegisteredJobNames().contains(JOB_NAME)) {
+      loaderService.unloadJob(definitionId, true);
+    }
+    assertThat(pluginRegistryService.getRegisteredJobNames()).doesNotContain(JOB_NAME);
+
+    // Force the stale persisted state: enabled + LOADED, but not in the registry.
+    JobDefinitionEntity def = jobDefinitionRepository.findById(definitionId).orElseThrow();
+    def.setEnabled(true);
+    def.setLoadStatus(LoadResult.LOADED);
+    jobDefinitionRepository.save(def);
+
+    // Precondition: the persisted state really is the stale "LOADED" we mean to test
+    // (otherwise the assertions below could pass for the wrong reason).
+    assertThat(jobDefinitionRepository.findById(definitionId).orElseThrow().getLoadStatus())
+        .isEqualTo(LoadResult.LOADED);
+
+    Map<String, LoadResult> results = loaderService.loadAllEnabled();
+
+    LoadResult result = results.get(JOB_NAME);
+    assertThat(result).as("auto-load result for %s", JOB_NAME).isNotNull();
+    assertThat(result.status()).isEqualTo(LoadResult.LOADED);
+    assertThat(result.message())
+        .as("stale-LOADED definition must be loaded, not skipped")
+        .isEqualTo("Successfully loaded");
+    assertThat(pluginRegistryService.getRegisteredJobNames()).contains(JOB_NAME);
   }
 }

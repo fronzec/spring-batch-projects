@@ -146,9 +146,18 @@ public class PluginRegistryService {
         return Optional.ofNullable(pluginsByJobName.get(jobName));
     }
 
-    /** Returns the set of all registered job names. */
+    /**
+     * Returns an immutable snapshot of all registered job names.
+     *
+     * <p>Takes the {@code pluginsByJobName} monitor and copies the key set so the
+     * returned value is safe to read while concurrent register/unregister calls
+     * mutate the map. Returning the live {@code keySet()} view would race with
+     * those writers.
+     */
     public Set<String> getRegisteredJobNames() {
-        return Collections.unmodifiableSet(pluginsByJobName.keySet());
+        synchronized (pluginsByJobName) {
+            return Set.copyOf(pluginsByJobName.keySet());
+        }
     }
 
     /**

@@ -280,9 +280,13 @@ class DynamicJobLoaderServiceTest {
 
   @Test
   void loadJob_alreadyLoaded_throwsIllegalStateException() {
-    JobDefinitionEntity entity = createEntity(7L, "already-loaded", true, LoadResult.LOADED);
+    // Persisted status is intentionally NOT LOADED: the guard must fire purely
+    // because the job is in the live registry, proving it consults the registry
+    // and not the DB column.
+    JobDefinitionEntity entity = createEntity(7L, "already-loaded", true, LoadResult.UNLOADED);
 
     when(jobDefinitionRepository.findById(7L)).thenReturn(Optional.of(entity));
+    when(pluginRegistryService.getRegisteredJobNames()).thenReturn(Set.of("already-loaded"));
 
     IllegalStateException ex =
         assertThrows(IllegalStateException.class, () -> service.loadJob(7L));
@@ -385,6 +389,9 @@ class DynamicJobLoaderServiceTest {
 
     when(jobDefinitionRepository.findByEnabled(true)).thenReturn(List.of(loaded, pending));
     when(jobDefinitionRepository.findById(13L)).thenReturn(Optional.of(pending));
+    // The "already-loaded" definition is the one currently in the live registry;
+    // "test-job" is not, so it must actually load.
+    when(pluginRegistryService.getRegisteredJobNames()).thenReturn(Set.of("already-loaded"));
     doNothing()
         .when(pluginRegistryService)
         .registerDynamicPlugin(any(BatchJobPlugin.class), any());
