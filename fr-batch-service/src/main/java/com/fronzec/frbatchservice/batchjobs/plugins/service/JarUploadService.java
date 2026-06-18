@@ -115,8 +115,14 @@ public class JarUploadService {
 
         pluginMetrics.incrementUpload();
 
-        // Auto-approve in dev profile (no-op when AutoApproveConfig is absent)
-        autoApproveConfig.ifPresent(ac -> ac.approve(entity));
+        // Auto-approve in non-production profiles (no-op when AutoApproveConfig is absent).
+        // approve() only mutates the entity in memory, and persistMetadata's save has
+        // already committed it as PENDING, so re-save to persist the approval.
+        autoApproveConfig.ifPresent(
+            ac -> {
+              ac.approve(entity);
+              jobDefinitionRepository.save(entity);
+            });
 
         log.info(
                 "JAR uploaded: job={}, version={}, id={}, checksum={}",
