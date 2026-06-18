@@ -1,0 +1,89 @@
+# Frictionless local-dev orchestration.
+# Task reference: https://taskfile.dev/usage/
+#
+# This is a thin convenience layer: every task delegates to the portable scripts
+# and the Maven wrapper, so the setup also works WITHOUT Task (run the scripts
+# directly — see RUNNING_LOCALLY.md). Task just sequences and labels the steps.
+#
+# Typical first run (each in its own terminal where noted):
+#   task doctor     # verify required tools are installed
+#   task deps       # one-time: install batch-job-api into the local Maven cache
+#   task up         # start MySQL (Podman)
+#   task backend    # run the backend (foreground — leave it running)
+#   task seed       # in another terminal, once the backend is up
+#   task plugins    # build + upload + approve + enable + load all plugins
+#   task ui         # start the UI (foreground)
+---
+version: '3'
+silent: true
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+
+  doctor:
+    desc: Check required tools and print install hints (nothing is installed for you)
+    cmds:
+      - |
+        check() {
+          if command -v "$1" >/dev/null 2>&1; then
+            printf '  ok    %-16s %s\n' "$1" "$(command -v "$1")"
+          else
+            printf '  MISS  %-16s -> %s\n' "$1" "$2"
+          fi
+        }
+        echo "Required tools for local development:"
+        check java            "install JDK 21 (e.g. brew install temurin@21)"
+        check node            "install Node 20 LTS (e.g. brew install node@20)"
+        check npm             "ships with Node"
+        check podman          "brew install podman   (then: podman machine init)"
+        check podman-compose  "brew install podman-compose"
+        echo
+        echo "Maven is NOT required — tasks use ./fr-batch-service/mvnw"
+        echo "A mysql client is NOT required — scripts exec into the DB container"
+
+  deps:
+    desc: One-time — install batch-job-api into the local Maven cache (needed before building)
+    # Run the wrapper from fr-batch-service so it finds its own .mvn/wrapper; -f targets the api module.
+    dir: fr-batch-service
+    cmds:
+      - ./mvnw -q -f ../batch-job-api/pom.xml clean install
+
+  up:
+    desc: Start MySQL via Podman (machine + compose). The DB auto-creates on backend boot.
+    dir: fr-batch-service/_devenvironment
+    cmds:
+      # `machine start` errors if already running (or on Linux there is no machine) — ignore that.
+      - podman machine start 2>/dev/null || true
+      - podman-compose up -d
+
+  backend:
+    desc: Run the backend in the foreground (local profile). Creates fr_batch_local + runs Flyway.
+    dir: fr-batch-service
+    cmds:
+      - ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+
+  seed:
+    desc: Apply local seed data (run after the backend has migrated the schema)
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/seed-local-db.sh
+
+  plugins:
+    desc: Build, upload, approve, enable and load all four plugins
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/load-plugins.sh --build
+
+  ui:
+    desc: Install deps and start the batch-ops-ui dev server (foreground)
+    dir: batch-ops-ui
+    cmds:
+      - npm install
+      - npm run dev
+
+  down:
+    desc: Stop and remove the Podman MySQL container
+    dir: fr-batch-service/_devenvironment
+    cmds:
+      - podman-compose down
