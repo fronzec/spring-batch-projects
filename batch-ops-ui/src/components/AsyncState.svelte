@@ -1,9 +1,22 @@
-<script lang="ts">
+<script lang="ts" generics="T">
   import type { ApiResult } from '../lib/api';
+  import type { Snippet } from 'svelte';
 
-  // Props
-  export let result: ApiResult<unknown> | null;
-  export let loading: boolean;
+  // Inline prop type: a named interface leaks as a "private name" in the
+  // generated generic component signature, which svelte-check rejects.
+  let {
+    result,
+    loading,
+    data,
+    empty,
+  }: {
+    result: ApiResult<T> | null;
+    loading: boolean;
+    /** Rendered for the 'data' kind, receiving the typed value. */
+    data?: Snippet<[T]>;
+    /** Rendered for the 'empty' kind; falls back to a default message. */
+    empty?: Snippet;
+  } = $props();
 </script>
 
 {#if loading}
@@ -11,12 +24,14 @@
 {:else if result === null}
   <!-- No fetch initiated yet — render nothing -->
 {:else if result.kind === 'data'}
-  <slot name="data" value={result.value} />
+  {@render data?.(result.value)}
 {:else if result.kind === 'empty'}
   <div data-slot="empty">
-    <slot name="empty">
+    {#if empty}
+      {@render empty()}
+    {:else}
       <p class="state-empty">No results found.</p>
-    </slot>
+    {/if}
   </div>
 {:else if result.kind === 'auth-failed'}
   <p class="state-error state-auth-failed">

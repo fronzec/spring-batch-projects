@@ -5,7 +5,7 @@ import type { PluginSummary } from '../lib/dto';
 
 // Use vi.hoisted to declare mocks before the vi.mock factory runs (hoisting)
 const { mockGetPlugins } = vi.hoisted(() => ({
-  mockGetPlugins: vi.fn<[], Promise<ApiResult<PluginSummary[]>>>(),
+  mockGetPlugins: vi.fn<() => Promise<ApiResult<PluginSummary[]>>>(),
 }));
 
 vi.mock('../lib/api', () => ({

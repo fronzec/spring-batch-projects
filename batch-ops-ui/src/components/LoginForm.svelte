@@ -1,10 +1,11 @@
 <script lang="ts">
   import { auth, login, logout } from '../lib/auth';
 
-  let username = '';
-  let password = '';
+  let username = $state('');
+  let password = $state('');
 
-  function handleSubmit() {
+  function handleSubmit(event: SubmitEvent) {
+    event.preventDefault();
     if (username && password) {
       login(username, password);
       password = ''; // Clear password field after login
@@ -16,10 +17,10 @@
   {#if $auth}
     <div class="logged-in">
       <span class="username">Logged in as <strong>{$auth.username}</strong></span>
-      <button class="logout-btn" on:click={logout}>Logout</button>
+      <button class="logout-btn" onclick={logout}>Logout</button>
     </div>
   {:else}
-    <form on:submit|preventDefault={handleSubmit} class="credentials-form">
+    <form onsubmit={handleSubmit} class="credentials-form">
       <label>
         Username
         <input

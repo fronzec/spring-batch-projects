@@ -4,7 +4,7 @@ import type { ApiResult } from '../lib/api';
 import type { RunningJobs } from '../lib/dto';
 
 const { mockGetRunningJobs } = vi.hoisted(() => ({
-  mockGetRunningJobs: vi.fn<[], Promise<ApiResult<RunningJobs>>>(),
+  mockGetRunningJobs: vi.fn<() => Promise<ApiResult<RunningJobs>>>(),
 }));
 
 vi.mock('../lib/api', () => ({

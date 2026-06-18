@@ -14,21 +14,21 @@
 <nav class="tab-bar" aria-label="Main navigation">
   <button
     class:active={$currentView === 'plugins'}
-    on:click={() => navigate('plugins')}
+    onclick={() => navigate('plugins')}
     aria-current={$currentView === 'plugins' ? 'page' : undefined}
   >
     Plugins
   </button>
   <button
     class:active={$currentView === 'definitions'}
-    on:click={() => navigate('definitions')}
+    onclick={() => navigate('definitions')}
     aria-current={$currentView === 'definitions' ? 'page' : undefined}
   >
     Definitions
   </button>
   <button
     class:active={$currentView === 'running'}
-    on:click={() => navigate('running')}
+    onclick={() => navigate('running')}
     aria-current={$currentView === 'running' ? 'page' : undefined}
   >
     Running Jobs
