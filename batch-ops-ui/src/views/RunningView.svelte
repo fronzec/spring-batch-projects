@@ -5,41 +5,34 @@
   import type { RunningJobs } from '../lib/dto';
   import AsyncState from '../components/AsyncState.svelte';
 
-  // Slot values arrive untyped from AsyncState; these typed accessors satisfy
-  // svelte-check without a TS `as` cast inside the {#each} expression
-  // (Svelte 4's template parser rejects casts in each-expressions).
-  const jobEntries = (jobs: unknown): [string, Record<string, string>][] =>
-    Object.entries(jobs as RunningJobs);
-  const execEntries = (execs: unknown): [string, string][] =>
-    Object.entries(execs as Record<string, string>);
-
-  let loading = true;
-  let result: ApiResult<RunningJobs> | null = null;
-  $: viewResult =
+  let loading = $state(true);
+  let result = $state<ApiResult<RunningJobs> | null>(null);
+  const viewResult = $derived(
     result?.kind === 'data' && Object.keys(result.value).length === 0
       ? ({ kind: 'empty' } as const)
-      : result;
+      : result,
+  );
 
-  async function fetch() {
+  async function fetchJobs() {
     loading = true;
     result = await getRunningJobs();
     loading = false;
   }
 
-  onMount(fetch);
+  onMount(fetchJobs);
 </script>
 
 <section class="running-view">
   <div class="running-header">
     <h2>Running Jobs</h2>
-    <button class="refresh-btn" on:click={fetch} disabled={loading}>
+    <button class="refresh-btn" onclick={fetchJobs} disabled={loading}>
       {loading ? 'Refreshing…' : 'Refresh'}
     </button>
   </div>
 
   <AsyncState result={viewResult} {loading}>
-    <div slot="data" let:value={jobs}>
-      {#each jobEntries(jobs) as [jobName, executions]}
+    {#snippet data(jobs)}
+      {#each Object.entries(jobs) as [jobName, executions]}
         <div class="job-section">
           <h3 class="job-name">{jobName}</h3>
           <div class="table-wrapper">
@@ -51,7 +44,7 @@
                 </tr>
               </thead>
               <tbody>
-                {#each execEntries(executions) as [execId, params]}
+                {#each Object.entries(executions) as [execId, params]}
                   <tr>
                     <td>{execId}</td>
                     <td>{params}</td>
@@ -62,8 +55,10 @@
           </div>
         </div>
       {/each}
-    </div>
-    <p slot="empty" class="empty-state">No jobs currently running.</p>
+    {/snippet}
+    {#snippet empty()}
+      <p class="empty-state">No jobs currently running.</p>
+    {/snippet}
   </AsyncState>
 </section>
 

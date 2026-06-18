@@ -4,8 +4,8 @@ import type { ApiResult } from '../lib/api';
 import type { JobDefinition } from '../lib/dto';
 
 const { mockGetDefinitions, mockGetDefinition } = vi.hoisted(() => ({
-  mockGetDefinitions: vi.fn<[], Promise<ApiResult<JobDefinition[]>>>(),
-  mockGetDefinition: vi.fn<[number], Promise<ApiResult<JobDefinition>>>(),
+  mockGetDefinitions: vi.fn<() => Promise<ApiResult<JobDefinition[]>>>(),
+  mockGetDefinition: vi.fn<(id: number) => Promise<ApiResult<JobDefinition>>>(),
 }));
 
 vi.mock('../lib/api', () => ({
