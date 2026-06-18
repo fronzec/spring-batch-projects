@@ -4,15 +4,22 @@
 # Usage:
 #   bash scripts/seed-local-db.sh [--help]
 #
+# Runs from any working directory — paths are resolved relative to this script.
+#
 # Environment variables (all optional — defaults shown below):
-#   DB_NAME      Database name          (default: fr_batch_local)
-#   DB_USER      MySQL username         (default: root)
-#   DB_PASSWORD  MySQL password         (default: empty string)
-#   MYSQL_HOST   MySQL host             (default: 127.0.0.1)
-#   MYSQL_PORT   MySQL port             (default: 3306)
+#   DB_NAME          Database name          (default: fr_batch_local)
+#   DB_USER          MySQL username         (default: root)
+#   DB_PASSWORD      MySQL password         (default: empty string)
+#   MYSQL_HOST       MySQL host             (default: 127.0.0.1)   [host client mode]
+#   MYSQL_PORT       MySQL port             (default: 3306)        [host client mode]
+#   DB_CLIENT        auto | host | podman   (default: auto)
+#   COMPOSE_PROJECT  Compose project label  (default: frbatch-local) [podman mode]
+#   COMPOSE_SERVICE  Compose service label  (default: db)            [podman mode]
 #
 # Prerequisites:
-#   - mysql client must be in PATH
+#   - A MySQL client: either `mysql` in PATH (host mode), OR the Podman DB
+#     container running (podman mode — no host client needed). DB_CLIENT=auto
+#     picks host if available, otherwise execs into the container.
 #   - The backend must have started and run Flyway migrations at least once,
 #     otherwise the target tables do not exist yet.
 #
@@ -35,6 +42,9 @@ DB_USER="${DB_USER:-root}"
 DB_PASSWORD="${DB_PASSWORD:-}"
 MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
 MYSQL_PORT="${MYSQL_PORT:-3306}"
+DB_CLIENT="${DB_CLIENT:-auto}"
+COMPOSE_PROJECT="${COMPOSE_PROJECT:-frbatch-local}"
+COMPOSE_SERVICE="${COMPOSE_SERVICE:-db}"
 
 # ─── Help ─────────────────────────────────────────────────────────────────────
 usage() {
@@ -46,6 +56,7 @@ usage() {
     printf '  DB_PASSWORD  MySQL password   (default: empty)\n'
     printf '  MYSQL_HOST   MySQL host       (default: 127.0.0.1)\n'
     printf '  MYSQL_PORT   MySQL port       (default: 3306)\n'
+    printf '  DB_CLIENT    auto|host|podman (default: auto)\n'
     exit 0
 }
 
@@ -53,12 +64,50 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     usage
 fi
 
-# ─── Dependency check ─────────────────────────────────────────────────────────
-if ! command -v mysql &>/dev/null; then
-    printf '[ERROR] mysql client not found in PATH.\n' >&2
-    printf '        Install it (e.g. brew install mysql-client) and retry.\n' >&2
-    exit 1
-fi
+# ─── Resolve MySQL client ─────────────────────────────────────────────────────
+# Prefer a host `mysql` client; otherwise exec into the running Podman DB
+# container, which already ships a mysql client (no host install needed).
+find_db_container() {
+    command -v podman &>/dev/null || return 0
+    podman ps -q \
+        --filter "label=com.docker.compose.project=${COMPOSE_PROJECT}" \
+        --filter "label=com.docker.compose.service=${COMPOSE_SERVICE}" \
+        | head -1
+}
+
+CLIENT_MODE=""
+DB_CONTAINER=""
+case "$DB_CLIENT" in
+    host)
+        command -v mysql &>/dev/null || {
+            printf '[ERROR] DB_CLIENT=host but mysql client not found in PATH.\n' >&2
+            exit 1
+        }
+        CLIENT_MODE="host" ;;
+    podman)
+        DB_CONTAINER="$(find_db_container)"
+        [[ -n "$DB_CONTAINER" ]] || {
+            printf '[ERROR] DB_CLIENT=podman but no running container for project "%s" / service "%s".\n' \
+                "$COMPOSE_PROJECT" "$COMPOSE_SERVICE" >&2
+            exit 1
+        }
+        CLIENT_MODE="podman" ;;
+    auto)
+        if command -v mysql &>/dev/null; then
+            CLIENT_MODE="host"
+        elif DB_CONTAINER="$(find_db_container)" && [[ -n "$DB_CONTAINER" ]]; then
+            CLIENT_MODE="podman"
+        else
+            printf '[ERROR] No MySQL client available.\n' >&2
+            printf '        Install a mysql client, or start the Podman DB container:\n' >&2
+            printf '          cd fr-batch-service/_devenvironment && podman-compose up -d\n' >&2
+            exit 1
+        fi ;;
+    *)
+        printf '[ERROR] Invalid DB_CLIENT="%s" (use auto|host|podman).\n' "$DB_CLIENT" >&2
+        exit 1 ;;
+esac
+printf '[INFO] MySQL client mode: %s%s\n' "$CLIENT_MODE" "${DB_CONTAINER:+ (container ${DB_CONTAINER})}"
 
 # ─── Seed files in order ──────────────────────────────────────────────────────
 declare -a SEED_FILES=(
@@ -69,21 +118,21 @@ declare -a SEED_FILES=(
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 run_mysql() {
-    # Accepts -e "SQL" or piped input
-    if [[ -n "${DB_PASSWORD}" ]]; then
-        mysql \
-            --host="$MYSQL_HOST" \
-            --port="$MYSQL_PORT" \
-            --user="$DB_USER" \
-            --password="$DB_PASSWORD" \
-            "$@"
+    # Accepts -e "SQL" or piped input. Dispatches to the resolved client mode.
+    # Empty password: omit the --password flag to suppress the mysql warning.
+    if [[ "$CLIENT_MODE" == "podman" ]]; then
+        # -i forwards stdin so `run_mysql "$DB_NAME" < file` pipes the seed in.
+        if [[ -n "${DB_PASSWORD}" ]]; then
+            podman exec -i "$DB_CONTAINER" mysql --user="$DB_USER" --password="$DB_PASSWORD" "$@"
+        else
+            podman exec -i "$DB_CONTAINER" mysql --user="$DB_USER" "$@"
+        fi
     else
-        # Empty password: avoid the --password flag to suppress the warning
-        mysql \
-            --host="$MYSQL_HOST" \
-            --port="$MYSQL_PORT" \
-            --user="$DB_USER" \
-            "$@"
+        if [[ -n "${DB_PASSWORD}" ]]; then
+            mysql --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$DB_USER" --password="$DB_PASSWORD" "$@"
+        else
+            mysql --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$DB_USER" "$@"
+        fi
     fi
 }
 
@@ -92,7 +141,7 @@ printf '[INFO] Checking MySQL connectivity at %s:%s ...\n' "$MYSQL_HOST" "$MYSQL
 if ! run_mysql -e "SELECT 1;" &>/dev/null; then
     printf '[ERROR] Cannot connect to MySQL at %s:%s as user %s.\n' \
         "$MYSQL_HOST" "$MYSQL_PORT" "$DB_USER" >&2
-    printf '        Is the database container running? (docker compose up -d)\n' >&2
+    printf '        Is the database container running? (cd fr-batch-service/_devenvironment && podman-compose up -d)\n' >&2
     exit 1
 fi
 printf '[INFO] Connected.\n'

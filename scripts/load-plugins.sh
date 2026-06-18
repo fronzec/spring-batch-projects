@@ -165,8 +165,10 @@ for entry in "${PLUGINS[@]}"; do
         -F "version=1.0.0" \
         -F "mainClassName=${MAIN_CLASS}")
 
-    HTTP_BODY=$(printf '%s' "$HTTP_RESPONSE" | head -n -1)
-    HTTP_CODE=$(printf '%s' "$HTTP_RESPONSE" | tail -n 1)
+    # Split the trailing "\n<code>" appended by curl -w, using pure bash
+    # parameter expansion (portable: GNU `head -n -1` is unavailable on BSD/macOS).
+    HTTP_CODE="${HTTP_RESPONSE##*$'\n'}"
+    HTTP_BODY="${HTTP_RESPONSE%$'\n'*}"
 
     if [[ "$HTTP_CODE" == "409" ]]; then
         printf '[SKIP] %s already uploaded (HTTP 409 Conflict).\n' "$JOB_NAME"
@@ -177,13 +179,14 @@ for entry in "${PLUGINS[@]}"; do
             "${BASE_URL}/jobs/definitions" \
             | (
                 if [[ "$JSON_PARSER" == "jq" ]]; then
-                    jq -r --arg name "$JOB_NAME" '.[] | select(.jobName == $name) | .id'
+                    # API serializes snake_case (Jackson SNAKE_CASE): field is job_name.
+                    jq -r --arg name "$JOB_NAME" '.[] | select(.job_name == $name) | .id'
                 else
                     python3 -c "
 import sys, json
 data = json.load(sys.stdin)
 for item in data:
-    if item.get('jobName') == '${JOB_NAME}':
+    if item.get('job_name') == '${JOB_NAME}':
         print(item['id'])
         break
 "
@@ -212,6 +215,24 @@ for item in data:
         continue
     fi
 
+    # ── Step 1b: Approve ───────────────────────────────────────────────────
+    # The /load endpoint rejects PENDING definitions (HTTP 409 "must be approved").
+    # Non-production profiles are meant to auto-approve on upload, but that path
+    # does not currently persist the approval, so approve explicitly here. This
+    # also mirrors the production lifecycle (upload -> approve -> enable -> load).
+    printf '[1b]   Approving definition %s ...\n' "$DEFINITION_ID"
+    APPROVE_CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+        -u "${ADMIN_USER}:${ADMIN_PASS}" \
+        -X PUT "${BASE_URL}/jobs/definitions/${DEFINITION_ID}/approve" \
+        -H 'Content-Type: application/json' \
+        -d "{\"approvedBy\":\"${ADMIN_USER}\"}")
+
+    case "$APPROVE_CODE" in
+        200) printf '[OK]   Approved.\n' ;;
+        409) printf '[SKIP] Already approved (HTTP 409).\n' ;;
+        *)   printf '[WARN] Approve returned HTTP %s (load may fail if still PENDING).\n' "$APPROVE_CODE" ;;
+    esac
+
     # ── Step 2: Enable ─────────────────────────────────────────────────────
     printf '[2/3] Enabling definition %s ...\n' "$DEFINITION_ID"
     ENABLE_CODE=$(curl -s -o /dev/null -w '%{http_code}' \
@@ -231,8 +252,8 @@ for item in data:
         -u "${ADMIN_USER}:${ADMIN_PASS}" \
         -X POST "${BASE_URL}/jobs/definitions/${DEFINITION_ID}/load")
 
-    LOAD_BODY=$(printf '%s' "$LOAD_RESPONSE" | head -n -1)
-    LOAD_CODE=$(printf '%s' "$LOAD_RESPONSE" | tail -n 1)
+    LOAD_CODE="${LOAD_RESPONSE##*$'\n'}"
+    LOAD_BODY="${LOAD_RESPONSE%$'\n'*}"
 
     if [[ "$LOAD_CODE" == "200" ]]; then
         printf '[OK]   Loaded.\n'

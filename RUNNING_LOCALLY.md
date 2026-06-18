@@ -9,7 +9,8 @@ Everything you need to go from a fresh clone to a fully operational local enviro
 | Java (JDK) | 21 | `java -version` |
 | JAVA_HOME | points to JDK 21 | `echo $JAVA_HOME` |
 | Maven | 3.9+ | `mvn -version` |
-| Docker or Podman | any recent | `docker info` |
+| Podman | 4.0+ | `podman --version` |
+| podman-compose | 1.0+ | `podman-compose --version` |
 | Node.js | 20 LTS | `node -version` |
 | npm | bundled with Node 20 | `npm -version` |
 | jq or python3 | either | `jq --version` / `python3 --version` |
@@ -51,19 +52,41 @@ mvn -f batch-job-api/pom.xml clean install
 
 ## Step 1 — Start MySQL
 
-The database container lives in `fr-batch-service/_devenvironment/`.
+This guide runs the database with [Podman](https://podman.io/) (rootless, daemonless) and
+[`podman-compose`](https://github.com/containers/podman-compose). The database container lives in
+`fr-batch-service/_devenvironment/`.
+
+On macOS, start the Podman VM once per boot before any container command:
+
+```bash
+podman machine start
+```
+
+Then bring up MySQL:
 
 ```bash
 cd fr-batch-service/_devenvironment
-docker compose up -d
+podman-compose up -d
 cd -
 ```
 
-The compose file reads `fr-batch-service/.env`. That file configures `MYSQL_DATABASE=frbatchservicedb2` and a non-root user. The app's **local profile** connects to a different database (`fr_batch_local`) as `root` with an empty password — so you must create that database manually:
+> **Why `podman-compose` and not `podman compose`?** The native `podman compose` wrapper delegates to
+> whatever external provider it finds — often Docker's `docker-compose` plugin, which on a machine that
+> once ran Docker Desktop tries to read credentials via `docker-credential-osxkeychain` and fails. The
+> standalone `podman-compose` tool talks to Podman directly and avoids that.
+
+The compose file reads `fr-batch-service/.env` (via `env_file: ../.env`) and declares an explicit project
+name (`frbatch-local`) so Podman accepts the generated volume name — Podman rejects volume names that
+don't start with an alphanumeric, and the `_devenvironment` directory name would otherwise leak a leading
+underscore into it.
+
+That `.env` configures `MYSQL_DATABASE=frbatchservicedb2` and a non-root user. The app's **local profile**
+connects to a different database (`fr_batch_local`) as `root` with an empty password — so you must create
+that database manually:
 
 ```bash
 # Wait a few seconds for MySQL to be ready, then:
-docker exec -it "$(docker ps --filter ancestor=mysql:8.2.0 -q | head -1)" \
+podman-compose exec db \
   mysql -u root -e "CREATE DATABASE IF NOT EXISTS fr_batch_local CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
@@ -79,8 +102,7 @@ CREATE DATABASE IF NOT EXISTS fr_batch_local
 Verify MySQL is up:
 
 ```bash
-docker exec -it "$(docker ps --filter ancestor=mysql:8.2.0 -q | head -1)" \
-  mysqladmin ping -u root
+podman-compose exec db mysqladmin ping -u root
 ```
 
 ---
@@ -98,7 +120,7 @@ What happens on first run with the `local` profile:
 
 - `FlywayMigrationRunner` (active only in the `local` profile) runs migrations V1–V8, creating all tables.
 - `spring.flyway.enabled=false` in `application-local.properties` keeps Spring's built-in Flyway autoconfigure out of the way.
-- `AutoApproveConfig` auto-approves every plugin upload — no manual approval step needed.
+- Uploaded plugins must be **approved** before they can load (see Step 6). A dev-only `AutoApproveConfig` exists but does not currently persist the approval under the `local` profile, so the helper script approves each definition explicitly.
 - NoOp password encoder is active (plain-text credentials work).
 
 Wait until you see a line similar to:
@@ -120,17 +142,22 @@ Expected: `{"status":"UP"}`.
 
 The seed files live in `fr-batch-service/_devenvironment/db/`. Apply them **after** the backend has started (Flyway must have created the tables first).
 
-Use the helper script:
+Run the helper script from the **repository root**:
 
 ```bash
 bash scripts/seed-local-db.sh
 ```
 
-Or apply manually:
+**No host `mysql` client required.** The script auto-detects how to reach the database: it uses a host
+`mysql` client if one is in your `PATH`, otherwise it execs into the running Podman DB container (which
+already ships a client). Force a mode with `DB_CLIENT=host|podman` if needed:
 
 ```bash
-# Default: root@127.0.0.1, DB fr_batch_local
-DB_NAME=fr_batch_local DB_USER=root MYSQL_HOST=127.0.0.1 bash scripts/seed-local-db.sh
+# Force the container client (default when no host mysql is installed)
+DB_CLIENT=podman bash scripts/seed-local-db.sh
+
+# Force a host mysql client over TCP
+DB_CLIENT=host DB_NAME=fr_batch_local DB_USER=root MYSQL_HOST=127.0.0.1 bash scripts/seed-local-db.sh
 ```
 
 Seed files applied in order:
@@ -198,10 +225,15 @@ Expected output jars:
 Plugin loading is **dynamic upload, not classpath**. At startup, zero plugins are active. You register them through the REST API:
 
 1. **Upload** — POST the JAR to the service (returns a definition `id`)
-2. **Enable** — PUT to mark the definition active
-3. **Load** — POST to instantiate the plugin and register it as a Spring Batch job
+2. **Approve** — PUT to approve the definition (the `/load` endpoint rejects `PENDING` definitions)
+3. **Enable** — PUT to mark the definition active
+4. **Load** — POST to instantiate the plugin and register it as a Spring Batch job
 
-Use the helper script (it handles all four plugins and all three steps):
+> The `approve` step is required under every non-production profile. A dev-only auto-approve exists but
+> does not currently persist, so the definition stays `PENDING` until approved explicitly — the helper
+> script does this for you.
+
+Use the helper script (it handles all four plugins and all four steps):
 
 ```bash
 bash scripts/load-plugins.sh
@@ -229,10 +261,14 @@ RESPONSE=$(curl -s -u admin:admin123 -X POST "$BASE/jobs/upload" \
 
 ID=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
 
-# 2. Enable
+# 2. Approve (required — /load rejects PENDING definitions)
+curl -s -u admin:admin123 -X PUT "$BASE/jobs/definitions/$ID/approve" \
+  -H 'Content-Type: application/json' -d '{"approvedBy":"admin"}'
+
+# 3. Enable
 curl -s -u admin:admin123 -X PUT "$BASE/jobs/definitions/$ID/enable"
 
-# 3. Load
+# 4. Load
 curl -s -u admin:admin123 -X POST "$BASE/jobs/definitions/$ID/load"
 ```
 
@@ -245,7 +281,7 @@ curl -s -u admin:admin123 -X POST "$BASE/jobs/definitions/$ID/load"
 | `fault-tolerant-harvester-job` | `fault-tolerant-harvester-job/target/fault-tolerant-harvester-job-1.0.0.jar` | `com.fronzec.plugins.harvester.FaultTolerantHarvesterJobPlugin` |
 | `partitioned-harvester-job` | `partitioned-harvester-job/target/partitioned-harvester-job-1.0.0.jar` | `com.fronzec.plugins.partitionedharvester.PartitionedHarvesterJobPlugin` |
 
-> **Security note:** `POST /jobs/upload`, `PUT /jobs/definitions/{id}/enable`, and `POST /jobs/definitions/{id}/load` all require the `ADMIN` role. Locally, use `admin:admin123`. `AutoApproveConfig` means the approval step is skipped automatically — you go straight from upload to enable.
+> **Security note:** `POST /jobs/upload`, `PUT /jobs/definitions/{id}/approve`, `PUT /jobs/definitions/{id}/enable`, and `POST /jobs/definitions/{id}/load` all require the `ADMIN` role. Locally, use `admin:admin123`.
 
 ---
 
@@ -273,7 +309,7 @@ curl -s http://localhost:8080/api/batch-service/jobs/plugins | python3 -m json.t
 curl -s -u viewer:viewer123 http://localhost:8080/api/batch-service/jobs/definitions | python3 -m json.tool
 ```
 
-Expected: four entries in `/jobs/plugins`, each showing `loadStatus: LOADED`.
+Expected: four uploaded entries in `/jobs/plugins`, each showing `status: ACTIVE`.
 
 Open the dashboard at http://localhost:5173 — you should see all four jobs listed and triggerable.
 
