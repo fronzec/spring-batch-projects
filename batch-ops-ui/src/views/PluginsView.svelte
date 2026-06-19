@@ -66,36 +66,44 @@
 
 <style>
   .plugins-view {
-    padding: 1rem;
+    padding: var(--space-4);
   }
 
   .table-wrapper {
     overflow-x: auto;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
   }
 
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
   }
 
   th, td {
     text-align: left;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #ddd;
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  tr:last-child td {
+    border-bottom: none;
   }
 
   th {
-    background: #f8f9fa;
-    font-weight: 600;
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    font-weight: var(--weight-semibold);
   }
 
   tr:hover td {
-    background: #f0f4ff;
+    background: var(--surface-accent);
   }
 
   .empty-state {
-    color: #666;
+    color: var(--text-muted);
     font-style: italic;
   }
 </style>

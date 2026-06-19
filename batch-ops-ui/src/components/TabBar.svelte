@@ -38,28 +38,31 @@
 <style>
   .tab-bar {
     display: flex;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #ddd;
-    background: #f8f9fa;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--surface-muted);
   }
 
   button {
-    padding: 0.4rem 0.9rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: white;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--surface-base);
+    color: var(--text-secondary);
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
   }
 
   button.active {
-    background: #0066cc;
-    color: white;
-    border-color: #0066cc;
+    background: var(--color-brand);
+    color: var(--text-on-brand);
+    border-color: var(--color-brand);
   }
 
   button:hover:not(.active) {
-    background: #e9ecef;
+    background: var(--surface-accent);
+    border-color: var(--border-strong);
   }
 </style>
