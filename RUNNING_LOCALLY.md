@@ -30,10 +30,13 @@ source of truth if you are not using Task.
 | JAVA_HOME | points to JDK 21 | `echo $JAVA_HOME` |
 | Podman | 4.0+ | `podman --version` |
 | podman-compose | 1.0+ | `podman-compose --version` |
-| Node.js | 20 LTS | `node -version` |
-| npm | bundled with Node 20 | `npm -version` |
+| Node.js | 22 LTS | `node -version` |
+| npm | bundled with Node 22 | `npm -version` |
 | Task (optional) | 3.x | `task --version` |
 
+> **Easiest path — [mise](https://mise.jdx.dev):** run `mise install` at the repo root to get the
+> pinned Java 21 + Node 22 automatically (see `.mise.toml`). No manual sdkman/fnm setup needed.
+>
 > **No Maven install needed** — every build uses the bundled wrapper `./fr-batch-service/mvnw`.
 > **No `mysql` client needed** — the seed script execs into the running DB container.
 > `python3` (built into macOS) covers the JSON parsing the scripts do; `jq` is used if present.
