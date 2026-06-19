@@ -21,37 +21,44 @@
 -- Partition ranges deliberately do NOT align with the cost blocks above:
 -- partitioning is orthogonal to the data's grouping, and Sigma(cost) is
 -- unaffected by how rows are split across workers.
+--
+-- Idempotent: the WHERE NOT EXISTS guard ensures a re-run is a no-op, so the
+-- ids stay exactly 1-24 (re-seeding would otherwise append ids 25+ and break
+-- the demo's expected partition ranges and 1260 total).
 -- =========================================================
 
-INSERT INTO usage_record (subscriber_id, units, rate) VALUES
+INSERT INTO usage_record (subscriber_id, units, rate)
+SELECT * FROM (VALUES
     -- Cost block (ids 1-6): subscriber 100, units=10, rate=5 -> cost=50 each
-    (100, 10, 5),
-    (100, 10, 5),
-    (100, 10, 5),
-    (100, 10, 5),
-    (100, 10, 5),
-    (100, 10, 5),
+    ROW(100, 10, 5),
+    ROW(100, 10, 5),
+    ROW(100, 10, 5),
+    ROW(100, 10, 5),
+    ROW(100, 10, 5),
+    ROW(100, 10, 5),
 
     -- Cost block (ids 7-12): subscriber 101, units=20, rate=3 -> cost=60 each
-    (101, 20, 3),
-    (101, 20, 3),
-    (101, 20, 3),
-    (101, 20, 3),
-    (101, 20, 3),
-    (101, 20, 3),
+    ROW(101, 20, 3),
+    ROW(101, 20, 3),
+    ROW(101, 20, 3),
+    ROW(101, 20, 3),
+    ROW(101, 20, 3),
+    ROW(101, 20, 3),
 
     -- Cost block (ids 13-18): subscriber 102, units=5, rate=8 -> cost=40 each
-    (102, 5, 8),
-    (102, 5, 8),
-    (102, 5, 8),
-    (102, 5, 8),
-    (102, 5, 8),
-    (102, 5, 8),
+    ROW(102, 5, 8),
+    ROW(102, 5, 8),
+    ROW(102, 5, 8),
+    ROW(102, 5, 8),
+    ROW(102, 5, 8),
+    ROW(102, 5, 8),
 
     -- Cost block (ids 19-24): subscriber 103, units=15, rate=4 -> cost=60 each
-    (103, 15, 4),
-    (103, 15, 4),
-    (103, 15, 4),
-    (103, 15, 4),
-    (103, 15, 4),
-    (103, 15, 4);
+    ROW(103, 15, 4),
+    ROW(103, 15, 4),
+    ROW(103, 15, 4),
+    ROW(103, 15, 4),
+    ROW(103, 15, 4),
+    ROW(103, 15, 4)
+) AS seed
+WHERE NOT EXISTS (SELECT 1 FROM usage_record);
