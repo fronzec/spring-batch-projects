@@ -106,28 +106,36 @@
 
 <style>
   .definitions-view {
-    padding: 1rem;
+    padding: var(--space-4);
   }
 
   .table-wrapper {
     overflow-x: auto;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
   }
 
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
   }
 
   th, td {
     text-align: left;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #ddd;
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  tr:last-child td {
+    border-bottom: none;
   }
 
   th {
-    background: #f8f9fa;
-    font-weight: 600;
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    font-weight: var(--weight-semibold);
   }
 
   .clickable-row {
@@ -135,40 +143,46 @@
   }
 
   .clickable-row:hover td {
-    background: #f0f4ff;
+    background: var(--surface-accent);
   }
 
   .empty-state {
-    color: #666;
+    color: var(--text-muted);
     font-style: italic;
   }
 
   .detail-header {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
   }
 
   .back-btn {
-    padding: 0.3rem 0.8rem;
-    border: 1px solid #0066cc;
-    border-radius: 4px;
-    background: white;
-    color: #0066cc;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-brand);
+    border-radius: var(--radius-md);
+    background: var(--surface-base);
+    color: var(--color-brand);
     cursor: pointer;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+
+  .back-btn:hover {
+    background: var(--color-brand);
+    color: var(--text-on-brand);
   }
 
   .detail-panel dl {
     display: grid;
     grid-template-columns: 200px 1fr;
-    gap: 0.4rem 1rem;
-    font-size: 0.875rem;
+    gap: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
   }
 
   .detail-panel dt {
-    font-weight: 600;
-    color: #555;
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
   }
 </style>

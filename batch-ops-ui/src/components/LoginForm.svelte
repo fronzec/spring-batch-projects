@@ -51,58 +51,71 @@
 
 <style>
   .login-form {
-    padding: 0.5rem 1rem;
-    background: #fff3cd;
-    border-bottom: 1px solid #ffc107;
-    font-size: 0.875rem;
+    padding: var(--space-2) var(--space-4);
+    background: var(--banner-bg);
+    border-bottom: 1px solid var(--banner-border);
+    font-size: var(--text-sm);
+    color: var(--banner-text);
   }
 
   .credentials-form {
     display: flex;
     align-items: flex-end;
-    gap: 0.75rem;
+    gap: var(--space-3);
     flex-wrap: wrap;
   }
 
   label {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    font-weight: 500;
+    gap: var(--space-1);
+    font-weight: var(--weight-medium);
   }
 
   input {
-    padding: 0.3rem 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.875rem;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--surface-base);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
   }
 
   button {
-    padding: 0.35rem 0.8rem;
-    border-radius: 4px;
-    border: 1px solid #0066cc;
-    background: #0066cc;
-    color: white;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-brand);
+    background: var(--color-brand);
+    color: var(--text-on-brand);
     cursor: pointer;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
+    transition: background 0.12s ease;
+  }
+
+  button:hover {
+    background: var(--color-brand-hover);
   }
 
   .caveat {
-    margin: 0.4rem 0 0;
-    color: #664d03;
-    font-size: 0.8rem;
+    margin: var(--space-2) 0 0;
+    color: var(--banner-text);
+    font-size: var(--text-xs);
   }
 
   .logged-in {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: var(--space-4);
   }
 
   .logout-btn {
-    background: white;
-    color: #cc0000;
-    border-color: #cc0000;
+    background: var(--surface-base);
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+  }
+
+  .logout-btn:hover {
+    background: var(--color-danger);
+    color: var(--text-on-brand);
   }
 </style>

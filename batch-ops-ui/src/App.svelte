@@ -31,27 +31,6 @@
 </div>
 
 <style>
-  :global(*, *::before, *::after) {
-    box-sizing: border-box;
-  }
-
-  :global(body) {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 16px;
-    color: #212529;
-    background: #fff;
-  }
-
-  :global(h2) {
-    margin: 0 0 1rem;
-    font-size: 1.25rem;
-  }
-
-  :global(h3) {
-    margin: 0 0 0.5rem;
-  }
-
   .app {
     min-height: 100vh;
     display: flex;
@@ -59,28 +38,29 @@
   }
 
   .app-header {
-    padding: 0.75rem 1rem;
-    background: #1a1a2e;
-    color: white;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-inverse);
+    color: var(--text-on-inverse);
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: var(--space-4);
+    box-shadow: var(--shadow-md);
   }
 
   .app-title {
     display: flex;
     align-items: baseline;
-    gap: 1rem;
+    gap: var(--space-4);
   }
 
   .app-title h1 {
     margin: 0;
-    font-size: 1.2rem;
-    font-weight: 700;
+    font-size: var(--text-xl);
+    font-weight: var(--weight-bold);
   }
 
   .subtitle {
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
     opacity: 0.7;
   }
 
