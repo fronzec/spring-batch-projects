@@ -22,6 +22,22 @@ task ui         # start the UI
 Run `task --list` to see every target. The rest of this guide explains each step in full and is the
 source of truth if you are not using Task.
 
+### One command for everything (process-compose)
+
+If you have [process-compose](https://github.com/F1bonacc1/process-compose) installed
+(`brew install f1bonacc1/tap/process-compose`), `task dev` runs the **whole stack** —
+MySQL, backend, seed, plugins and UI — in a single TUI, with start-order, health gating
+and per-process logs. No more juggling terminals.
+
+```bash
+task deps     # one-time prerequisite (Maven cache)
+task dev      # everything, orchestrated; quit with q / Ctrl-C
+```
+
+`mysql`, `backend` and `ui` stay running; `seed` and `plugins` run once in order after the
+backend is healthy. The config lives in `process-compose.yaml` and mirrors the individual
+tasks below.
+
 ## Prerequisites
 
 | Tool | Version | Check |

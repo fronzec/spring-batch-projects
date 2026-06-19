@@ -51,6 +51,11 @@ tasks:
     cmds:
       - ./mvnw -q -f ../batch-job-api/pom.xml clean install
 
+  dev:
+    desc: Run the WHOLE stack (MySQL + backend + seed + plugins + UI) in one TUI via process-compose
+    cmds:
+      - process-compose
+
   up:
     desc: Start MySQL via Podman (machine + compose). The DB auto-creates on backend boot.
     dir: fr-batch-service/_devenvironment
