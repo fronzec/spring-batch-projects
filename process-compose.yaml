@@ -3,8 +3,11 @@
 # orchestrated instead of juggled across terminals.
 #
 # Prereq (one-time):  task deps     # installs batch-job-api into the Maven cache
-# Run:                process-compose      (or: task dev)
+# Run:                task dev      (or: process-compose --port 8099)
 # Quit:               q / Ctrl-C in the TUI — the shutdown hook stops MySQL.
+#
+# NOTE: process-compose's own REST API defaults to port 8080, which the backend
+# owns — always start it on another port (--port 8099). `task dev` does this.
 #
 # Long-running: mysql, backend, ui.   One-shots: seed, plugins.
 # Each process mirrors the matching Taskfile task; Task stays the front door.
