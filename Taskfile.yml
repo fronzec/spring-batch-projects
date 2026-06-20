@@ -27,11 +27,13 @@ tasks:
     desc: Check required + optional tools and print install hints (nothing is installed for you)
     cmds:
       - |
+        # Green ✓ / red ✗ — but only on a terminal, so piping/redirecting stays plain.
+        if [ -t 1 ]; then OK='\033[32m✓\033[0m'; NO='\033[31m✗\033[0m'; else OK='✓'; NO='✗'; fi
         check() {
           if command -v "$1" >/dev/null 2>&1; then
-            printf '  ok    %-16s %s\n' "$1" "$(command -v "$1")"
+            printf '  %b  %-16s %s\n' "$OK" "$1" "$(command -v "$1")"
           else
-            printf '  MISS  %-16s -> %s\n' "$1" "$2"
+            printf '  %b  %-16s → %s\n' "$NO" "$1" "$2"
           fi
         }
         # ok if ANY of the candidate binaries is present (e.g. jq OR python3)
@@ -39,11 +41,11 @@ tasks:
           label="$1"; shift
           for bin in "$@"; do
             if command -v "$bin" >/dev/null 2>&1; then
-              printf '  ok    %-16s %s\n' "$label" "$(command -v "$bin")"
+              printf '  %b  %-16s %s\n' "$OK" "$label" "$(command -v "$bin")"
               return
             fi
           done
-          printf '  MISS  %-16s -> install one of: %s\n' "$label" "$*"
+          printf '  %b  %-16s → install one of: %s\n' "$NO" "$label" "$*"
         }
         echo "Required tools for local development:"
         check java            "install JDK 21 (e.g. brew install temurin@21) — or use mise"
