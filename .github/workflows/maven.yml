@@ -55,6 +55,11 @@ jobs:
         run: mvn -B package -f fault-tolerant-harvester-job/pom.xml
       - name: Build and test partitioned-harvester-job plugin
         run: mvn -B package -f partitioned-harvester-job/pom.xml
+      # Reference template for the plugin tutorial (example-payment-job/README.md).
+      # Build-only — it is intentionally NOT loaded by the platform; this step just
+      # keeps the documented example compiling against batch-job-api.
+      - name: Build example-payment-job (reference template)
+        run: mvn -B package -f example-payment-job/pom.xml
 
   # Boots the real backend against MySQL and drives the plugin lifecycle
   # (upload -> approve -> enable -> load) through scripts/load-plugins.hurl.
