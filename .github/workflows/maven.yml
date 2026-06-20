@@ -56,6 +56,115 @@ jobs:
       - name: Build and test partitioned-harvester-job plugin
         run: mvn -B package -f partitioned-harvester-job/pom.xml
 
+  # Boots the real backend against MySQL and drives the plugin lifecycle
+  # (upload -> approve -> enable -> load) through scripts/load-plugins.hurl.
+  # Runs the suite twice: pass 1 proves the contract on a fresh database,
+  # pass 2 proves the flow is idempotent (re-runs return 409s and still pass).
+  contract-test:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    services:
+      mysql:
+        image: mysql:8.2.0
+        env:
+          # Mirrors the local dev profile: root with an empty password. The app
+          # creates fr_batch_local itself via createDatabaseIfNotExist=true.
+          MYSQL_ALLOW_EMPTY_PASSWORD: "1"
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+      - name: Configure GitHub Packages authentication
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << EOF
+          <settings>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>${GITHUB_ACTOR}</username>
+                <password>${GITHUB_TOKEN}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install hurl
+        env:
+          HURL_VERSION: 8.0.1
+        run: |
+          curl --location --silent --fail \
+            "https://github.com/Orange-OpenSource/hurl/releases/download/${HURL_VERSION}/hurl_${HURL_VERSION}_amd64.deb" \
+            -o /tmp/hurl.deb
+          sudo apt-get update
+          sudo apt-get install -y /tmp/hurl.deb
+          hurl --version
+      - name: Build backend and ticket-pdf-job plugin
+        run: |
+          mvn -B -q -DskipTests package -f fr-batch-service/pom.xml
+          mvn -B -q -DskipTests package -f ticket-pdf-job/pom.xml
+      - name: Start backend (local profile)
+        run: |
+          # Glob the repackaged executable JAR — *.jar excludes the thin
+          # *.jar.original, and stays correct across version bumps.
+          jar=$(echo fr-batch-service/target/*.jar)
+          echo "Booting $jar"
+          java -jar "$jar" --spring.profiles.active=local > /tmp/backend.log 2>&1 &
+          echo $! > /tmp/backend.pid
+      - name: Wait for backend to be healthy
+        run: |
+          for _ in $(seq 1 40); do
+            # Fail fast if the app died during startup instead of waiting out the loop.
+            if ! kill -0 "$(cat /tmp/backend.pid)" 2>/dev/null; then
+              echo "::error::Backend process died during startup"
+              tail -n 100 /tmp/backend.log
+              exit 1
+            fi
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              http://localhost:8080/api/batch-service/jobs/plugins || true)
+            if [ "$code" = "200" ]; then echo "Backend is up."; exit 0; fi
+            sleep 3
+          done
+          echo "::error::Backend did not become healthy in time"
+          tail -n 100 /tmp/backend.log
+          exit 1
+      - name: Run plugin lifecycle contract test (idempotent — runs twice)
+        run: |
+          run_hurl() {
+            hurl --test --file-root . \
+              --variable base=http://localhost:8080/api/batch-service \
+              --variable user=admin --variable pass=admin123 \
+              --variable jobName=ticket-pdf-job \
+              --variable version=1.0.0 \
+              --variable mainClass=com.fronzec.plugins.ticketpdf.TicketPdfJobPlugin \
+              --variable jar=ticket-pdf-job/target/ticket-pdf-job-1.0.0.jar \
+              scripts/load-plugins.hurl
+          }
+          echo "── Pass 1: fresh load ──"
+          run_hurl
+          echo "── Pass 2: idempotency (re-run must still pass) ──"
+          run_hurl
+      - name: Dump backend log on failure
+        if: failure()
+        run: tail -n 200 /tmp/backend.log || true
+
   frontend:
     runs-on: ubuntu-latest
     permissions:
