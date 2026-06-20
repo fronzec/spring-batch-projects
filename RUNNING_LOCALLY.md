@@ -304,6 +304,34 @@ curl -s -u admin:admin123 -X PUT "$BASE/jobs/definitions/$ID/enable"
 curl -s -u admin:admin123 -X POST "$BASE/jobs/definitions/$ID/load"
 ```
 
+### Declarative reference (hurl)
+
+The same four steps as a declarative HTTP file — [`scripts/load-plugins.hurl`](scripts/load-plugins.hurl).
+It replaces the `curl` + JSON-parsing chain above with five readable requests and native
+assertions; the definition `id` is captured from the definitions list by `job_name`, so there is
+nothing to parse by hand.
+
+```bash
+# one-time: install hurl (https://hurl.dev) — e.g. brew install hurl
+hurl --test --file-root . \
+  --variable base=http://localhost:8080/api/batch-service \
+  --variable user=admin --variable pass=admin123 \
+  --variable jobName=ticket-pdf-job \
+  --variable version=1.0.0 \
+  --variable mainClass=com.fronzec.plugins.ticketpdf.TicketPdfJobPlugin \
+  --variable jar=ticket-pdf-job/target/ticket-pdf-job-1.0.0.jar \
+  scripts/load-plugins.hurl
+```
+
+> `--file-root .` is required: hurl sandboxes file reads to the `.hurl` file's directory, and the
+> JAR lives outside `scripts/`. Swap the `--variable` values (see the coordinates table below) to
+> load a different plugin.
+
+The flow is idempotent — re-running returns `409`s and still passes. CI runs this file twice
+(fresh load + idempotency) for `ticket-pdf-job` as a contract test on every PR; see the
+`contract-test` job in `.github/workflows/maven.yml`. The coordinates table below covers all four
+plugins for manual runs.
+
 ### Plugin coordinates reference
 
 | jobName | JAR path | mainClassName |
