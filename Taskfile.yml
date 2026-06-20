@@ -24,7 +24,7 @@ tasks:
       - task --list
 
   doctor:
-    desc: Check required tools and print install hints (nothing is installed for you)
+    desc: Check required + optional tools and print install hints (nothing is installed for you)
     cmds:
       - |
         check() {
@@ -34,12 +34,29 @@ tasks:
             printf '  MISS  %-16s -> %s\n' "$1" "$2"
           fi
         }
+        # ok if ANY of the candidate binaries is present (e.g. jq OR python3)
+        check_any() {
+          label="$1"; shift
+          for bin in "$@"; do
+            if command -v "$bin" >/dev/null 2>&1; then
+              printf '  ok    %-16s %s\n' "$label" "$(command -v "$bin")"
+              return
+            fi
+          done
+          printf '  MISS  %-16s -> install one of: %s\n' "$label" "$*"
+        }
         echo "Required tools for local development:"
-        check java            "install JDK 21 (e.g. brew install temurin@21)"
-        check node            "install Node 20 LTS (e.g. brew install node@20)"
+        check java            "install JDK 21 (e.g. brew install temurin@21) — or use mise"
+        check node            "install Node 22 LTS (e.g. brew install node@22) — or use mise"
         check npm             "ships with Node"
         check podman          "brew install podman   (then: podman machine init)"
         check podman-compose  "brew install podman-compose"
+        check_any "jq/python3" jq python3   # load-plugins.sh parses the upload JSON with either
+        echo
+        echo "Optional tools (enhanced workflows):"
+        check mise            "pins Java 21 + Node 22 per .mise.toml — https://mise.jdx.dev"
+        check process-compose "one-command full stack via 'task dev' — brew install f1bonacc1/tap/process-compose"
+        check hurl            "declarative plugin loading + CI contract test — brew install hurl"
         echo
         echo "Maven is NOT required — tasks use ./fr-batch-service/mvnw"
         echo "A mysql client is NOT required — scripts exec into the DB container"
