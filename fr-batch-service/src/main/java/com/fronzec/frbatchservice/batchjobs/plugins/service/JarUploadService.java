@@ -47,6 +47,14 @@ public class JarUploadService {
     /** Allowed characters in job name and version used as path components. */
     private static final Pattern SAFE_NAME = Pattern.compile("[a-zA-Z0-9._\\-]+");
 
+    /**
+     * Fully-qualified Java class name pattern.
+     * Matches names like {@code com.fronzec.plugins.ticketpdf.TicketPdfJobPlugin}.
+     * Requires at least one package segment followed by a simple class name.
+     */
+    private static final Pattern FQCN =
+        Pattern.compile("([a-zA-Z_$][a-zA-Z0-9_$]*\\.)+[a-zA-Z_$][a-zA-Z0-9_$]*");
+
   private final JobDefinitionRepository jobDefinitionRepository;
   private final Optional<AutoApproveConfig> autoApproveConfig;
   private final JarSignatureVerifier jarSignatureVerifier;
@@ -90,6 +98,7 @@ public class JarUploadService {
         try {
 
         validateJar(file);
+        validateMainClassName(mainClassName);
 
         String checksum = ChecksumUtil.computeSha256(file);
 
@@ -169,6 +178,28 @@ public class JarUploadService {
                     "File is not a valid JAR — missing ZIP/PK magic bytes. "
                             + "Expected 0x504B0304, got: "
                             + HexFormat.of().formatHex(header));
+        }
+    }
+
+    /**
+     * Validates that {@code mainClassName} is a fully-qualified Java class name.
+     *
+     * <p>Requires at least one package segment (e.g. {@code com.example.MyClass}).
+     * A bare simple name ({@code MyClass}) is rejected because a plugin entry-point
+     * without a package would conflict with the default package and is almost always
+     * an input error.
+     *
+     * @param mainClassName the class name to validate
+     * @throws InvalidJarException if the value is blank or does not match the FQCN pattern
+     */
+    private void validateMainClassName(String mainClassName) {
+        if (mainClassName == null || mainClassName.isBlank()) {
+            throw new InvalidJarException("mainClassName must not be blank");
+        }
+        if (!FQCN.matcher(mainClassName).matches()) {
+            throw new InvalidJarException(
+                "mainClassName must be a fully-qualified Java class name "
+                    + "(e.g. com.example.MyClass): " + mainClassName);
         }
     }
 

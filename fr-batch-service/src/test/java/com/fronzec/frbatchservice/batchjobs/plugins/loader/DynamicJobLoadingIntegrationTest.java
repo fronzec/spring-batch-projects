@@ -236,6 +236,10 @@ class DynamicJobLoadingIntegrationTest {
   @Test
   @Order(3)
   void approveDefinition_setsApproved() throws Exception {
+    // The approvedBy field in the request body is accepted for backward compatibility
+    // but intentionally ignored — the controller derives the approver from the
+    // authenticated principal (AuditService.currentUserId()). In the test context
+    // there is no authenticated user, so the fallback "system" is recorded.
     mockMvc
         .perform(
             put(JOBS_BASE + "/definitions/" + definitionId + "/approve")
@@ -243,7 +247,7 @@ class DynamicJobLoadingIntegrationTest {
                 .content("{\"approved_by\":\"test-user\"}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.approval_status").value("APPROVED"))
-        .andExpect(jsonPath("$.approved_by").value("test-user"))
+        .andExpect(jsonPath("$.approved_by").value("system"))
         .andExpect(jsonPath("$.approved_at").exists());
   }
 

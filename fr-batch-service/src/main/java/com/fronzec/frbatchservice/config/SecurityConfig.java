@@ -31,6 +31,7 @@ import org.springframework.security.web.SecurityFilterChain;
  *   <li>{@code GET /jobs/plugins} — public (plugin discovery)</li>
  *   <li>{@code GET /jobs/**} — {@code PLUGIN_VIEWER} or {@code PLUGIN_ADMIN}</li>
  *   <li>{@code POST /jobs/**}, {@code PUT /jobs/**}, {@code DELETE /jobs/**} — {@code PLUGIN_ADMIN}</li>
+ *   <li>{@code POST /data/**} — {@code PLUGIN_ADMIN} (destructive data-reset; not active in production)</li>
  *   <li>{@code /actuator/health} — public</li>
  * </ul>
  *
@@ -63,6 +64,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/jobs/**")
                     .hasAnyRole("PLUGIN_VIEWER", "PLUGIN_ADMIN")
                     .requestMatchers("/jobs/**")
+                    .hasRole("PLUGIN_ADMIN")
+                    .requestMatchers("/data/**")
                     .hasRole("PLUGIN_ADMIN")
                     .anyRequest()
                     .authenticated())
