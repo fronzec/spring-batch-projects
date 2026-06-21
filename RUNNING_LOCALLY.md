@@ -392,8 +392,13 @@ Open the dashboard at http://localhost:5173 — you should see all four jobs lis
 
 A root-level `docker-compose.yml` runs MySQL, the Spring Boot app (built from the Dockerfile), Prometheus, and Grafana together. It targets the `docker` profile, not `local`.
 
+The app image builds from source and pulls the private `batch-job-api` from GitHub Packages, so the build needs a token. Export `GITHUB_TOKEN` (a PAT with `read:packages`) — it is passed to the build as a BuildKit secret and never lands in an image layer:
+
 ```bash
+export GITHUB_TOKEN=<your-pat-with-read:packages>
 DB_PASSWORD=yourpassword docker compose up -d
 ```
+
+If your GitHub username matters for package auth, also `export GITHUB_ACTOR=<your-username>` (defaults to `x-access-token`).
 
 This is useful for a production-like smoke test, but not the recommended path for day-to-day development because it rebuilds the app image on every change.

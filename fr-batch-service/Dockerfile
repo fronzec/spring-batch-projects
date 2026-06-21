@@ -28,8 +28,12 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 RUN apk add --no-cache wget
 WORKDIR /app
 COPY --from=build /build/target/*.jar app.jar
+# Probe the plugin-listing endpoint, not /actuator/health: the aggregate health
+# is DOWN (503) until at least one plugin is loaded, which would put a fresh
+# container in an endless unhealthy/restart loop. /jobs/plugins returns 200 as
+# soon as the app serves — the same readiness signal used by CI and process-compose.
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD wget -qO- http://localhost:8080/api/batch-service/actuator/health || exit 1
+  CMD wget -qO- http://localhost:8080/api/batch-service/jobs/plugins || exit 1
 USER appuser
 EXPOSE 8080
 ENTRYPOINT ["java", "-Xmx512m", "-XX:MaxMetaspaceSize=256m", "-jar", "app.jar"]
