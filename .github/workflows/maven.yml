@@ -14,6 +14,13 @@ on:
   pull_request:
     branches: ["main"]
 
+# Cancel an in-progress run when a newer commit lands on the same ref, so rapid
+# PR pushes don't pile up (each contract-test holds a MySQL service container).
+# main is never canceled (its ref is unique per push, but keep pushes serialized).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -60,6 +67,17 @@ jobs:
       # keeps the documented example compiling against batch-job-api.
       - name: Build example-payment-job (reference template)
         run: mvn -B package -f example-payment-job/pom.xml
+      # Hand the executable backend JAR and the ticket-pdf-job plugin JAR to
+      # contract-test so it doesn't recompile what this job already built.
+      - name: Upload JARs needed by contract-test
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-test-jars
+          path: |
+            fr-batch-service/target/*.jar
+            ticket-pdf-job/target/ticket-pdf-job-1.0.0.jar
+          retention-days: 1
+          if-no-files-found: error
 
   # Boots the real backend against MySQL and drives the plugin lifecycle
   # (upload -> approve -> enable -> load) through scripts/load-plugins.hurl.
@@ -94,23 +112,9 @@ jobs:
         with:
           java-version: "21"
           distribution: "temurin"
-          cache: maven
-      - name: Configure GitHub Packages authentication
-        run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml << EOF
-          <settings>
-            <servers>
-              <server>
-                <id>github</id>
-                <username>${GITHUB_ACTOR}</username>
-                <password>${GITHUB_TOKEN}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # No Maven build runs here — the JARs come prebuilt from the `build` job,
+      # so neither GitHub Packages auth nor a Maven cache is needed; just a JDK
+      # to run `java -jar`.
       - name: Install hurl
         env:
           HURL_VERSION: 8.0.1
@@ -121,10 +125,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y /tmp/hurl.deb
           hurl --version
-      - name: Build backend and ticket-pdf-job plugin
-        run: |
-          mvn -B -q -DskipTests package -f fr-batch-service/pom.xml
-          mvn -B -q -DskipTests package -f ticket-pdf-job/pom.xml
+      - name: Download prebuilt JARs from the build job
+        uses: actions/download-artifact@v4
+        with:
+          name: contract-test-jars
       - name: Start backend (local profile)
         run: |
           # Glob the repackaged executable JAR — *.jar excludes the thin
