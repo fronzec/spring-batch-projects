@@ -24,9 +24,16 @@ class SecurityConfigPasswordEncoderProfileTest {
 
   // SecurityConfig is annotated with @EnableWebSecurity, which imports the
   // HttpSecurity infrastructure — no SecurityAutoConfiguration needed here.
+  // SecurityProperties has no Java-level password defaults (fail-safe by design), so the
+  // isolated web slice must supply explicit credentials or UserDetails building would fail.
+  private static final String[] TEST_CREDENTIALS = {
+    "app.security.admin-password={noop}test-admin", "app.security.viewer-password={noop}test-viewer"
+  };
+
   private WebApplicationContextRunner runnerWithProfiles(String... profiles) {
     return new WebApplicationContextRunner()
         .withUserConfiguration(SecurityConfig.class)
+        .withPropertyValues(TEST_CREDENTIALS)
         .withInitializer(ctx -> ctx.getEnvironment().setActiveProfiles(profiles));
   }
 
@@ -73,6 +80,7 @@ class SecurityConfigPasswordEncoderProfileTest {
     // No profile active at all — the !production NoOp bean must still be the only one.
     new WebApplicationContextRunner()
         .withUserConfiguration(SecurityConfig.class)
+        .withPropertyValues(TEST_CREDENTIALS)
         .run(
             context -> {
               assertThat(context).hasNotFailed();

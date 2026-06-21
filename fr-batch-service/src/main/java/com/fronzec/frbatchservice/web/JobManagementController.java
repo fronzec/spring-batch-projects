@@ -203,6 +203,12 @@ public class JobManagementController {
      * Approves a job definition, setting its status to {@code APPROVED} and recording
      * the approver and timestamp.
      *
+     * <p>The approver identity is always derived from the authenticated principal
+     * (via {@link AuditService#currentUserId()}). Any {@code approvedBy} field
+     * supplied in the request body is accepted for backward compatibility with existing
+     * scripts (e.g. {@code load-plugins.hurl}) but is intentionally ignored — it
+     * cannot be trusted because callers can forge any value.
+     *
      * <p>Returns {@code 200 OK} with the updated definition on success.
      * {@code 404 Not Found} if the definition does not exist.
      * {@code 409 Conflict} if the definition is already approved.
@@ -210,7 +216,7 @@ public class JobManagementController {
     @PutMapping("/definitions/{id}/approve")
     public ResponseEntity<?> approveDefinition(
             @PathVariable long id,
-            @RequestBody ApprovalRequest request) {
+            @RequestBody(required = false) ApprovalRequest request) {
         Optional<JobDefinitionEntity> opt = jobDefinitionRepository.findById(id);
         if (opt.isEmpty()) {
             log.warn("Cannot approve — job definition not found: id={}", id);
@@ -226,22 +232,25 @@ public class JobManagementController {
                             "message", "Job definition " + id + " is already approved"));
         }
 
+        // Derive the approver from the authenticated principal, not from the request body.
+        // The body field is kept for backward-compat deserialization but its value is discarded.
+        String approver = AuditService.currentUserId();
         entity.setApprovalStatus("APPROVED");
-        entity.setApprovedBy(request.approvedBy());
+        entity.setApprovedBy(approver);
         entity.setApprovedAt(LocalDateTime.now());
         JobDefinitionEntity saved = jobDefinitionRepository.save(entity);
         log.info(
                 "Job definition approved: id={}, jobName={}, approvedBy={}",
                 saved.getId(),
                 saved.getJobName(),
-                request.approvedBy());
+                approver);
 
         auditService.logEvent(
             new AuditEvent(
                 AuditEventType.JOB_APPROVED,
                 saved.getJobName(),
-                AuditService.currentUserId(),
-                "Approved by " + request.approvedBy(),
+                approver,
+                "Approved by " + approver,
                 AuditEvent.SUCCESS,
                 LocalDateTime.now()));
 
@@ -252,36 +261,44 @@ public class JobManagementController {
      * Rejects a job definition, setting its status to {@code REJECTED} and recording
      * the reviewer and timestamp.
      *
+     * <p>The reviewer identity is always derived from the authenticated principal
+     * (via {@link AuditService#currentUserId()}). Any {@code approvedBy} field
+     * supplied in the request body is accepted for backward compatibility but is
+     * intentionally ignored — it cannot be trusted because callers can forge any value.
+     *
      * <p>Returns {@code 200 OK} with the updated definition on success.
      * {@code 404 Not Found} if the definition does not exist.
      */
     @PutMapping("/definitions/{id}/reject")
     public ResponseEntity<?> rejectDefinition(
             @PathVariable long id,
-            @RequestBody ApprovalRequest request) {
+            @RequestBody(required = false) ApprovalRequest request) {
         Optional<JobDefinitionEntity> opt = jobDefinitionRepository.findById(id);
         if (opt.isEmpty()) {
             log.warn("Cannot reject — job definition not found: id={}", id);
             return ResponseEntity.notFound().build();
         }
 
+        // Derive the reviewer from the authenticated principal, not from the request body.
+        // The body field is kept for backward-compat deserialization but its value is discarded.
+        String reviewer = AuditService.currentUserId();
         JobDefinitionEntity entity = opt.get();
         entity.setApprovalStatus("REJECTED");
-        entity.setApprovedBy(request.approvedBy());
+        entity.setApprovedBy(reviewer);
         entity.setApprovedAt(LocalDateTime.now());
         JobDefinitionEntity saved = jobDefinitionRepository.save(entity);
         log.info(
                 "Job definition rejected: id={}, jobName={}, rejectedBy={}",
                 saved.getId(),
                 saved.getJobName(),
-                request.approvedBy());
+                reviewer);
 
         auditService.logEvent(
             new AuditEvent(
                 AuditEventType.JOB_REJECTED,
                 saved.getJobName(),
-                AuditService.currentUserId(),
-                "Rejected by " + request.approvedBy(),
+                reviewer,
+                "Rejected by " + reviewer,
                 AuditEvent.SUCCESS,
                 LocalDateTime.now()));
 
