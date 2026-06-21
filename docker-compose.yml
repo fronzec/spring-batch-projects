@@ -18,6 +18,13 @@ services:
     build:
       context: ./fr-batch-service
       dockerfile: Dockerfile
+      # The Dockerfile pulls the private batch-job-api from GitHub Packages, so the
+      # build needs a token. Export GITHUB_TOKEN (a PAT with read:packages) before
+      # `docker compose up`; GITHUB_ACTOR defaults to x-access-token if unset.
+      args:
+        GITHUB_ACTOR: ${GITHUB_ACTOR:-x-access-token}
+      secrets:
+        - gh_token
     ports:
       - "8080:8080"
     environment:
@@ -33,7 +40,9 @@ services:
       mysql:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/batch-service/actuator/health"]
+      # Not /actuator/health: it is 503 until a plugin is loaded (endless restart
+      # loop on a fresh stack). /jobs/plugins is 200 once the app serves.
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/batch-service/jobs/plugins"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -78,3 +87,8 @@ volumes:
   plugin-jars:
   prometheus-data:
   grafana-data:
+
+secrets:
+  # Sourced from the GITHUB_TOKEN env var at build time (BuildKit secret).
+  gh_token:
+    environment: GITHUB_TOKEN
