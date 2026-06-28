@@ -5,7 +5,6 @@ import com.fronzec.frbatchservice.batchjobs.plugins.entity.JobDefinitionEntity;
 import com.fronzec.frbatchservice.batchjobs.plugins.repository.JobDefinitionRepository;
 import jakarta.annotation.PostConstruct;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -136,14 +135,24 @@ public class PluginRegistryService {
                 pluginsByJobName.keySet());
     }
 
-    /** Returns all registered plugins in registration order. */
+    /**
+     * Returns an immutable snapshot of all registered plugins in registration order.
+     *
+     * <p>Takes the {@code pluginsByJobName} monitor and copies the values so the
+     * returned collection is safe to read while concurrent register/unregister calls
+     * mutate the map.
+     */
     public Collection<BatchJobPlugin> getPlugins() {
-        return Collections.unmodifiableCollection(pluginsByJobName.values());
+        synchronized (pluginsByJobName) {
+            return List.copyOf(pluginsByJobName.values());
+        }
     }
 
     /** Returns the plugin registered under the given job name, or empty if not found. */
     public Optional<BatchJobPlugin> getPlugin(String jobName) {
-        return Optional.ofNullable(pluginsByJobName.get(jobName));
+        synchronized (pluginsByJobName) {
+            return Optional.ofNullable(pluginsByJobName.get(jobName));
+        }
     }
 
     /**
@@ -284,8 +293,10 @@ public class PluginRegistryService {
      *         or {@code null} if not found in either source
      */
     public String getPluginBySource(String jobName) {
-        if (pluginsByJobName.containsKey(jobName)) {
-            return "CLASSPATH";
+        synchronized (pluginsByJobName) {
+            if (pluginsByJobName.containsKey(jobName)) {
+                return "CLASSPATH";
+            }
         }
         Optional<JobDefinitionEntity> def = jobDefinitionRepository.findByJobName(jobName);
         if (def.isPresent() && Boolean.TRUE.equals(def.get().getEnabled())) {
