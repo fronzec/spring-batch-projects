@@ -19,6 +19,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -445,6 +447,95 @@ class DynamicJobLoaderServiceTest {
       assertTrue(
           results.get("bad-job").message().contains("JAR file not found"),
           "Expected 'JAR file not found' but got: " + results.get("bad-job").message());
+    }
+  }
+
+  // ── Concurrency ───────────────────────────────────────────────────────────
+
+  /**
+   * Two concurrent {@code loadJob} calls for the SAME definition id must be serialized: only one may
+   * proceed through the load body (opening a classloader / JAR file-handle and registering); the
+   * loser must observe the winner's registration and be rejected, never opening a second handle.
+   *
+   * <p>Uses a REAL {@link DynamicJobClassLoader} rather than {@code mockConstruction}, because
+   * Mockito's construction mocking is thread-confined and would not intercept the pool threads. The
+   * parent-last classloader resolves {@link TestBatchJobPlugin} from the application classloader, so
+   * the load succeeds on both threads. The winner is parked inside {@code registerDynamicPlugin}
+   * (holding the per-id lock under the fix); the registration only becomes visible once it returns,
+   * modelling the real race window. Without serialization the contender sails past the already-loaded
+   * guard and reaches {@code registerDynamicPlugin} a second time; serialized, it parks on the lock
+   * and is rejected by the guard. The bounded {@link CountDownLatch} awaits assert this
+   * deterministically, without timing-dependent sleeps.
+   */
+  @Test
+  void loadJob_concurrentSameId_serializesAndOpensSingleClassloader() throws Exception {
+    JobDefinitionEntity entity = createEntity(20L, "test-job", true, null);
+    // Real parent-last classloader resolves this class from the application classloader.
+    entity.setMainClassName(TestBatchJobPlugin.class.getName());
+    when(jobDefinitionRepository.findById(20L)).thenReturn(Optional.of(entity));
+
+    // Stateful registry: a registration only becomes visible once register() returns, modelling the
+    // real race window between the already-loaded guard and the registry write.
+    Set<String> registeredNames = ConcurrentHashMap.newKeySet();
+    AtomicInteger guardCalls = new AtomicInteger();
+    CountDownLatch secondGuardReached = new CountDownLatch(1);
+    when(pluginRegistryService.getRegisteredJobNames())
+        .thenAnswer(
+            inv -> {
+              if (guardCalls.incrementAndGet() == 2) {
+                secondGuardReached.countDown();
+              }
+              return new HashSet<>(registeredNames);
+            });
+
+    CountDownLatch registerEntered = new CountDownLatch(1);
+    CountDownLatch releaseRegister = new CountDownLatch(1);
+    doAnswer(
+            inv -> {
+              registerEntered.countDown();
+              releaseRegister.await();
+              BatchJobPlugin plugin = inv.getArgument(0);
+              registeredNames.add(plugin.getJobName());
+              return null;
+            })
+        .when(pluginRegistryService)
+        .registerDynamicPlugin(any(BatchJobPlugin.class), any());
+
+    ExecutorService pool = Executors.newFixedThreadPool(2);
+    try {
+      // Winner: blocks inside registerDynamicPlugin while holding the per-id lock (under the fix).
+      Future<?> winner = pool.submit(() -> service.loadJob(20L));
+      assertTrue(
+          registerEntered.await(5, TimeUnit.SECONDS),
+          "Winning thread never reached registerDynamicPlugin");
+
+      // Contender: same id. Serialized, it parks on the lock and never reaches the guard again;
+      // unserialized, it passes the guard and reaches registerDynamicPlugin a second time.
+      Future<?> contender =
+          pool.submit(
+              () -> {
+                try {
+                  service.loadJob(20L);
+                } catch (IllegalStateException alreadyLoaded) {
+                  // Expected once serialized: the contender sees the winner's registration.
+                }
+              });
+
+      boolean contenderPassedGuard = secondGuardReached.await(1, TimeUnit.SECONDS);
+
+      releaseRegister.countDown();
+      winner.get(5, TimeUnit.SECONDS);
+      contender.get(5, TimeUnit.SECONDS);
+
+      assertFalse(
+          contenderPassedGuard,
+          "Second concurrent load entered the load body while the first held the lock — "
+              + "loadJob is not serialized per definition id");
+      // Serialized: only the winner registers; the contender is rejected by the guard.
+      verify(pluginRegistryService, times(1))
+          .registerDynamicPlugin(any(BatchJobPlugin.class), any());
+    } finally {
+      pool.shutdownNow();
     }
   }
 
