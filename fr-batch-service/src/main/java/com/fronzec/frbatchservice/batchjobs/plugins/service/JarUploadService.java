@@ -100,11 +100,13 @@ public class JarUploadService {
         validateJar(file);
         validateMainClassName(mainClassName);
 
-        String checksum = ChecksumUtil.computeSha256(file);
-
         checkDuplicate(jobName);
 
     Path storedPath = storeFile(file, jobName, version);
+
+    // Compute the checksum from the persisted file (not the multipart stream) so the
+    // stored digest matches the bytes that load-time integrity verification re-checks.
+    String checksum = ChecksumUtil.computeSha256(storedPath);
 
     // ── signature verification ───────────────────────────────────────────────
     SignatureResult sigResult = jarSignatureVerifier.verify(storedPath);
