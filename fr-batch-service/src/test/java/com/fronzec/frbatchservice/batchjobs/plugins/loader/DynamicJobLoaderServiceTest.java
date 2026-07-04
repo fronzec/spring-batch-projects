@@ -19,7 +19,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -97,6 +102,14 @@ class DynamicJobLoaderServiceTest {
     entity.setLoadStatus(loadStatus);
     entity.setApprovalStatus("APPROVED");
     return entity;
+  }
+
+  /** Reads the private per-definition {@code loadLocks} map via reflection for white-box assertions. */
+  @SuppressWarnings("unchecked")
+  private static Map<Long, ?> loadLocksOf(DynamicJobLoaderService target) throws Exception {
+    var field = DynamicJobLoaderService.class.getDeclaredField("loadLocks");
+    field.setAccessible(true);
+    return (Map<Long, ?>) field.get(target);
   }
 
   // ── Successful load ───────────────────────────────────────────────────────
@@ -267,6 +280,17 @@ class DynamicJobLoaderServiceTest {
     when(jobDefinitionRepository.findById(999L)).thenReturn(Optional.empty());
 
     assertThrows(NoSuchElementException.class, () -> service.loadJob(999L));
+  }
+
+  @Test
+  void loadJob_nonexistentId_doesNotRetainLock() throws Exception {
+    when(jobDefinitionRepository.findById(999L)).thenReturn(Optional.empty());
+
+    assertThrows(NoSuchElementException.class, () -> service.loadJob(999L));
+
+    assertTrue(
+        loadLocksOf(service).isEmpty(),
+        "loadJob must not retain a per-definition lock for a nonexistent id");
   }
 
   @Test
@@ -534,7 +558,12 @@ class DynamicJobLoaderServiceTest {
       // Serialized: only the winner registers; the contender is rejected by the guard.
       verify(pluginRegistryService, times(1))
           .registerDynamicPlugin(any(BatchJobPlugin.class), any());
+
+      // Release the real classloader/temp-JAR handle opened by the successful load.
+      service.unloadJob(20L, true);
     } finally {
+      // Unblock any thread still parked in registerDynamicPlugin so shutdown cannot hang.
+      releaseRegister.countDown();
       pool.shutdownNow();
     }
   }

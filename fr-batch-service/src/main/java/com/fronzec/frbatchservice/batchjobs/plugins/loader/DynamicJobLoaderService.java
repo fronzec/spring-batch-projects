@@ -56,8 +56,8 @@ public class DynamicJobLoaderService {
    * definition ID so the already-loaded guard and the classloader/registry writes execute
    * atomically. Without this, two concurrent loads of the same definition both pass the guard, each
    * opens a JAR file-handle, and the loser's {@code classLoaders.put} silently overwrites the
-   * winner's entry — leaking the winner's handle. Definitions are admin-managed and bounded, so the
-   * map does not grow unbounded in practice.
+   * winner's entry — leaking the winner's handle. {@link #loadJob(Long)} allocates an entry only
+   * after confirming the definition exists, so unknown IDs cannot grow the map without bound.
    */
   private final Map<Long, ReentrantLock> loadLocks = new ConcurrentHashMap<>();
 
@@ -90,6 +90,12 @@ public class DynamicJobLoaderService {
    *     failure, etc.)
    */
   public LoadResult loadJob(Long definitionId) {
+    // Gate lock allocation on existence so unknown IDs (e.g. POST /definitions/{id}/load with a
+    // bogus id) cannot grow loadLocks without bound. The authoritative existence check still runs
+    // inside doLoadJob under the lock, guarding against a definition deleted between the two reads.
+    if (jobDefinitionRepository.findById(definitionId).isEmpty()) {
+      throw new NoSuchElementException("Job definition not found for id: " + definitionId);
+    }
     ReentrantLock lock = loadLocks.computeIfAbsent(definitionId, k -> new ReentrantLock());
     lock.lock();
     try {
