@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.repository.JobRepository;
@@ -50,6 +51,16 @@ public class DynamicJobLoaderService {
   /** Tracks active classloaders by definition ID for cleanup on unload. */
   private final Map<Long, DynamicJobClassLoader> classLoaders = new ConcurrentHashMap<>();
 
+  /**
+   * Per-definition load locks. Serializes concurrent {@link #loadJob(Long)} calls for the same
+   * definition ID so the already-loaded guard and the classloader/registry writes execute
+   * atomically. Without this, two concurrent loads of the same definition both pass the guard, each
+   * opens a JAR file-handle, and the loser's {@code classLoaders.put} silently overwrites the
+   * winner's entry — leaking the winner's handle. {@link #loadJob(Long)} allocates an entry only
+   * after confirming the definition exists, so unknown IDs cannot grow the map without bound.
+   */
+  private final Map<Long, ReentrantLock> loadLocks = new ConcurrentHashMap<>();
+
   public DynamicJobLoaderService(
       JobDefinitionRepository jobDefinitionRepository,
       PluginRegistryService pluginRegistryService,
@@ -79,6 +90,27 @@ public class DynamicJobLoaderService {
    *     failure, etc.)
    */
   public LoadResult loadJob(Long definitionId) {
+    // Gate lock allocation on existence so unknown IDs (e.g. POST /definitions/{id}/load with a
+    // bogus id) cannot grow loadLocks without bound. The authoritative existence check still runs
+    // inside doLoadJob under the lock, guarding against a definition deleted between the two reads.
+    if (jobDefinitionRepository.findById(definitionId).isEmpty()) {
+      throw new NoSuchElementException("Job definition not found for id: " + definitionId);
+    }
+    ReentrantLock lock = loadLocks.computeIfAbsent(definitionId, k -> new ReentrantLock());
+    lock.lock();
+    try {
+      return doLoadJob(definitionId);
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /**
+   * Performs the actual load. Always invoked while holding the per-definition lock acquired in
+   * {@link #loadJob(Long)}, so the already-loaded guard and the classloader/registry writes are
+   * atomic with respect to other loads of the same definition.
+   */
+  private LoadResult doLoadJob(Long definitionId) {
     JobDefinitionEntity entity =
         jobDefinitionRepository
             .findById(definitionId)
