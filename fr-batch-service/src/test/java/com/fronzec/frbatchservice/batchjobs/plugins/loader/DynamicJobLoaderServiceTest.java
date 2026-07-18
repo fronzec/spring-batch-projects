@@ -397,9 +397,11 @@ class DynamicJobLoaderServiceTest {
   // ── Unload ────────────────────────────────────────────────────────────────
 
   @Test
-  void unloadJob_success_updatesStatus() {
+  void unloadJob_success_releasesClassLoaderOwnershipAndUpdatesStatus() throws Exception {
     JobDefinitionEntity entity =
         createEntity(8L, "unloadable-job", true, LoadResult.LOADED);
+    DynamicJobClassLoader classLoader = mock(DynamicJobClassLoader.class);
+    classLoadersOf(service).put(8L, classLoader);
 
     when(jobDefinitionRepository.findById(8L)).thenReturn(Optional.of(entity));
     when(jobRepository.findRunningJobExecutions("unloadable-job"))
@@ -412,6 +414,8 @@ class DynamicJobLoaderServiceTest {
     assertEquals(LoadResult.UNLOADED, result.status());
     assertEquals(LoadResult.UNLOADED, entity.getLoadStatus());
     verify(pluginRegistryService).unregisterDynamicPlugin("unloadable-job");
+    verify(classLoader).cleanup();
+    assertFalse(classLoadersOf(service).containsKey(8L));
   }
 
   @Test
@@ -478,6 +482,139 @@ class DynamicJobLoaderServiceTest {
       verify(pluginRegistryService)
           .registerDynamicPlugin(any(BatchJobPlugin.class));
     }
+  }
+
+  @Test
+  void reloadJob_holdsOneLockAcrossUnloadAndReplacementLoad() throws Exception {
+    JobDefinitionEntity entity = createEntity(21L, "test-job", true, LoadResult.LOADED);
+    entity.setMainClassName(TestBatchJobPlugin.class.getName());
+    when(jobDefinitionRepository.findById(21L)).thenReturn(Optional.of(entity));
+
+    AtomicInteger unregisterCalls = new AtomicInteger();
+    CountDownLatch secondUnregisterEntered = new CountDownLatch(1);
+    doAnswer(
+            invocation -> {
+              if (unregisterCalls.incrementAndGet() == 2) {
+                secondUnregisterEntered.countDown();
+              }
+              return null;
+            })
+        .when(pluginRegistryService)
+        .unregisterDynamicPlugin("test-job");
+
+    CountDownLatch replacementRegisterEntered = new CountDownLatch(1);
+    CountDownLatch releaseReplacementRegister = new CountDownLatch(1);
+    doAnswer(
+            invocation -> {
+              replacementRegisterEntered.countDown();
+              assertTrue(releaseReplacementRegister.await(5, TimeUnit.SECONDS));
+              return null;
+            })
+        .when(pluginRegistryService)
+        .registerDynamicPlugin(any(BatchJobPlugin.class));
+
+    ExecutorService pool = Executors.newFixedThreadPool(2);
+    try {
+      Future<?> reload = pool.submit(() -> service.reloadJob(21L));
+      assertTrue(replacementRegisterEntered.await(5, TimeUnit.SECONDS));
+
+      Future<?> concurrentUnload = pool.submit(() -> service.unloadJob(21L, true));
+      assertFalse(
+          secondUnregisterEntered.await(250, TimeUnit.MILLISECONDS),
+          "Concurrent unload must not enter while reload owns the lifecycle lock");
+
+      releaseReplacementRegister.countDown();
+      reload.get(5, TimeUnit.SECONDS);
+      concurrentUnload.get(5, TimeUnit.SECONDS);
+      assertEquals(2, unregisterCalls.get());
+    } finally {
+      releaseReplacementRegister.countDown();
+      pool.shutdownNow();
+    }
+  }
+
+  @Test
+  void reloadJob_unregisterFailureAbortsReplacementAndPreservesLoadedState() throws Exception {
+    JobDefinitionEntity entity = createEntity(22L, "test-job", true, LoadResult.LOADED);
+    DynamicJobClassLoader oldLoader = mock(DynamicJobClassLoader.class);
+    classLoadersOf(service).put(22L, oldLoader);
+    when(jobDefinitionRepository.findById(22L)).thenReturn(Optional.of(entity));
+    doThrow(new RuntimeException("unregister failed"))
+        .when(pluginRegistryService)
+        .unregisterDynamicPlugin("test-job");
+
+    assertThrows(RuntimeException.class, () -> service.reloadJob(22L));
+
+    verify(pluginRegistryService, never()).registerDynamicPlugin(any(BatchJobPlugin.class));
+    verify(oldLoader, never()).cleanup();
+    verify(jobDefinitionRepository, never()).save(entity);
+    assertSame(oldLoader, classLoadersOf(service).get(22L));
+    assertEquals(LoadResult.LOADED, entity.getLoadStatus());
+  }
+
+  @Test
+  void reloadJob_replacementFailureCleansCandidateAndPersistsFailed() throws Exception {
+    JobDefinitionEntity entity = createEntity(23L, "test-job", true, LoadResult.LOADED);
+    DynamicJobClassLoader oldLoader = mock(DynamicJobClassLoader.class);
+    classLoadersOf(service).put(23L, oldLoader);
+    when(jobDefinitionRepository.findById(23L)).thenReturn(Optional.of(entity));
+
+    try (MockedConstruction<DynamicJobClassLoader> mocked =
+        mockConstruction(
+            DynamicJobClassLoader.class,
+            (mock, context) ->
+                when(mock.loadClass("com.test.TestPlugin"))
+                    .thenThrow(new ClassNotFoundException("replacement missing")))) {
+      assertThrows(JobLoadException.class, () -> service.reloadJob(23L));
+      verify(oldLoader).cleanup();
+      verify(mocked.constructed().getFirst()).cleanup();
+    }
+
+    verify(pluginRegistryService).unregisterDynamicPlugin("test-job");
+    verify(pluginRegistryService, never()).registerDynamicPlugin(any(BatchJobPlugin.class));
+    verify(jobDefinitionRepository, atLeastOnce()).save(entity);
+    assertTrue(classLoadersOf(service).isEmpty());
+    assertEquals(LoadResult.FAILED, entity.getLoadStatus());
+  }
+
+  @Test
+  void loadJob_recoversFailedDefinitionWithOneRegistrationAndClassLoader() throws Exception {
+    JobDefinitionEntity entity = createEntity(24L, "test-job", true, LoadResult.FAILED);
+    when(jobDefinitionRepository.findById(24L)).thenReturn(Optional.of(entity));
+
+    try (MockedConstruction<DynamicJobClassLoader> mocked =
+        mockConstruction(
+            DynamicJobClassLoader.class,
+            (mock, context) ->
+                when(mock.loadClass("com.test.TestPlugin"))
+                    .thenAnswer(invocation -> TestBatchJobPlugin.class))) {
+      assertEquals(LoadResult.LOADED, service.loadJob(24L).status());
+      assertEquals(1, mocked.constructed().size());
+    }
+
+    verify(pluginRegistryService, times(1)).registerDynamicPlugin(any(BatchJobPlugin.class));
+    assertEquals(1, classLoadersOf(service).size());
+    assertEquals(LoadResult.LOADED, entity.getLoadStatus());
+  }
+
+  @Test
+  void loadJob_failedRecoveryLeavesFailedWithoutLoaderOrRegistration() throws Exception {
+    JobDefinitionEntity entity = createEntity(25L, "test-job", true, LoadResult.FAILED);
+    when(jobDefinitionRepository.findById(25L)).thenReturn(Optional.of(entity));
+
+    try (MockedConstruction<DynamicJobClassLoader> mocked =
+        mockConstruction(
+            DynamicJobClassLoader.class,
+            (mock, context) ->
+                when(mock.loadClass("com.test.TestPlugin"))
+                    .thenThrow(new ClassNotFoundException("recovery missing")))) {
+      assertThrows(JobLoadException.class, () -> service.loadJob(25L));
+      verify(mocked.constructed().getFirst()).cleanup();
+    }
+
+    verify(pluginRegistryService, never()).registerDynamicPlugin(any(BatchJobPlugin.class));
+    assertTrue(classLoadersOf(service).isEmpty());
+    assertEquals(LoadResult.FAILED, entity.getLoadStatus());
   }
 
   // ── loadAllEnabled ────────────────────────────────────────────────────────
