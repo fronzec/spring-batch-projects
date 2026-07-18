@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -120,13 +121,12 @@ class PluginRegistryServiceTest {
     void registerDynamicPlugin_addsToMapAndJobRegistry() throws Exception {
         Job job = stubJob("dynamicJob");
         BatchJobPlugin plugin = stubPlugin("dynamicJob", job);
-        Object classLoaderRef = new Object();
 
         PluginRegistryService service = new PluginRegistryService(
                 List.of(), jobRegistry, jobRepository, transactionManager,
                 applicationContext, jobDefinitionRepository);
 
-        service.registerDynamicPlugin(plugin, classLoaderRef);
+        service.registerDynamicPlugin(plugin);
 
         assertTrue(service.getRegisteredJobNames().contains("dynamicJob"));
         assertTrue(service.getPlugin("dynamicJob").isPresent());
@@ -134,19 +134,20 @@ class PluginRegistryServiceTest {
     }
 
     @Test
-    void registerDynamicPlugin_tracksClassloaderReference() throws Exception {
+    void registerDynamicPlugin_doesNotRetainClassloaderOwnership() throws Exception {
         Job job = stubJob("dynamicJob");
         BatchJobPlugin plugin = stubPlugin("dynamicJob", job);
-        Object classLoaderRef = new Object();
 
         PluginRegistryService service = new PluginRegistryService(
                 List.of(), jobRegistry, jobRepository, transactionManager,
                 applicationContext, jobDefinitionRepository);
 
-        service.registerDynamicPlugin(plugin, classLoaderRef);
+        service.registerDynamicPlugin(plugin);
 
-        // getPluginBySource confirms it's registered as classpath
         assertEquals("CLASSPATH", service.getPluginBySource("dynamicJob"));
+        assertThrows(
+                NoSuchFieldException.class,
+                () -> PluginRegistryService.class.getDeclaredField("classloaderRefs"));
     }
 
     @Test
@@ -160,11 +161,11 @@ class PluginRegistryServiceTest {
                 List.of(), jobRegistry, jobRepository, transactionManager,
                 applicationContext, jobDefinitionRepository);
 
-        service.registerDynamicPlugin(plugin1, new Object());
+        service.registerDynamicPlugin(plugin1);
 
         PluginRegistrationException ex = assertThrows(
                 PluginRegistrationException.class,
-                () -> service.registerDynamicPlugin(plugin2, new Object()));
+                () -> service.registerDynamicPlugin(plugin2));
 
         assertTrue(ex.getMessage().contains("dynamicJob"),
                 "message should contain the conflicting job name");
@@ -179,7 +180,7 @@ class PluginRegistryServiceTest {
                 List.of(), jobRegistry, jobRepository, transactionManager,
                 applicationContext, jobDefinitionRepository);
 
-        service.registerDynamicPlugin(plugin, new Object());
+        service.registerDynamicPlugin(plugin);
         service.unregisterDynamicPlugin("dynamicJob");
 
         assertFalse(service.getRegisteredJobNames().contains("dynamicJob"));
@@ -188,20 +189,24 @@ class PluginRegistryServiceTest {
     }
 
     @Test
-    void unregisterDynamicPlugin_retainsClassloaderReference() throws Exception {
+    void unregisterDynamicPlugin_propagatesRegistryFailureAndPreservesPluginMap() throws Exception {
         Job job = stubJob("dynamicJob");
         BatchJobPlugin plugin = stubPlugin("dynamicJob", job);
-        Object classLoaderRef = new Object();
 
         PluginRegistryService service = new PluginRegistryService(
                 List.of(), jobRegistry, jobRepository, transactionManager,
                 applicationContext, jobDefinitionRepository);
 
-        service.registerDynamicPlugin(plugin, classLoaderRef);
-        service.unregisterDynamicPlugin("dynamicJob");
+        service.registerDynamicPlugin(plugin);
+        RuntimeException failure = new RuntimeException("registry unavailable");
+        doThrow(failure).when(jobRegistry).unregister("dynamicJob");
 
-        // Plugin is unregistered from the map but the classloader ref is retained
-        assertFalse(service.getRegisteredJobNames().contains("dynamicJob"));
+        RuntimeException thrown =
+                assertThrows(RuntimeException.class, () -> service.unregisterDynamicPlugin("dynamicJob"));
+
+        assertEquals(failure, thrown);
+        assertTrue(service.getRegisteredJobNames().contains("dynamicJob"));
+        assertTrue(service.getPlugin("dynamicJob").isPresent());
     }
 
     @Test
