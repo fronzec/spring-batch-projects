@@ -53,12 +53,11 @@ public class DynamicJobLoaderService {
   private final Map<Long, DynamicJobClassLoader> classLoaders = new ConcurrentHashMap<>();
 
   /**
-   * Per-definition load locks. Serializes concurrent {@link #loadJob(Long)} calls for the same
-   * definition ID so the already-loaded guard and the classloader/registry writes execute
-   * atomically. Without this, two concurrent loads of the same definition both pass the guard, each
-   * opens a JAR file-handle, and the loser's {@code classLoaders.put} silently overwrites the
-   * winner's entry — leaking the winner's handle. {@link #loadJob(Long)} allocates an entry only
-   * after confirming the definition exists, so unknown IDs cannot grow the map without bound.
+   * Per-definition lifecycle locks. Serialize concurrent load, unload, and reload calls for the
+   * same definition ID so registry and classloader transitions execute atomically. A holder is
+   * allocated only after confirming the definition exists, so unknown IDs cannot grow this map
+   * without bound. This coordination is limited to calls in this service instance; it does not
+   * provide distributed lifecycle locking.
    */
   private final Map<Long, LifecycleLockHolder> lifecycleLocks = new ConcurrentHashMap<>();
 
@@ -135,9 +134,7 @@ public class DynamicJobLoaderService {
   }
 
   /**
-   * Performs the actual load. Always invoked while holding the per-definition lock acquired in
-   * {@link #loadJob(Long)}, so the already-loaded guard and the classloader/registry writes are
-   * atomic with respect to other loads of the same definition.
+   * Performs the actual load while the caller owns the per-definition lifecycle lock.
    */
   private LoadResult doLoadJob(Long definitionId) {
     JobDefinitionEntity entity =
@@ -349,6 +346,14 @@ public class DynamicJobLoaderService {
    *     {@code false}
    */
   public LoadResult unloadJob(Long definitionId, boolean force) {
+    if (jobDefinitionRepository.findById(definitionId).isEmpty()) {
+      throw new NoSuchElementException("Job definition not found for id: " + definitionId);
+    }
+    return withDefinitionLock(definitionId, () -> doUnloadJob(definitionId, force));
+  }
+
+  /** Performs the actual unload while the caller owns the per-definition lifecycle lock. */
+  private LoadResult doUnloadJob(Long definitionId, boolean force) {
     long unloadStartNanos = System.nanoTime();
 
     JobDefinitionEntity entity =
@@ -437,8 +442,15 @@ public class DynamicJobLoaderService {
    * @throws JobLoadException if the load step fails
    */
   public LoadResult reloadJob(Long definitionId) {
-    unloadJob(definitionId, true);
-    return loadJob(definitionId);
+    if (jobDefinitionRepository.findById(definitionId).isEmpty()) {
+      throw new NoSuchElementException("Job definition not found for id: " + definitionId);
+    }
+    return withDefinitionLock(
+        definitionId,
+        () -> {
+          doUnloadJob(definitionId, true);
+          return doLoadJob(definitionId);
+        });
   }
 
   /**
