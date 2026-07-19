@@ -18,10 +18,6 @@ tasks:
       task dbbootstraping
       cd ..
 
-#- init: ./spring-batch-projects/mvnw -B dependency:go-offline package -DskipTests
-#  command: java -jar target/*.jar
-#  name: Run SingleThreaded app
-
 image:
   file: .gitpod.Dockerfile
 

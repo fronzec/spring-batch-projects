@@ -175,7 +175,7 @@
   <repositories>
     <repository>
       <id>github</id>
-      <url>https://maven.pkg.github.com/fronzec/spring-batch-projects</url>
+      <url>https://maven.pkg.github.com/fronzec/spring-batch-plugin-lab</url>
     </repository>
   </repositories>
 </project>

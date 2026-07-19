@@ -1,4 +1,4 @@
-# spring-batch-projects
+# Spring Batch Plugin Lab
 
 A monorepo for experimenting with Spring Batch: a dynamic plugin host service, four batch job plugins, and a Svelte ops UI.
 

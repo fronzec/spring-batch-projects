@@ -18,7 +18,7 @@ mvn -f batch-job-api/pom.xml clean install
 
 ## Publishing
 
-This artifact is published to **GitHub Packages** at `https://maven.pkg.github.com/fronzec/spring-batch-projects`.
+This artifact is published to **GitHub Packages** at `https://maven.pkg.github.com/fronzec/spring-batch-plugin-lab`.
 
 ### 1. GitHub Personal Access Token
 
@@ -55,7 +55,7 @@ Releases are immutable on GitHub Packages. Use `-SNAPSHOT` versions during devel
 <repositories>
   <repository>
     <id>github</id>
-    <url>https://maven.pkg.github.com/fronzec/spring-batch-projects</url>
+    <url>https://maven.pkg.github.com/fronzec/spring-batch-plugin-lab</url>
   </repository>
 </repositories>
 
