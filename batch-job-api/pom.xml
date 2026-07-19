@@ -56,11 +56,11 @@
   <distributionManagement>
     <repository>
       <id>github</id>
-      <url>https://maven.pkg.github.com/fronzec/spring-batch-projects</url>
+      <url>https://maven.pkg.github.com/fronzec/spring-batch-plugin-lab</url>
     </repository>
     <snapshotRepository>
       <id>github</id>
-      <url>https://maven.pkg.github.com/fronzec/spring-batch-projects</url>
+      <url>https://maven.pkg.github.com/fronzec/spring-batch-plugin-lab</url>
     </snapshotRepository>
   </distributionManagement>
 </project>
