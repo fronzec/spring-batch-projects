@@ -104,12 +104,20 @@ class DynamicJobLoaderServiceTest {
     return entity;
   }
 
-  /** Reads the private per-definition {@code loadLocks} map via reflection for white-box assertions. */
+  /** Reads the reference-counted lifecycle holder map for white-box assertions. */
   @SuppressWarnings("unchecked")
-  private static Map<Long, ?> loadLocksOf(DynamicJobLoaderService target) throws Exception {
-    var field = DynamicJobLoaderService.class.getDeclaredField("loadLocks");
+  private static Map<Long, ?> lifecycleLocksOf(DynamicJobLoaderService target) throws Exception {
+    var field = DynamicJobLoaderService.class.getDeclaredField("lifecycleLocks");
     field.setAccessible(true);
     return (Map<Long, ?>) field.get(target);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Map<Long, DynamicJobClassLoader> classLoadersOf(
+      DynamicJobLoaderService target) throws Exception {
+    var field = DynamicJobLoaderService.class.getDeclaredField("classLoaders");
+    field.setAccessible(true);
+    return (Map<Long, DynamicJobClassLoader>) field.get(target);
   }
 
   // ── Successful load ───────────────────────────────────────────────────────
@@ -121,7 +129,7 @@ class DynamicJobLoaderServiceTest {
     when(jobDefinitionRepository.findById(1L)).thenReturn(Optional.of(entity));
     doNothing()
         .when(pluginRegistryService)
-        .registerDynamicPlugin(any(BatchJobPlugin.class), any());
+        .registerDynamicPlugin(any(BatchJobPlugin.class));
 
     try (MockedConstruction<DynamicJobClassLoader> mocked =
         mockConstruction(
@@ -140,7 +148,7 @@ class DynamicJobLoaderServiceTest {
       assertNull(entity.getLoadError());
 
       verify(pluginRegistryService)
-          .registerDynamicPlugin(any(BatchJobPlugin.class), any(DynamicJobClassLoader.class));
+          .registerDynamicPlugin(any(BatchJobPlugin.class));
     }
   }
 
@@ -254,7 +262,7 @@ class DynamicJobLoaderServiceTest {
     when(jobDefinitionRepository.findById(17L)).thenReturn(Optional.of(entity));
     doThrow(new PluginRegistrationException("configureJob failed"))
         .when(pluginRegistryService)
-        .registerDynamicPlugin(any(BatchJobPlugin.class), any());
+        .registerDynamicPlugin(any(BatchJobPlugin.class));
 
     try (MockedConstruction<DynamicJobClassLoader> mocked =
         mockConstruction(
@@ -270,6 +278,73 @@ class DynamicJobLoaderServiceTest {
           "Expected 'configureJob failed' but got: " + ex.getMessage());
       assertEquals(LoadResult.FAILED, entity.getLoadStatus());
       assertNotNull(entity.getLoadError());
+    }
+  }
+
+  @Test
+  void loadJob_lateFailureAfterRegistration_unregistersBeforeClassLoaderCleanup() throws Exception {
+    JobDefinitionEntity entity = createEntity(19L, "test-job", true, null);
+    RuntimeException loadFailure = new RuntimeException("persisting LOADED failed");
+
+    when(jobDefinitionRepository.findById(19L)).thenReturn(Optional.of(entity));
+    when(jobDefinitionRepository.save(entity))
+        .thenAnswer(
+            invocation -> {
+              if (LoadResult.LOADED.equals(entity.getLoadStatus())) {
+                throw loadFailure;
+              }
+              return entity;
+            });
+
+    try (MockedConstruction<DynamicJobClassLoader> mocked =
+        mockConstruction(
+            DynamicJobClassLoader.class,
+            (mock, ctx) ->
+                when(mock.loadClass("com.test.TestPlugin"))
+                    .thenAnswer(inv -> TestBatchJobPlugin.class))) {
+      JobLoadException thrown =
+          assertThrows(JobLoadException.class, () -> service.loadJob(19L));
+      DynamicJobClassLoader candidate = mocked.constructed().getFirst();
+      InOrder rollbackOrder = inOrder(pluginRegistryService, candidate);
+
+      assertSame(loadFailure, thrown.getCause());
+      rollbackOrder.verify(pluginRegistryService).unregisterDynamicPlugin("test-job");
+      rollbackOrder.verify(candidate).cleanup();
+      assertFalse(classLoadersOf(service).containsKey(19L));
+    }
+  }
+
+  @Test
+  void loadJob_rollbackUnregisterFails_retainsClassLoaderOwnership() throws Exception {
+    JobDefinitionEntity entity = createEntity(20L, "test-job", true, null);
+    RuntimeException loadFailure = new RuntimeException("persisting LOADED failed");
+    RuntimeException rollbackFailure = new RuntimeException("unregister failed");
+
+    when(jobDefinitionRepository.findById(20L)).thenReturn(Optional.of(entity));
+    when(jobDefinitionRepository.save(entity))
+        .thenAnswer(
+            invocation -> {
+              if (LoadResult.LOADED.equals(entity.getLoadStatus())) {
+                throw loadFailure;
+              }
+              return entity;
+            });
+    doThrow(rollbackFailure).when(pluginRegistryService).unregisterDynamicPlugin("test-job");
+
+    try (MockedConstruction<DynamicJobClassLoader> mocked =
+        mockConstruction(
+            DynamicJobClassLoader.class,
+            (mock, ctx) ->
+                when(mock.loadClass("com.test.TestPlugin"))
+                    .thenAnswer(inv -> TestBatchJobPlugin.class))) {
+      JobLoadException thrown =
+          assertThrows(JobLoadException.class, () -> service.loadJob(20L));
+      DynamicJobClassLoader candidate = mocked.constructed().getFirst();
+
+      assertSame(loadFailure, thrown.getCause());
+      assertSame(rollbackFailure, loadFailure.getSuppressed()[0]);
+      assertSame(candidate, classLoadersOf(service).get(20L));
+      verify(candidate, never()).cleanup();
     }
   }
 
@@ -289,7 +364,7 @@ class DynamicJobLoaderServiceTest {
     assertThrows(NoSuchElementException.class, () -> service.loadJob(999L));
 
     assertTrue(
-        loadLocksOf(service).isEmpty(),
+        lifecycleLocksOf(service).isEmpty(),
         "loadJob must not retain a per-definition lock for a nonexistent id");
   }
 
@@ -386,7 +461,7 @@ class DynamicJobLoaderServiceTest {
     doNothing().when(pluginRegistryService).unregisterDynamicPlugin("test-job");
     doNothing()
         .when(pluginRegistryService)
-        .registerDynamicPlugin(any(BatchJobPlugin.class), any());
+        .registerDynamicPlugin(any(BatchJobPlugin.class));
 
     try (MockedConstruction<DynamicJobClassLoader> mocked =
         mockConstruction(
@@ -401,7 +476,7 @@ class DynamicJobLoaderServiceTest {
       assertEquals(LoadResult.LOADED, result.status());
       verify(pluginRegistryService).unregisterDynamicPlugin("test-job");
       verify(pluginRegistryService)
-          .registerDynamicPlugin(any(BatchJobPlugin.class), any(DynamicJobClassLoader.class));
+          .registerDynamicPlugin(any(BatchJobPlugin.class));
     }
   }
 
@@ -420,7 +495,7 @@ class DynamicJobLoaderServiceTest {
     when(pluginRegistryService.getRegisteredJobNames()).thenReturn(Set.of("already-loaded"));
     doNothing()
         .when(pluginRegistryService)
-        .registerDynamicPlugin(any(BatchJobPlugin.class), any());
+        .registerDynamicPlugin(any(BatchJobPlugin.class));
 
     try (MockedConstruction<DynamicJobClassLoader> mocked =
         mockConstruction(
@@ -453,7 +528,7 @@ class DynamicJobLoaderServiceTest {
     when(jobDefinitionRepository.findById(15L)).thenReturn(Optional.of(bad));
     doNothing()
         .when(pluginRegistryService)
-        .registerDynamicPlugin(any(BatchJobPlugin.class), any());
+        .registerDynamicPlugin(any(BatchJobPlugin.class));
 
     try (MockedConstruction<DynamicJobClassLoader> mocked =
         mockConstruction(
@@ -475,6 +550,123 @@ class DynamicJobLoaderServiceTest {
   }
 
   // ── Concurrency ───────────────────────────────────────────────────────────
+
+  @Test
+  void withDefinitionLock_sameIdExcludesConcurrentCallers() throws Exception {
+    CountDownLatch firstEntered = new CountDownLatch(1);
+    CountDownLatch releaseFirst = new CountDownLatch(1);
+    CountDownLatch secondEntered = new CountDownLatch(1);
+    ExecutorService pool = Executors.newFixedThreadPool(2);
+    try {
+      Future<?> first =
+          pool.submit(
+              () ->
+                  service.withDefinitionLock(
+                      30L,
+                      () -> {
+                        firstEntered.countDown();
+                        await(releaseFirst);
+                      }));
+      assertTrue(firstEntered.await(5, TimeUnit.SECONDS));
+      Future<?> second = pool.submit(() -> service.withDefinitionLock(30L, secondEntered::countDown));
+
+      assertFalse(secondEntered.await(200, TimeUnit.MILLISECONDS));
+      releaseFirst.countDown();
+      first.get(5, TimeUnit.SECONDS);
+      second.get(5, TimeUnit.SECONDS);
+      assertEquals(0, lifecycleLocksOf(service).size());
+    } finally {
+      releaseFirst.countDown();
+      pool.shutdownNow();
+    }
+  }
+
+  @Test
+  void withDefinitionLock_differentIdsProceedIndependently() throws Exception {
+    CountDownLatch bothEntered = new CountDownLatch(2);
+    CountDownLatch releaseBoth = new CountDownLatch(1);
+    ExecutorService pool = Executors.newFixedThreadPool(2);
+    try {
+      Future<?> first =
+          pool.submit(
+              () ->
+                  service.withDefinitionLock(
+                      31L,
+                      () -> {
+                        bothEntered.countDown();
+                        await(releaseBoth);
+                      }));
+      Future<?> second =
+          pool.submit(
+              () ->
+                  service.withDefinitionLock(
+                      32L,
+                      () -> {
+                        bothEntered.countDown();
+                        await(releaseBoth);
+                      }));
+
+      assertTrue(bothEntered.await(5, TimeUnit.SECONDS));
+      releaseBoth.countDown();
+      first.get(5, TimeUnit.SECONDS);
+      second.get(5, TimeUnit.SECONDS);
+      assertTrue(lifecycleLocksOf(service).isEmpty());
+    } finally {
+      releaseBoth.countDown();
+      pool.shutdownNow();
+    }
+  }
+
+  @Test
+  void withDefinitionLock_queuedCallersShareHolderUntilAllComplete() throws Exception {
+    CountDownLatch firstEntered = new CountDownLatch(1);
+    CountDownLatch releaseFirst = new CountDownLatch(1);
+    CountDownLatch queuedEntered = new CountDownLatch(2);
+    ExecutorService pool = Executors.newFixedThreadPool(3);
+    try {
+      Future<?> first =
+          pool.submit(
+              () ->
+                  service.withDefinitionLock(
+                      33L,
+                      () -> {
+                        firstEntered.countDown();
+                        await(releaseFirst);
+                      }));
+      assertTrue(firstEntered.await(5, TimeUnit.SECONDS));
+      Future<?> second = pool.submit(() -> service.withDefinitionLock(33L, queuedEntered::countDown));
+      Future<?> third = pool.submit(() -> service.withDefinitionLock(33L, queuedEntered::countDown));
+
+      assertEquals(1, lifecycleLocksOf(service).size());
+      releaseFirst.countDown();
+      assertTrue(queuedEntered.await(5, TimeUnit.SECONDS));
+      first.get(5, TimeUnit.SECONDS);
+      second.get(5, TimeUnit.SECONDS);
+      third.get(5, TimeUnit.SECONDS);
+      assertTrue(lifecycleLocksOf(service).isEmpty());
+    } finally {
+      releaseFirst.countDown();
+      pool.shutdownNow();
+    }
+  }
+
+  @Test
+  void withDefinitionLock_reclaimsHolderAfterFailure() throws Exception {
+    assertThrows(
+        IllegalStateException.class,
+        () -> service.withDefinitionLock(34L, () -> { throw new IllegalStateException("failure"); }));
+
+    assertTrue(lifecycleLocksOf(service).isEmpty());
+  }
+
+  private static void await(CountDownLatch latch) {
+    try {
+      latch.await();
+    } catch (InterruptedException exception) {
+      Thread.currentThread().interrupt();
+      throw new AssertionError("Interrupted while awaiting test synchronization", exception);
+    }
+  }
 
   /**
    * Two concurrent {@code loadJob} calls for the SAME definition id must be serialized: only one may
@@ -523,7 +715,7 @@ class DynamicJobLoaderServiceTest {
               return null;
             })
         .when(pluginRegistryService)
-        .registerDynamicPlugin(any(BatchJobPlugin.class), any());
+        .registerDynamicPlugin(any(BatchJobPlugin.class));
 
     ExecutorService pool = Executors.newFixedThreadPool(2);
     try {
@@ -557,7 +749,7 @@ class DynamicJobLoaderServiceTest {
               + "loadJob is not serialized per definition id");
       // Serialized: only the winner registers; the contender is rejected by the guard.
       verify(pluginRegistryService, times(1))
-          .registerDynamicPlugin(any(BatchJobPlugin.class), any());
+        .registerDynamicPlugin(any(BatchJobPlugin.class));
 
       // Release the real classloader/temp-JAR handle opened by the successful load.
       service.unloadJob(20L, true);

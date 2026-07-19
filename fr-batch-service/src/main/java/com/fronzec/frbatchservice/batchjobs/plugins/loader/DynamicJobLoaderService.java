@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.repository.JobRepository;
@@ -59,7 +60,7 @@ public class DynamicJobLoaderService {
    * winner's entry — leaking the winner's handle. {@link #loadJob(Long)} allocates an entry only
    * after confirming the definition exists, so unknown IDs cannot grow the map without bound.
    */
-  private final Map<Long, ReentrantLock> loadLocks = new ConcurrentHashMap<>();
+  private final Map<Long, LifecycleLockHolder> lifecycleLocks = new ConcurrentHashMap<>();
 
   public DynamicJobLoaderService(
       JobDefinitionRepository jobDefinitionRepository,
@@ -91,18 +92,46 @@ public class DynamicJobLoaderService {
    */
   public LoadResult loadJob(Long definitionId) {
     // Gate lock allocation on existence so unknown IDs (e.g. POST /definitions/{id}/load with a
-    // bogus id) cannot grow loadLocks without bound. The authoritative existence check still runs
+    // bogus id) cannot grow lifecycleLocks without bound. The authoritative existence check still runs
     // inside doLoadJob under the lock, guarding against a definition deleted between the two reads.
     if (jobDefinitionRepository.findById(definitionId).isEmpty()) {
       throw new NoSuchElementException("Job definition not found for id: " + definitionId);
     }
-    ReentrantLock lock = loadLocks.computeIfAbsent(definitionId, k -> new ReentrantLock());
-    lock.lock();
+    return withDefinitionLock(definitionId, () -> doLoadJob(definitionId));
+  }
+
+  <T> T withDefinitionLock(Long definitionId, Supplier<T> action) {
+    LifecycleLockHolder holder =
+        lifecycleLocks.compute(
+            definitionId,
+            (id, current) -> {
+              LifecycleLockHolder selected = current == null ? new LifecycleLockHolder() : current;
+              selected.users++;
+              return selected;
+            });
+    holder.lock.lock();
     try {
-      return doLoadJob(definitionId);
+      return action.get();
     } finally {
-      lock.unlock();
+      holder.lock.unlock();
+      lifecycleLocks.computeIfPresent(
+          definitionId,
+          (id, current) -> --current.users == 0 ? null : current);
     }
+  }
+
+  void withDefinitionLock(Long definitionId, Runnable action) {
+    withDefinitionLock(
+        definitionId,
+        () -> {
+          action.run();
+          return null;
+        });
+  }
+
+  private static final class LifecycleLockHolder {
+    private final ReentrantLock lock = new ReentrantLock();
+    private int users;
   }
 
   /**
@@ -151,6 +180,7 @@ public class DynamicJobLoaderService {
 
     long loadStartNanos = System.nanoTime();
     DynamicJobClassLoader classLoader = null;
+    boolean registered = false;
     try {
       // Validate JAR file exists
       File jarFile = new File(entity.getJarFilePath());
@@ -206,7 +236,8 @@ public class DynamicJobLoaderService {
 
       // Register through existing hook — registerDynamicPlugin() internally calls
       // plugin.configureJob(...), validates the Job, and registers in JobRegistry
-      pluginRegistryService.registerDynamicPlugin(plugin, classLoader);
+      pluginRegistryService.registerDynamicPlugin(plugin);
+      registered = true;
 
       // Track classloader for future unload
       classLoaders.put(definitionId, classLoader);
@@ -240,35 +271,52 @@ public class DynamicJobLoaderService {
       return new LoadResult(
           entity.getJobName(), LoadResult.LOADED, "Successfully loaded");
 
-    } catch (NoSuchElementException | IllegalStateException e) {
-      // Re-throw without wrapping — these are validation failures, not load errors
-      // Reset status from LOADING back to previous
-      entity.setLoadStatus(getPreviousLoadStatus(entity, definitionId));
-      jobDefinitionRepository.save(entity);
-      auditService.logEvent(
-          new AuditEvent(
-              AuditEventType.JOB_LOADED,
-              entity.getJobName(),
-              AuditService.currentUserId(),
-              "Load rejected: " + e.getMessage(),
-              AuditEvent.FAILURE,
-              LocalDateTime.now()));
-      throw e;
     } catch (Exception e) {
-      // Mark FAILED and persist the error
-      entity.setLoadStatus(LoadResult.FAILED);
-      entity.setLoadError(e.getMessage());
-      jobDefinitionRepository.save(entity);
-
-      // Clean up any partial classloader
-      if (classLoader != null) {
+      boolean canReleaseClassLoader = true;
+      if (registered) {
         try {
-          classLoader.cleanup();
-        } catch (Exception cleanupEx) {
-          log.warn("Failed to clean up classloader for definition {}: {}", definitionId, cleanupEx.getMessage());
+          pluginRegistryService.unregisterDynamicPlugin(entity.getJobName());
+        } catch (Exception rollbackEx) {
+          canReleaseClassLoader = false;
+          e.addSuppressed(rollbackEx);
+          log.error(
+              "Failed to roll back plugin registration for definition {}: {}",
+              definitionId,
+              rollbackEx.getMessage(),
+              rollbackEx);
         }
       }
-      classLoaders.remove(definitionId);
+
+      if (canReleaseClassLoader) {
+        DynamicJobClassLoader ownedClassLoader = classLoaders.remove(definitionId);
+        DynamicJobClassLoader classLoaderToClean =
+            ownedClassLoader != null ? ownedClassLoader : classLoader;
+        if (classLoaderToClean != null) {
+          try {
+            classLoaderToClean.cleanup();
+          } catch (Exception cleanupEx) {
+            e.addSuppressed(cleanupEx);
+            log.warn(
+                "Failed to clean up classloader for definition {}: {}",
+                definitionId,
+                cleanupEx.getMessage(),
+                cleanupEx);
+          }
+        }
+      }
+
+      entity.setLoadStatus(LoadResult.FAILED);
+      entity.setLoadError(e.getMessage());
+      try {
+        jobDefinitionRepository.save(entity);
+      } catch (Exception persistenceEx) {
+        e.addSuppressed(persistenceEx);
+        log.error(
+            "Failed to persist FAILED status for definition {}: {}",
+            definitionId,
+            persistenceEx.getMessage(),
+            persistenceEx);
+      }
 
       log.error("Failed to load plugin for definition {}: {}", definitionId, e.getMessage(), e);
 
@@ -440,16 +488,4 @@ public class DynamicJobLoaderService {
     return results;
   }
 
-  /**
-   * Determines the previous load status for rollback when a pre-condition validation fails after
-   * LOADING was already set.
-   */
-  private String getPreviousLoadStatus(JobDefinitionEntity entity, Long definitionId) {
-    // If we already had a classloader, it means we were LOADED before this attempt
-    if (classLoaders.containsKey(definitionId)) {
-      return LoadResult.LOADED;
-    }
-    // Otherwise revert to UNLOADED (the most common prior state for a fresh load)
-    return LoadResult.UNLOADED;
-  }
 }

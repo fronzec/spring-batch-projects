@@ -44,13 +44,7 @@ public class PluginRegistryService {
     /** Built during {@link PostConstruct} and dynamic registration; mutable. */
     private final Map<String, BatchJobPlugin> pluginsByJobName = new LinkedHashMap<>();
 
-    /**
-     * Tracks classloader references for dynamically-registered plugins. Stored for
-     * Phase 4 cleanup (classloader close/reload). Key: job name, Value: classloader
-     * reference.
-     */
-    private final Map<String, Object> classloaderRefs = new HashMap<>();
-
+    /** Creates a registry backed by the shared Spring Batch infrastructure and job definitions. */
     public PluginRegistryService(
             List<BatchJobPlugin> plugins,
             JobRegistry jobRegistry,
@@ -175,15 +169,12 @@ public class PluginRegistryService {
      * <p>Thread-safe: acquires the {@code pluginsByJobName} monitor before
      * mutation so register-into-map + register-into-JobRegistry are atomic.
      *
-     * @param plugin          the plugin instance to register (must have a unique
-     *                        job name)
-     * @param classLoaderRef  a reference to the classloader that loaded the
-     *                        plugin (stored for Phase 4 cleanup)
+     * @param plugin the plugin instance to register (must have a unique job name)
      * @throws PluginRegistrationException if a plugin with the same job name
      *                                     is already registered, or if
      *                                     {@code configureJob()} fails
      */
-    public void registerDynamicPlugin(BatchJobPlugin plugin, Object classLoaderRef) {
+    public void registerDynamicPlugin(BatchJobPlugin plugin) {
         String name = plugin.getJobName();
 
         synchronized (pluginsByJobName) {
@@ -223,8 +214,6 @@ public class PluginRegistryService {
             }
 
             pluginsByJobName.put(name, plugin);
-            classloaderRefs.put(name, classLoaderRef);
-
             log.info(
                     "Dynamically registered plugin job '{}' from {}",
                     name,
@@ -236,12 +225,9 @@ public class PluginRegistryService {
      * Unregisters a dynamically-registered plugin from the internal map and the
      * shared {@link JobRegistry}.
      *
-     * <p>Thread-safe: acquires the {@code pluginsByJobName} monitor. The
-     * classloader reference is <em>retained</em> in {@code classloaderRefs} for
-     * Phase 4 cleanup (graceful drain / close).
-     *
-     * <p>If the job is currently running, a warning is logged but execution is
-     * not interrupted — Phase 4 handles graceful drain.
+     * <p>Thread-safe: acquires the {@code pluginsByJobName} monitor. The map entry
+     * is removed only after {@link JobRegistry#unregister(String)} succeeds, so a
+     * registry failure preserves the plugin's in-memory registration.
      *
      * @param jobName the job name to unregister
      */
@@ -252,22 +238,10 @@ public class PluginRegistryService {
                 return;
             }
 
+            jobRegistry.unregister(jobName);
             pluginsByJobName.remove(jobName);
 
-            try {
-                jobRegistry.unregister(jobName);
-            } catch (Exception e) {
-                log.warn(
-                        "Failed to unregister job \"{}\" from JobRegistry: {}",
-                        jobName,
-                        e.getMessage());
-            }
-
-            classloaderRefs.remove(jobName);
-
-            log.info(
-                    "Unregistered plugin '{}', classloader reference removed",
-                    jobName);
+            log.info("Unregistered plugin '{}'", jobName);
         }
     }
 
